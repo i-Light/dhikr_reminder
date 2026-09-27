@@ -1,0 +1,66 @@
+name: Release Windows build
+
+# Fires when a version tag is pushed. Unlike gratovo_toolbox, nothing here
+# pushes tags by itself -- build_windows.ps1 stopped at the .zip + installer --
+# so cutting a release means bumping pubspec.yaml, committing it, and pushing
+# the matching tag:
+#
+#   git tag v0.1.0 ; git push origin v0.1.0
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write # required for softprops/action-gh-release to create the release
+
+jobs:
+  build-windows:
+    # Pinned, not windows-latest: the unpinned label moves under a release
+    # pipeline that is supposed to be reproducible, and this is the same image
+    # gratovo_toolbox has been building on without incident.
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # There is no auto-versioning to lean on, so the tag is the only thing
+      # claiming which version this is -- and a tag that disagrees with
+      # pubspec.yaml would publish a build labelled v0.2.0 that reports itself
+      # as 0.1.0 forever after. Fail loudly instead.
+      - name: Tag matches pubspec version
+        shell: pwsh
+        run: |
+          $raw = Get-Content pubspec.yaml -Raw
+          $declared = [regex]::Match($raw, '(?m)^version:\s*(\S+)').Groups[1].Value
+          $declared = ($declared -split '\+')[0]
+          $tag = ('${{ github.ref_name }}' -replace '^v', '')
+          if ($declared -ne $tag) {
+            throw "Tag v$tag does not match pubspec.yaml version $declared. Bump pubspec.yaml, commit it, and re-tag."
+          }
+
+      # windows-2022 ships Inno Setup preinstalled, which is everything
+      # -Installer needs beyond the Flutter SDK.
+      - name: Build + stage
+        shell: pwsh
+        run: .\scripts\build_windows.ps1 -Installer
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          # ${{ github.ref_name }} is the pushed tag, e.g. "v0.1.0".
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          # Relative, forward-slash globs -- not absolute Windows paths. This
+          # action's glob matcher expects forward slashes; a Windows absolute
+          # path with backslashes silently matches nothing, which -- with
+          # fail_on_unmatched_files off -- publishes a Release with no build
+          # attached and no error anywhere in the log.
+          fail_on_unmatched_files: true
+          files: |
+            dist/*.zip
+            dist/*-setup.exe

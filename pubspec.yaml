@@ -1,0 +1,60 @@
+name: dhikr_reminder
+description: "Dhikr Reminder — a standalone desktop app that pops a dhikr on screen every few minutes and lets you tap it out."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  # Same floor as gratovo_toolbox: the reminder overlay leans on `withValues(alpha:)`,
+  # `OverlayPortal` and `BlurStyle.outer`, all of which need a recent Flutter.
+  sdk: '>=3.5.0 <4.0.0'
+  flutter: '>=3.38.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Ships the locale data AppLocalizations needs for `en` + `ar` (and the RTL
+  # layout the Arabic strings depend on).
+  flutter_localizations:
+    sdk: flutter
+
+  # State management — hand-written Riverpod providers, no codegen, matching
+  # gratovo_toolbox (which this app's reminder code was lifted from).
+  flutter_riverpod: ^3.4.2
+
+  # The reminder card's mandala/frame-corner artwork.
+  flutter_svg: ^2.2.1
+
+  # Persists the dhikr list, the reminder interval and the next row id.
+  shared_preferences: ^2.5.5
+
+  # Pinned to the version flutter_localizations already resolves on this SDK,
+  # so this doesn't introduce a second, conflicting constraint.
+  intl: ^0.20.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: '>=3.0.0 <6.0.0'
+
+flutter:
+  uses-material-design: true
+
+  # Drives `flutter gen-l10n` (see l10n.yaml) — generates
+  # lib/l10n/gen/app_localizations.dart from lib/l10n/app_en.arb + app_ar.arb
+  # on every `flutter pub get` / `flutter run`.
+  generate: true
+
+  fonts:
+    # The reminder card's Arabic text (see `fontFamily: 'Naksh'` in
+    # dhikr_reminder_overlay.dart). This is the one asset font the reminder
+    # actually renders with; gratovo_toolbox's other fonts belong to screens
+    # this app doesn't have.
+    - family: Naksh
+      fonts:
+        - asset: assets/fonts/PanoramaNaskhMobile-Regular.otf
+
+  assets:
+    # The reminder card's frame — see border_frame.dart.
+    - assets/images/frame_corner.svg
+    - assets/images/mandala_background.svg

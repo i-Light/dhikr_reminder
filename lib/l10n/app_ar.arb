@@ -1,0 +1,24 @@
+{
+  "@@locale": "ar",
+
+  "appTitle": "تذكير الأذكار",
+  "homeSubtitle": "هيطلع ذكر كل شوية دقايق — عدّه بضغطة وارجع لشغلك.",
+  "commonTestReminder": "اظهار التذكير دلوقتي",
+
+  "settingsDhikrTitle": "تعديل الأذكار",
+  "settingsDhikrSubtitle": "غير كمية تكرار الأذكار، والعدد، وضيف، وشيل أذكار",
+  "settingsDhikrIntervalLabel": "الفاصل الزمني للتذكير",
+  "settingsDhikrIntervalSubtitle": "كل قد ايه يظهر تذكير الذكر، بالدقايق",
+  "settingsDhikrNameColumn": "الذكر",
+  "settingsDhikrAmountColumn": "العدد",
+  "settingsDhikrChanceColumn": "نسبة الظهور",
+  "settingsDhikrChanceExplainer": "الاحتمال هنا وزن وليس نسبة مئوية. الذكر عند 6 يظهر ضعف ما يظهر عند 3 — لا أكثر. إذا تساوت الأرقام تساوت الفرص، والصفر يعني أنه لن يظهر أبداً. ذكر واحد عند 1 مع إسكات البقية سيظهر في كل مرة، لأنه لا يوجد غيره للمقارنة.",
+  "settingsDhikrSaved": "التغييرات الى اتعملت للأذكار اتحفظت.",
+
+  "commonAdd": "إضافة",
+  "commonDelete": "حذف",
+  "commonSave": "حفظ",
+
+  "dhikrReminderTitle": "تذكير باللَّه",
+  "dhikrReminderTouchEverywhereTip": "أضغط فى اى مكان للعد"
+}

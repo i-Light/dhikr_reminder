@@ -1,0 +1,24 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Dhikr Reminder",
+  "homeSubtitle": "A dhikr pops up every few minutes — tap it out, then get back to work.",
+  "commonTestReminder": "Show a reminder now",
+
+  "settingsDhikrTitle": "Azkar Settings",
+  "settingsDhikrSubtitle": "Change the zikr reminders frequency, volume, add, and remove azkar",
+  "settingsDhikrIntervalLabel": "Reminder interval",
+  "settingsDhikrIntervalSubtitle": "How often a reminder pops up, in minutes",
+  "settingsDhikrNameColumn": "Dhikr",
+  "settingsDhikrAmountColumn": "Amount",
+  "settingsDhikrChanceColumn": "Chance",
+  "settingsDhikrChanceExplainer": "Chance is a weight, not a percentage. An entry at 6 comes up twice as often as one at 3 — nothing more. Give every entry the same number and they are equally likely; set one to 0 and it never comes up at all. A single entry at 1 with everything else muted still comes up every time, because there is nothing else to compare it against.",
+  "settingsDhikrSaved": "Azkar changes has been saved.",
+
+  "commonAdd": "Add",
+  "commonDelete": "Delete",
+  "commonSave": "Save",
+
+  "dhikrReminderTitle": "Dhikr reminder",
+  "dhikrReminderTouchEverywhereTip": "Touch anywhere to count"
+}

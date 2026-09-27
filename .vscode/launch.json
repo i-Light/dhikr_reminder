@@ -1,0 +1,30 @@
+{
+  // Mirrors gratovo_toolbox's launch.json with the two things this app doesn't
+  // need taken out:
+  //   - `--dart-define-from-file=data/.env` (no Supabase/Anthropic keys here)
+  //   - a preLaunchTask (that one existed to run `window_manager` setup steps;
+  //     this app has no tray, no second window and no native prep work, so F5
+  //     goes straight to `flutter run` and hot reload keeps working)
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // The primary one: Windows desktop is what this app is built for.
+      // `deviceId` skips the device picker on F5. Flutter-tool flags (like
+      // --verbose) belong in "toolArgs", not "args" -- "args" reaches the
+      // app's own argv and is ignored here.
+      "name": "Dhikr Reminder (Windows)",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "windows"
+    },
+    {
+      // No Chrome configuration here on purpose: `flutter create` was run for
+      // windows/android/ios, so there is no web/ folder and a chrome device is
+      // not a valid target for this project. If a web build is ever wanted, run
+      // `flutter create --platforms web .` and add the configuration back.
+      "name": "Dhikr Reminder (Android emulator / other)",
+      "request": "launch",
+      "type": "dart"
+    }
+  ]
+}

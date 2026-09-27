@@ -1,0 +1,53 @@
+name: CI
+
+# Every push to main and every pull request. release.yml only fires on a
+# version tag and never tests, so without this the suite runs only on
+# whichever machine remembered to run it before pushing.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A newer push to the same branch supersedes the run in progress.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  flutter:
+    name: analyze + flutter test
+    # Linux, not the windows-2022 the release uses: a fraction of the cost per
+    # minute, and everything here is platform-neutral Dart (the scheduler's
+    # weighted pick, the tap counter). The Windows runner stays reserved for
+    # release.yml, where the .exe actually has to be compiled.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          # Pinned so "CI is red" means the code changed, not the SDK. Bump
+          # deliberately, together with the local toolchain.
+          flutter-version: 3.47.0
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      # pub get regenerates lib/l10n/gen from lib/l10n/*.arb; the tree must not
+      # then differ from what is committed, or the app is being built from ARB
+      # files nobody regenerated.
+      - name: generated l10n is up to date
+        run: git diff --exit-code -- lib/l10n/gen
+
+      # Held to the formatter so a diff is only ever about code.
+      - run: dart format --output=none --set-exit-if-changed lib test
+
+      # --fatal-infos because the copied-in gratovo_toolbox rules are a
+      # deliberate standard here, not a suggestion.
+      - run: flutter analyze --fatal-infos
+
+      - run: flutter test --reporter expanded --no-pub
