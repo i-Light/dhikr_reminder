@@ -26,8 +26,9 @@ class DhikrReminderApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
-      locale:
-          null, // Follows the OS locale; falls back to en for anything else.
+      // Always Arabic (Egyptian), whatever the OS locale is. `ar_EG` resolves
+      // to the `ar` strings, which are already written in Egyptian dialect.
+      locale: const Locale('ar', 'EG'),
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       home: const HomeScreen(),

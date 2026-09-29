@@ -102,6 +102,7 @@ class _WindowSpec {
     required this.alwaysOnTop,
     required this.hiddenFromTaskbar,
     required this.takeFocus,
+    this.centredOnScreen = false,
   });
 
   /// Where the window ends up on screen, in logical pixels.
@@ -121,6 +122,10 @@ class _WindowSpec {
   /// Whether showing it should pull keyboard focus. The splash and the
   /// reminder must not: the person is probably typing into something else.
   final bool takeFocus;
+
+  /// Placed at the exact centre of the monitor (see
+  /// [AppShellNotifier._centreOnScreen]) instead of at [rect]'s corner.
+  final bool centredOnScreen;
 }
 
 /// Owns the app's relationship with its own window and the system tray.
@@ -166,7 +171,8 @@ class AppShellNotifier extends Notifier<ShellState>
   /// goes back to when a transient one (reminder, menu, splash) is over.
   ShellMode _resting = ShellMode.hidden;
 
-  /// Where the settings window was last, so it reopens in the same place.
+  /// How big the settings window was last, so it reopens at the same size
+  /// (though always centred — see [_WindowSpec.centredOnScreen]).
   Rect? _settingsBounds;
 
   Future<void> _queue = Future<void>.value();
@@ -434,7 +440,9 @@ class AppShellNotifier extends Notifier<ShellState>
         state = ShellState(target, revealed: true);
         return;
       }
-      await windowManager.setPosition(spec.rect.topLeft);
+      if (!spec.centredOnScreen || !await _centreOnScreen(spec.rect.size)) {
+        await windowManager.setPosition(spec.rect.topLeft);
+      }
       if (spec.takeFocus) await windowManager.focus();
       state = ShellState(target, revealed: true);
     } finally {
@@ -448,6 +456,26 @@ class AppShellNotifier extends Notifier<ShellState>
     } on MissingPluginException {
       // An older runner without the channel: the popup just shows in the
       // taskbar while it is up.
+    }
+  }
+
+  /// Centres the window on the middle of the whole monitor the cursor is on,
+  /// natively and in physical pixels (see `centerOnCursorMonitor` in
+  /// `flutter_window.cpp`), which stays exact at any resolution or DPI where
+  /// logical-pixel arithmetic across monitors does not. Returns false when the
+  /// runner has no such method, so the caller can place it the Dart way.
+  Future<bool> _centreOnScreen(Size size) async {
+    try {
+      final dpiChanged = await _windowChannel.invokeMethod<bool>(
+        'centerOnCursorMonitor',
+        {'width': size.width, 'height': size.height, 'gap': _screenGap},
+      );
+      // Landing on a monitor with another DPI re-scales the window; give the
+      // surface a moment to lay out again at the new density.
+      if (dpiChanged ?? false) await _settle();
+      return true;
+    } on MissingPluginException {
+      return false;
     }
   }
 
@@ -471,6 +499,7 @@ class AppShellNotifier extends Notifier<ShellState>
           alwaysOnTop: true,
           hiddenFromTaskbar: true,
           takeFocus: false,
+          centredOnScreen: true,
         );
       case ShellMode.reminder:
       case ShellMode.prewarm:
@@ -481,6 +510,7 @@ class AppShellNotifier extends Notifier<ShellState>
           alwaysOnTop: true,
           hiddenFromTaskbar: true,
           takeFocus: false,
+          centredOnScreen: true,
         );
       case ShellMode.trayMenu:
         return _WindowSpec(
@@ -493,12 +523,15 @@ class AppShellNotifier extends Notifier<ShellState>
         );
       case ShellMode.settings:
         return _WindowSpec(
-          rect: _settingsBounds ?? _centred(area, kSettingsWindowSize),
+          // Reopens at the size it last had, but always in the middle of the
+          // monitor the cursor is on rather than wherever it was left.
+          rect: _centred(area, _settingsBounds?.size ?? kSettingsWindowSize),
           frameless: false,
           transparent: false,
           alwaysOnTop: false,
           hiddenFromTaskbar: false,
           takeFocus: true,
+          centredOnScreen: true,
         );
       case ShellMode.hidden:
         throw StateError('hidden has no window to describe');

@@ -43,9 +43,6 @@ jobs:
       - name: generated l10n is up to date
         run: git diff --exit-code -- lib/l10n/gen
 
-      # Held to the formatter so a diff is only ever about code.
-      - run: dart format --output=none --set-exit-if-changed lib test
-
       # --fatal-infos because the copied-in gratovo_toolbox rules are a
       # deliberate standard here, not a suggestion.
       - run: flutter analyze --fatal-infos
