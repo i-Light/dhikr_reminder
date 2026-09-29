@@ -2,6 +2,8 @@ import 'package:dhikr_reminder/core/theme/app_theme.dart';
 import 'package:dhikr_reminder/core/toast/dhikr_reminder_overlay.dart';
 import 'package:dhikr_reminder/core/toast/toast_overlay.dart';
 import 'package:dhikr_reminder/core/window/app_shell.dart';
+import 'package:dhikr_reminder/core/window/reminder_prewarm.dart';
+import 'package:dhikr_reminder/core/window/splash_surface.dart';
 import 'package:dhikr_reminder/core/window/tray_menu_panel.dart';
 import 'package:dhikr_reminder/features/settings/presentation/home_screen.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
@@ -11,9 +13,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Root widget of the standalone dhikr reminder.
 ///
 /// This is gratovo_toolbox's `app.dart` reduced to what this app actually
-/// needs: the same theme, the same localization setup, and — most
-/// importantly — the same `builder` that keeps both overlays mounted above
-/// every screen.
+/// needs: the same theme, the same localization setup, and a `builder` that
+/// decides what the one native window is showing — see [_ShellHost].
 class DhikrReminderApp extends StatelessWidget {
   const DhikrReminderApp({super.key});
 
@@ -30,25 +31,17 @@ class DhikrReminderApp extends StatelessWidget {
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       home: const HomeScreen(),
-      // Both overlays sit in `builder`, above `home`, and that placement is
-      // the whole reason they work:
+      // `DhikrReminderHost` sits in `builder`, above everything the window can
+      // show, and that placement is the whole reason the reminders work: it is
+      // the only place `dhikrReminderSchedulerProvider` is watched, and a
+      // `NotifierProvider` with nothing listening to it is torn down. Mounting
+      // it here — rather than inside a screen — means the timer outlives every
+      // change of what the window is showing.
       //
-      //  - `DhikrReminderOverlay` is the only place
-      //    `dhikrReminderSchedulerProvider` is watched, and a
-      //    `NotifierProvider` with nothing listening to it is torn down.
-      //    Mounting it here — rather than inside a screen — means the timer
-      //    outlives every rebuild of the widget below it.
-      //  - `ToastOverlay` likewise needs one permanent home, since
-      //    `AppToast.*` calls come from widgets (the settings card's Save)
-      //    that can be built and thrown away at any time.
-      //
-      // Reminder above toast, so a reminder that fires while a toast is up
-      // still reads as the more urgent of the two.
-      //
-      // While the window is doubling as the tray popup (see
-      // `AppShellNotifier`), the overlay stays mounted — the timer must not
-      // stop — and so does the app; see [_ShellHost].
-      builder: (context, child) => DhikrReminderOverlay(
+      // `ToastOverlay` likewise needs one permanent home, since `AppToast.*`
+      // calls come from widgets (the settings card's Save) that can be built
+      // and thrown away at any time.
+      builder: (context, child) => DhikrReminderHost(
         child: _ShellHost(
           app: ToastOverlay(child: child ?? const SizedBox.shrink()),
         ),
@@ -57,12 +50,16 @@ class DhikrReminderApp extends StatelessWidget {
   }
 }
 
-/// Shows either the app or, while the window is the tray popup, the menu.
+/// Shows whichever surface matches what [AppShellNotifier] currently has the
+/// window turned into: nothing, the splash, the reminder popup (or its
+/// invisible pre-warm run), the tray menu, or the settings screen.
 ///
-/// The app is never unmounted for the menu: doing so would throw away the
-/// navigator and with it the settings card's unsaved draft. Instead it is
-/// taken out of view and pinned to the size it last had, so it is not laid out
-/// at popup size (which would squash the settings page) while it waits.
+/// The settings screen is not built until it is first opened, and is never
+/// unmounted after that: doing so would throw away the navigator and with it
+/// the settings card's unsaved draft, which matters when a reminder or the
+/// menu takes the window over while settings is open. Instead it is taken out
+/// of view and pinned to the size it last had, so it is not laid out at the
+/// other surface's size (which would squash the page) while it waits.
 class _ShellHost extends ConsumerStatefulWidget {
   const _ShellHost({required this.app});
 
@@ -73,31 +70,69 @@ class _ShellHost extends ConsumerStatefulWidget {
 }
 
 class _ShellHostState extends ConsumerState<_ShellHost> {
-  Size _appSize = Size.zero;
+  Size _appSize = kSettingsWindowSize;
+  bool _appEverShown = false;
 
   @override
   Widget build(BuildContext context) {
-    final isMenu = ref.watch(appShellProvider) == ShellMode.trayMenu;
+    final shell = ref.watch(appShellProvider);
+    final showApp = shell.mode == ShellMode.settings;
+    _appEverShown = _appEverShown || showApp;
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (!isMenu) _appSize = constraints.biggest;
-        final pinned = isMenu && !_appSize.isEmpty;
+        // Only once the window has arrived at its settings size: on the way
+        // there the constraints are still whatever the last mode's were.
+        if (showApp && shell.revealed) _appSize = constraints.biggest;
         return Stack(
           children: [
-            Offstage(
-              offstage: isMenu,
-              // Same widget in both modes (only its arguments change) so the
-              // app keeps its state across the switch.
-              child: OverflowBox(
-                alignment: Alignment.topLeft,
-                minWidth: pinned ? _appSize.width : null,
-                maxWidth: pinned ? _appSize.width : null,
-                minHeight: pinned ? _appSize.height : null,
-                maxHeight: pinned ? _appSize.height : null,
-                child: widget.app,
+            if (_appEverShown)
+              Offstage(
+                key: const ValueKey('app'),
+                offstage: !showApp,
+                // Same widget in every mode (only its arguments change) so the
+                // app keeps its state across the switch.
+                child: OverflowBox(
+                  alignment: Alignment.topLeft,
+                  minWidth: showApp ? null : _appSize.width,
+                  maxWidth: showApp ? null : _appSize.width,
+                  minHeight: showApp ? null : _appSize.height,
+                  maxHeight: showApp ? null : _appSize.height,
+                  child: widget.app,
+                ),
               ),
-            ),
-            if (isMenu) const Positioned.fill(child: TrayMenuPanel()),
+            ...switch (shell.mode) {
+              ShellMode.hidden || ShellMode.settings => const <Widget>[],
+              ShellMode.splash => [
+                  // Mounted only once the window is on screen, so the splash's
+                  // fade-in is the first thing anyone sees of it.
+                  if (shell.revealed)
+                    const Positioned.fill(
+                      key: ValueKey('splash'),
+                      child: SplashSurface(),
+                    ),
+                ],
+              ShellMode.prewarm => const [
+                  Positioned.fill(
+                    key: ValueKey('prewarm'),
+                    child: ReminderPrewarmSurface(),
+                  ),
+                ],
+              ShellMode.reminder => [
+                  Positioned.fill(
+                    key: const ValueKey('reminder'),
+                    // Empty until the window is on screen, so the card plays
+                    // its entrance where it can be seen.
+                    child: DhikrReminderProviderSurface(visible: shell.revealed),
+                  ),
+                ],
+              ShellMode.trayMenu => const [
+                  Positioned.fill(
+                    key: ValueKey('menu'),
+                    child: TrayMenuPanel(),
+                  ),
+                ],
+            },
           ],
         );
       },

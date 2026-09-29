@@ -3,7 +3,6 @@ import 'dart:math';
 
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// A dhikr reminder currently on screen, plus how many times it's been
@@ -27,20 +26,34 @@ class ActiveDhikrReminder {
 }
 
 /// Holds whichever dhikr reminder is currently floating on screen, if any.
-/// `DhikrReminderScheduler` populates it on a timer; `DhikrReminderOverlay`
-/// (mounted once at the app root, next to `ToastOverlay`) renders it and
-/// drives [increment]/[dismiss] from taps.
+/// `DhikrReminderScheduler` populates it on a timer; the reminder popup
+/// (`DhikrReminderSurface`) renders it and drives [increment]/[dismiss] from taps.
 class ActiveDhikrReminderNotifier extends Notifier<ActiveDhikrReminder?> {
   @override
   ActiveDhikrReminder? build() => null;
 
   void show(DhikrEntry entry) {
     state = ActiveDhikrReminder(entry: entry);
-    if (!ref.read(dhikrSettingsProvider).isMuted) {
-      // Fire-and-forget: a platform without a system alert sound just stays
-      // silent, and a reminder must never fail to appear over a missing beep.
-      unawaited(SystemSound.play(SystemSoundType.alert).catchError((_) {}));
-    }
+    // No sound for now: the system beep this used to play is off on purpose.
+    // The mute setting (`isMuted`) stays wired up for when each dhikr gets its
+    // own optional custom sound — play it here, unless muted.
+  }
+
+  /// Pops a reminder right now, for the settings page's test button and the
+  /// debug-session demo.
+  ///
+  /// Deliberately not `DhikrReminderScheduler.pickWeighted`: that is
+  /// `@visibleForTesting`, and this is app code. The point is to see the card,
+  /// not to sample the weighting, so it just takes the first eligible entry.
+  void showTest() {
+    final settings = ref.read(dhikrSettingsProvider);
+    // With the chance option off nothing is excluded, whatever chance an
+    // entry has stored.
+    final entries = settings.entries
+        .where((entry) => !settings.useChance || entry.chance > 0)
+        .toList();
+    if (entries.isEmpty) return;
+    show(entries.first);
   }
 
   void increment() {

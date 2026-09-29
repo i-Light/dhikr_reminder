@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:dhikr_reminder/core/constants/app_colors.dart';
 import 'package:dhikr_reminder/core/toast/border_frame.dart';
 import 'package:dhikr_reminder/core/toast/dhikr_fit_text.dart';
 import 'package:dhikr_reminder/core/toast/dust_particles_overlay.dart';
@@ -149,30 +148,40 @@ class DhikrPalette {
   }
 }
 
-/// Hosts the floating dhikr-reminder card above [child] — mounted once at
-/// the app root next to `ToastOverlay` (see `app.dart`), so a reminder fired
-/// from anywhere lands at the same top-center spot regardless of which page
-/// is underneath. Unlike `ToastOverlay` there's only ever one of these on
-/// screen at a time, so it's a single card rather than an animated stack.
+/// Room the reminder window leaves around the card, on every side, for the
+/// card's outer glow (its 60px blur — see `AmbientGlowPainter`) to fall off
+/// into instead of being cut by the window's edge.
+const double kDhikrReminderGlowMargin = 80;
+
+/// Keeps the reminder machinery running for the app's lifetime; renders
+/// nothing of its own, only [child].
 ///
-/// Also the one place `dhikrReminderSchedulerProvider` gets watched — that
+/// This is the one place `dhikrReminderSchedulerProvider` gets watched — that
 /// notifier's state (the next due time) is for the tray menu, not for this
 /// widget to render; what matters here is the side-effecting `Timer` in its
 /// `build()`, but a `NotifierProvider` still needs a live listener to stay
 /// built at all, so watching it here (selecting nothing, so a new due time
-/// does not rebuild the overlay) is what keeps the reminder timer running for
-/// the app's lifetime.
-class DhikrReminderOverlay extends ConsumerStatefulWidget {
-  const DhikrReminderOverlay({super.key, required this.child});
+/// does not rebuild anything) is what keeps the reminder timer running.
+///
+/// It also owns the auto-dismiss: reaching the target count is a state change,
+/// not a user action, so there is no tap to hang the dismiss off — give the
+/// checkmark and confetti a beat, then clear the reminder the same way a
+/// toast's own timer would. That beat is `DhikrTimers.dismissDelay`, not
+/// `autoDismiss` alone, so the card doesn't start fading out — and clipping
+/// the confetti — before the burst has actually finished.
+///
+/// Mounted once at the app root (see `app.dart`) so the timer outlives every
+/// rebuild of the widget below it, whichever surface the window is showing.
+class DhikrReminderHost extends ConsumerStatefulWidget {
+  const DhikrReminderHost({super.key, required this.child});
 
   final Widget child;
 
   @override
-  ConsumerState<DhikrReminderOverlay> createState() =>
-      _DhikrReminderOverlayState();
+  ConsumerState<DhikrReminderHost> createState() => _DhikrReminderHostState();
 }
 
-class _DhikrReminderOverlayState extends ConsumerState<DhikrReminderOverlay> {
+class _DhikrReminderHostState extends ConsumerState<DhikrReminderHost> {
   Timer? _autoDismissTimer;
 
   @override
@@ -184,14 +193,7 @@ class _DhikrReminderOverlayState extends ConsumerState<DhikrReminderOverlay> {
   @override
   Widget build(BuildContext context) {
     ref.watch(dhikrReminderSchedulerProvider.select((_) => null));
-    final reminder = ref.watch(activeDhikrReminderProvider);
 
-    // Reaching the target count is a state change, not a user action, so
-    // there's no tap to hang the dismiss off — give it a beat to register
-    // the checkmark and confetti, then clear itself the same way a toast's
-    // own timer would. That beat is `DhikrTimers.dismissDelay`, not
-    // `autoDismiss` alone, so the card doesn't start fading out — and
-    // clipping the confetti — before the burst has actually finished.
     ref.listen(activeDhikrReminderProvider, (previous, next) {
       _autoDismissTimer?.cancel();
       if (next != null && next.isComplete) {
@@ -205,81 +207,104 @@ class _DhikrReminderOverlayState extends ConsumerState<DhikrReminderOverlay> {
       }
     });
 
-    return Stack(
-      children: [
-        widget.child,
-        Positioned.fill(
-          child: IgnorePointer(
-            ignoring: reminder == null,
-            child: SafeArea(
-              child: LayoutBuilder(
-                builder: (context, constraints) => Stack(children: [
-                  AnimatedOpacity(
-                    // 1. Match the duration of your dialog animation
-                    duration: DhikrTimers.cardEntrance,
-                    // 2. Fade to 0 when reminder is null, 1 when active
-                    opacity: reminder == null ? 0.0 : 1.0,
-                    // 3. Prevent the invisible layer from blocking taps when hidden
-                    child: IgnorePointer(
-                      ignoring: reminder == null,
-                      child: Container(
-                        color: AppColors.primaryDark.withAlpha(180),
-                        // Gated on `reminder` rather than left mounted and
-                        // faded: `AnimatedOpacity` above only changes this
-                        // layer's alpha, and `HolyDustBackground` drives a
-                        // `.repeat()`ing AnimationController. Left alone it
-                        // would repaint every particle, every frame, for the
-                        // whole session — an always-running animation for a
-                        // background that is only ever visible while a
-                        // reminder is on screen.
-                        child: reminder == null
-                            ? const SizedBox.shrink()
-                            : const HolyDustBackground(
-                                particleCount: 15,
-                              ),
-                      ),
-                    ),
-                  ),
-                  Align(
-                    alignment: Alignment.center,
-                    child: AnimatedSwitcher(
-                      duration: DhikrTimers.cardEntrance,
-                      // The scale+fade the switcher always ran, routed
-                      // through [_SnapshotExitTransition] so the *exit*
-                      // plays against a frozen texture of the card instead
-                      // of re-rasterizing the whole card (glow blurs, text
-                      // shadows, SVG frame and all) on every frame of the
-                      // fade — see the class docs below.
-                      transitionBuilder: (child, animation) =>
-                          _SnapshotExitTransition(
-                        animation: animation,
-                        child: child,
-                      ),
-                      child: reminder == null
-                          ? const SizedBox.shrink(key: ValueKey('empty'))
-                          : _DhikrReminderCard(
-                              key: ValueKey(reminder.entry.id),
-                              reminder: reminder,
-                              maxWidth: constraints.maxWidth,
-                              maxHeight: constraints.maxHeight,
-                              onTap: () {
-                                HapticFeedback.lightImpact();
-                                ref
-                                    .read(activeDhikrReminderProvider.notifier)
-                                    .increment();
-                              },
-                              onDismiss: () => ref
-                                  .read(activeDhikrReminderProvider.notifier)
-                                  .dismiss(),
-                            ),
-                    ),
-                  ),
-                ]),
-              ),
+    return widget.child;
+  }
+}
+
+/// [DhikrReminderSurface] bound to the real reminder: shows whatever
+/// `activeDhikrReminderProvider` holds and routes taps back into it.
+class DhikrReminderProviderSurface extends ConsumerWidget {
+  const DhikrReminderProviderSurface({super.key, this.visible = true});
+
+  /// False keeps the surface mounted but empty — the window is still being
+  /// moved into place, and the card should play its entrance once it is
+  /// actually on screen, not while it is still off it.
+  final bool visible;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final reminder = visible ? ref.watch(activeDhikrReminderProvider) : null;
+    final notifier = ref.read(activeDhikrReminderProvider.notifier);
+    return DhikrReminderSurface(
+      reminder: reminder,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        notifier.increment();
+      },
+      onDismiss: notifier.dismiss,
+    );
+  }
+}
+
+/// What the reminder window shows: the floating dhikr card, centred, over a
+/// transparent background so it reads as a popup on the desktop rather than as
+/// part of an app window. Fills its constraints (the reminder window, sized by
+/// `AppShellNotifier`) and leaves [kDhikrReminderGlowMargin] free on every side
+/// for the glow.
+///
+/// Unlike `ToastOverlay` there's only ever one card at a time, so it's a
+/// single card rather than an animated stack. Takes the reminder as a
+/// parameter (instead of reading the provider) so the startup pre-warm can
+/// drive it with a made-up one.
+class DhikrReminderSurface extends StatelessWidget {
+  const DhikrReminderSurface({
+    super.key,
+    required this.reminder,
+    required this.onTap,
+    required this.onDismiss,
+  });
+
+  final ActiveDhikrReminder? reminder;
+  final VoidCallback onTap;
+  final VoidCallback onDismiss;
+
+  /// The card's glow sprites, shared by every card rather than owned by one.
+  /// The reminder window is always the same size, so a sprite baked for one
+  /// card fits the next — which is what lets the startup pre-warm bake them
+  /// before the first real reminder needs them.
+  static final GlowSpriteStore glowSprites = GlowSpriteStore();
+
+  @override
+  Widget build(BuildContext context) {
+    final reminder = this.reminder;
+    return LayoutBuilder(
+      builder: (context, constraints) => Stack(children: [
+        // The holy dust drifts around the card. Gated on `reminder` rather
+        // than left mounted and faded: `HolyDustBackground` drives a
+        // `.repeat()`ing AnimationController, which left alone would repaint
+        // every particle, every frame, for as long as the window exists.
+        if (reminder != null)
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: HolyDustBackground(particleCount: 15),
             ),
           ),
+        Align(
+          alignment: Alignment.center,
+          child: AnimatedSwitcher(
+            duration: DhikrTimers.cardEntrance,
+            // The scale+fade the switcher always ran, routed through
+            // [_SnapshotExitTransition] so the *exit* plays against a frozen
+            // texture of the card instead of re-rasterizing the whole card
+            // (glow blurs, text shadows, SVG frame and all) on every frame of
+            // the fade — see the class docs below.
+            transitionBuilder: (child, animation) => _SnapshotExitTransition(
+              animation: animation,
+              child: child,
+            ),
+            child: reminder == null
+                ? const SizedBox.shrink(key: ValueKey('empty'))
+                : _DhikrReminderCard(
+                    key: ValueKey(reminder.entry.id),
+                    reminder: reminder,
+                    maxWidth: constraints.maxWidth,
+                    maxHeight: constraints.maxHeight,
+                    onTap: onTap,
+                    onDismiss: onDismiss,
+                  ),
+          ),
         ),
-      ],
+      ]),
     );
   }
 }
@@ -492,9 +517,10 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
       _ConfettiParticle.generate(16);
 
   /// Falloff sprites shared by the card's two outer-glow layers (glow
-  /// layer 1 and 1b), so the 60-blur shape is baked once and drawn twice.
-  /// Owned here so the images are disposed with the card.
-  final GlowSpriteStore _glowSprites = GlowSpriteStore();
+  /// layer 1 and 1b), so the 60-blur shape is baked once and drawn twice —
+  /// and, being [DhikrReminderSurface.glowSprites], kept for the next card
+  /// too instead of being disposed with this one.
+  final GlowSpriteStore _glowSprites = DhikrReminderSurface.glowSprites;
 
   @override
   void didUpdateWidget(covariant _DhikrReminderCard oldWidget) {
@@ -515,7 +541,6 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
     _glowController.dispose();
     _textGlowController.dispose();
     _confettiController.dispose();
-    _glowSprites.dispose();
     super.dispose();
   }
 
@@ -537,8 +562,11 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
     final dhikrTextStyle = (theme.textTheme.displayLarge ?? const TextStyle())
         .copyWith(fontFamily: 'Naksh', wordSpacing: 12, height: 1.6);
 
-    final widgetWidth = widget.maxWidth * 0.75;
-    final widgetHeight = widget.maxHeight * 0.75;
+    // Everything the window has, less the glow's room on each side.
+    final widgetWidth =
+        max(0.0, widget.maxWidth - 2 * kDhikrReminderGlowMargin);
+    final widgetHeight =
+        max(0.0, widget.maxHeight - 2 * kDhikrReminderGlowMargin);
 
     // The glow layers bake their sprites at the current display density;
     // re-set on every build so a density change re-bakes them (see

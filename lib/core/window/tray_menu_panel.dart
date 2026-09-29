@@ -11,8 +11,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// The tray icon's right-click menu, drawn in the reminder card's own gold —
 /// the same palette and border language — rather than the native Windows menu.
 ///
-/// Shown in place of the whole app while [AppShellNotifier] has the window
-/// turned into a small popup (see [ShellMode.trayMenu]); it fills that window
+/// Shown while [AppShellNotifier] has the window turned into a small popup
+/// (see [ShellMode.trayMenu]); it fills that window
 /// edge to edge, which is why it draws its own border.
 ///
 /// Every row is an icon and a label. A row that toggles something (the sound)

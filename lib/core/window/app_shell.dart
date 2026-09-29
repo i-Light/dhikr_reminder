@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 import 'dart:io';
-import 'dart:ui';
+import 'dart:math' as math;
 
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart' show WidgetsBinding;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:screen_retriever/screen_retriever.dart';
 import 'package:tray_manager/tray_manager.dart';
@@ -13,67 +15,170 @@ import 'package:window_manager/window_manager.dart';
 
 /// What the one native window is currently being used as.
 enum ShellMode {
-  /// The normal app window: settings screen plus the reminder overlay.
-  app,
+  /// Nothing on screen. The app's normal state: it lives in the tray.
+  hidden,
+
+  /// A quick floating splash, shown once when the app starts.
+  splash,
+
+  /// The reminder popup, parked far off-screen and run once through its whole
+  /// life (entrance, taps, completion, exit) so the fonts, artwork and glow
+  /// sprites it needs are already in memory by the time a real reminder shows.
+  prewarm,
+
+  /// The floating dhikr popup.
+  reminder,
+
+  /// The settings screen. Only ever reached from the tray icon.
+  settings,
 
   /// A small frameless popup shown at the tray icon, rendering
-  /// `TrayMenuPanel` instead of the app.
+  /// `TrayMenuPanel`.
   trayMenu,
+}
+
+/// The window's mode plus whether it has actually arrived.
+///
+/// A window is re-shaped out of sight (see [AppShellNotifier]) and only then
+/// moved on screen. [revealed] is false for the first part of that and true
+/// from the moment the window is where the person will see it, so a surface
+/// can hold its entrance animation until there is someone to see it.
+@immutable
+class ShellState {
+  const ShellState(this.mode, {this.revealed = false});
+
+  final ShellMode mode;
+  final bool revealed;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ShellState && other.mode == mode && other.revealed == revealed;
+
+  @override
+  int get hashCode => Object.hash(mode, revealed);
 }
 
 /// Size of the tray popup, in logical pixels — see `TrayMenuPanel`.
 const kTrayMenuSize = Size(272, 264);
 
+/// Size of the splash window; the splash card fills it.
+const kSplashSize = Size(420, 240);
+
+/// Size of the reminder popup window: the card plus room for its glow (see
+/// [kDhikrReminderGlowMargin]). Shrunk to fit a display smaller than this.
+const kReminderWindowSize = Size(1120, 700);
+
+/// Size the settings window opens at the first time.
+const kSettingsWindowSize = Size(960, 720);
+
+/// How long the splash stays up. `SplashSurface` runs its fade in and out
+/// inside this.
+const kSplashDuration = Duration(milliseconds: 1800);
+
 const _trayIconAsset = 'assets/images/tray_icon.ico';
 const _trayTooltip = 'Dhikr Reminder';
 
-/// Gap between the popup and the tray icon it opened from, and between the
-/// popup and the screen's edge.
-const _trayMenuGap = 10.0;
+/// Gap between a popup and the tray icon it opened from, and between a popup
+/// and the screen's edge.
+const _screenGap = 10.0;
 
-/// Owns the app's relationship with its own window and the system tray:
+/// How long a leaving reminder is given to play its exit before the window
+/// goes away under it (`DhikrTimers.cardEntrance`, plus a little).
+const _reminderExitGrace = Duration(milliseconds: 300);
+
+/// Windows-only window tweaks `window_manager` cannot do — see
+/// `windows/runner/flutter_window.cpp`.
+const _windowChannel = MethodChannel('dhikr_reminder/window');
+
+/// Somewhere no monitor is, for changing the window's shape out of sight.
+const _offscreen = Offset(-20000, -20000);
+
+/// How the window should look for one [ShellMode].
+class _WindowSpec {
+  const _WindowSpec({
+    required this.rect,
+    required this.frameless,
+    required this.transparent,
+    required this.alwaysOnTop,
+    required this.hiddenFromTaskbar,
+    required this.takeFocus,
+  });
+
+  /// Where the window ends up on screen, in logical pixels.
+  final Rect rect;
+
+  /// No title bar or border: the surface draws everything itself.
+  final bool frameless;
+
+  /// The desktop shows through wherever the surface paints nothing.
+  final bool transparent;
+
+  final bool alwaysOnTop;
+
+  /// Out of the taskbar and Alt+Tab.
+  final bool hiddenFromTaskbar;
+
+  /// Whether showing it should pull keyboard focus. The splash and the
+  /// reminder must not: the person is probably typing into something else.
+  final bool takeFocus;
+}
+
+/// Owns the app's relationship with its own window and the system tray.
 ///
-///  * closing the window hides it to the tray instead of quitting;
-///  * the tray icon's left click brings the app back, its right click opens a
-///    themed menu (rendered by Flutter, not a native one) — done by turning
-///    this same window into a small frameless popup for as long as the menu is
-///    up, then restoring it exactly as it was;
-///  * a reminder that comes due while the window is hidden brings the window
-///    up to show it, and puts it away again when the reminder is done.
+/// The app has no window of its own to speak of: it lives in the tray, and its
+/// one native window is only ever *shown* as one of a few things (see
+/// [ShellMode]):
 ///
-/// One window, two modes, rather than a second native window: the Flutter
+///  * on start-up, a quick floating splash, then an off-screen pre-warm run of
+///    the reminder popup;
+///  * when a reminder comes due, the reminder popup — a frameless, transparent,
+///    always-on-top window holding just the card, which is why it reads as a
+///    floating popup and not as part of an app;
+///  * from the tray icon's left click, the settings screen — the only way to
+///    it;
+///  * from the tray icon's right click, a themed menu (rendered by Flutter,
+///    not a native one).
+///
+/// One window, several modes, rather than several native windows: the Flutter
 /// engine, the providers and the reminder timer all live in this one, and a
-/// second engine would have had to be kept in step with them.
+/// second engine would have had to be kept in step with them. The price is that
+/// a reminder that comes due while settings is open takes the window over for
+/// its duration, and settings comes back afterwards exactly as it was.
+///
+/// Every change of mode goes through one queue ([_enqueue]) and re-checks the
+/// state when its turn comes, so a burst of events (a click during the splash,
+/// a reminder while the menu is opening) resolves in order instead of racing.
 ///
 /// Everything native is skipped off Windows (and in tests, where [init] is
 /// never called), so the notifier itself is safe to build anywhere.
-class AppShellNotifier extends Notifier<ShellMode>
+class AppShellNotifier extends Notifier<ShellState>
     with TrayListener, WindowListener {
   bool _initialised = false;
 
-  /// True while the window is hidden to the tray.
-  bool _isHidden = false;
+  /// True while the native window is hidden.
+  bool _isHidden = true;
 
-  /// True when the window was raised only to show a reminder, so it should go
-  /// back to the tray once that reminder is done. Cleared as soon as the
-  /// person opens the app themselves.
-  bool _shownForReminder = false;
+  /// True while a mode change is under way, so the focus changes it causes
+  /// itself are not mistaken for the person clicking away.
+  bool _busy = false;
 
-  /// True while switching between modes, so the focus changes the switch
-  /// itself causes are not mistaken for the person clicking away.
-  bool _transitioning = false;
+  /// The resting mode ([ShellMode.hidden] or [ShellMode.settings]) the window
+  /// goes back to when a transient one (reminder, menu, splash) is over.
+  ShellMode _resting = ShellMode.hidden;
 
-  Rect? _savedBounds;
-  bool _wasHiddenBeforeMenu = false;
+  /// Where the settings window was last, so it reopens in the same place.
+  Rect? _settingsBounds;
+
+  Future<void> _queue = Future<void>.value();
 
   @override
-  ShellMode build() {
+  ShellState build() {
     ref.listen(activeDhikrReminderProvider, (previous, next) {
       if (!_initialised) return;
       if (previous == null && next != null) {
-        unawaited(_onReminderShown());
+        _enqueue(_onReminderShown);
       } else if (previous != null && next == null) {
-        unawaited(_onReminderDone());
+        _enqueue(_onReminderDone);
       }
     });
     ref.onDispose(() {
@@ -81,7 +186,7 @@ class AppShellNotifier extends Notifier<ShellMode>
       trayManager.removeListener(this);
       windowManager.removeListener(this);
     });
-    return ShellMode.app;
+    return const ShellState(ShellMode.hidden, revealed: true);
   }
 
   /// Sets up the tray icon and takes over the window's close button. Called
@@ -100,50 +205,109 @@ class AppShellNotifier extends Notifier<ShellMode>
       await windowManager.setPreventClose(true);
       _initialised = true;
     } catch (error, stackTrace) {
-      developer.log(
-        'Tray setup failed; closing the window will quit the app.',
-        name: 'dhikr_reminder.shell',
-        level: 900,
-        error: error,
-        stackTrace: stackTrace,
-      );
+      _log('Tray setup failed; closing the window will quit the app.',
+          error, stackTrace);
     }
   }
+
+  /// Runs the start-up sequence: the splash, then the off-screen pre-warm.
+  /// Called once from `main` after `runApp`.
+  ///
+  /// The window starts hidden (see `flutter_window.cpp`), so without this — or
+  /// a tray click — nothing would ever be on screen.
+  Future<void> start() async {
+    if (!_initialised) {
+      // No tray means no way to reach the app once it is hidden: show the
+      // window as the plain settings window it would otherwise be.
+      if (!kIsWeb && Platform.isWindows) {
+        try {
+          await windowManager.show();
+        } catch (_) {}
+      }
+      return;
+    }
+    await _enqueue(() => _enter(ShellMode.splash));
+    if (state.mode != ShellMode.splash) return; // Something took over.
+    await Future<void>.delayed(kSplashDuration);
+    await _enqueue(() async {
+      if (state.mode == ShellMode.splash) await _enter(ShellMode.prewarm);
+    });
+  }
+
+  /// Called by the pre-warm surface once it has played out.
+  void prewarmFinished() {
+    _enqueue(() async {
+      if (state.mode != ShellMode.prewarm) return;
+      await _enter(_resting);
+      // A debug session would otherwise wait out the whole interval (30
+      // minutes by default) to find out whether the reminder even renders,
+      // so it gets one for free as soon as start-up is done.
+      if (!kReleaseMode && !_demoShown) {
+        _demoShown = true;
+        ref.read(activeDhikrReminderProvider.notifier).showTest();
+      }
+    });
+  }
+
+  bool _demoShown = false;
 
   // ---- window / tray events ------------------------------------------------
 
   @override
   void onWindowClose() {
-    if (state == ShellMode.trayMenu) {
-      unawaited(closeTrayMenu(showApp: false));
-      return;
+    switch (state.mode) {
+      case ShellMode.settings:
+        _enqueue(() => _enter(ShellMode.hidden));
+      case ShellMode.trayMenu:
+        _enqueue(_closeMenu);
+      case ShellMode.reminder:
+        ref.read(activeDhikrReminderProvider.notifier).dismiss();
+      case ShellMode.hidden || ShellMode.splash || ShellMode.prewarm:
+        break;
     }
-    unawaited(_hideToTray());
   }
 
   @override
   void onWindowBlur() {
-    if (state == ShellMode.trayMenu && !_transitioning) {
-      unawaited(closeTrayMenu(showApp: false));
+    if (state.mode == ShellMode.trayMenu && !_busy) {
+      _enqueue(_closeMenu);
     }
   }
 
+  // The `...MouseDown` callbacks, not `...MouseUp`: on Windows the plugin
+  // reports a click once, on button release, and only ever under the
+  // `MouseDown` names — the `MouseUp` ones are never delivered there.
   @override
-  void onTrayIconMouseUp() => unawaited(openApp());
+  void onTrayIconMouseDown() => unawaited(openApp());
 
   @override
-  void onTrayIconRightMouseUp() => unawaited(openTrayMenu());
+  void onTrayIconRightMouseDown() => unawaited(openTrayMenu());
 
   // ---- actions -------------------------------------------------------------
 
-  /// Brings the app window to the front, from the tray or from the menu.
-  Future<void> openApp() async {
-    _shownForReminder = false;
-    if (state == ShellMode.trayMenu) {
-      await closeTrayMenu(showApp: true);
-      return;
-    }
-    await _showWindow();
+  /// Brings up the settings screen, from the tray icon or from the menu.
+  Future<void> openApp() {
+    return _enqueue(() async {
+      // A reminder in progress owns the window; the person is mid-dhikr.
+      if (state.mode == ShellMode.reminder) return;
+      _resting = ShellMode.settings;
+      if (state.mode == ShellMode.settings && state.revealed) {
+        // Already open, perhaps behind something: just bring it forward.
+        await windowManager.show();
+        await windowManager.focus();
+        return;
+      }
+      await _enter(ShellMode.settings);
+    });
+  }
+
+  Future<void> openTrayMenu() {
+    return _enqueue(() async {
+      if (state.mode == ShellMode.reminder || state.mode == ShellMode.trayMenu) {
+        return;
+      }
+      await _enter(ShellMode.trayMenu);
+    });
   }
 
   Future<void> toggleMuted() {
@@ -163,114 +327,188 @@ class AppShellNotifier extends Notifier<ShellMode>
     await windowManager.destroy();
   }
 
-  Future<void> openTrayMenu() async {
-    if (!_initialised || state == ShellMode.trayMenu || _transitioning) return;
-    _transitioning = true;
-    try {
-      final cursor = await screenRetriever.getCursorScreenPoint();
-      final display = await _displayAt(cursor);
+  // ---- reminder ------------------------------------------------------------
 
-      _wasHiddenBeforeMenu = _isHidden;
-      _savedBounds = await windowManager.getBounds();
-      // Hidden while it changes shape, so the settings screen is never seen
-      // squashed into a menu-sized frame.
-      await windowManager.hide();
-      state = ShellMode.trayMenu;
-      await windowManager.setAsFrameless();
-      await windowManager.setSkipTaskbar(true);
-      await windowManager.setAlwaysOnTop(true);
-      await windowManager.setBounds(_menuRect(cursor, display));
-      // Gives the panel a moment to replace the app before it is shown.
-      await Future<void>.delayed(const Duration(milliseconds: 60));
-      await windowManager.show();
-      await windowManager.focus();
-      _isHidden = false;
-    } catch (error, stackTrace) {
-      developer.log(
-        'Opening the tray menu failed.',
-        name: 'dhikr_reminder.shell',
-        level: 900,
-        error: error,
-        stackTrace: stackTrace,
-      );
-      _transitioning = false;
-      await closeTrayMenu(showApp: false);
-    } finally {
-      _transitioning = false;
-    }
+  Future<void> _onReminderShown() async {
+    if (ref.read(activeDhikrReminderProvider) == null) return; // Already gone.
+    if (state.mode == ShellMode.reminder) return;
+    await _enter(ShellMode.reminder);
   }
 
-  /// Puts the window back the way it was before the menu took it over: same
-  /// frame, same size and position, and hidden again unless [showApp] says the
-  /// person asked for the app.
-  Future<void> closeTrayMenu({required bool showApp}) async {
-    if (state != ShellMode.trayMenu || _transitioning) return;
-    _transitioning = true;
-    try {
-      await windowManager.hide();
-      await windowManager.setAlwaysOnTop(false);
-      await windowManager.setSkipTaskbar(false);
-      await windowManager.setTitleBarStyle(TitleBarStyle.normal);
-      final bounds = _savedBounds;
-      if (bounds != null) await windowManager.setBounds(bounds);
-      // Only now, at full size again: the app records the size it is given
-      // whenever it is not the menu (see `_ShellHost`), and must not record
-      // the popup's.
-      state = ShellMode.app;
-      await Future<void>.delayed(const Duration(milliseconds: 60));
-      if (showApp || !_wasHiddenBeforeMenu) {
-        await _showWindow();
-      } else {
-        _isHidden = true;
-      }
-    } finally {
-      _transitioning = false;
-    }
+  Future<void> _onReminderDone() async {
+    if (state.mode != ShellMode.reminder) return;
+    // The card plays a short exit; taking the window away now would cut it.
+    await Future<void>.delayed(_reminderExitGrace);
+    // Another reminder may have started in the meantime — it keeps the window.
+    if (ref.read(activeDhikrReminderProvider) != null) return;
+    if (state.mode != ShellMode.reminder) return;
+    await _enter(_resting);
+  }
+
+  Future<void> _closeMenu() async {
+    if (state.mode != ShellMode.trayMenu || _busy) return;
+    await _enter(_resting);
   }
 
   // ---- internals -----------------------------------------------------------
 
-  Future<void> _showWindow() async {
-    _isHidden = false;
-    // `show` also un-minimizes.
-    await windowManager.show();
-    await windowManager.focus();
+  /// Runs [task] after every earlier one, and never lets one failure stop the
+  /// ones behind it.
+  Future<void> _enqueue(Future<void> Function() task) {
+    final next = _queue.then((_) => task()).catchError((Object error, StackTrace stackTrace) {
+      _log('A window change failed.', error, stackTrace);
+      // A failure part-way leaves the window in an unknown shape; hiding it is
+      // the one state that is always safe to be in.
+      _isHidden = true;
+      unawaited(windowManager.hide().catchError((_) {}));
+      state = const ShellState(ShellMode.hidden, revealed: true);
+    });
+    _queue = next;
+    return next;
   }
 
-  Future<void> _hideToTray() async {
-    _shownForReminder = false;
-    // A reminder left up behind a hidden window would block every later one
-    // (the scheduler never interrupts one in progress) with nothing on screen
-    // to dismiss it.
-    ref.read(activeDhikrReminderProvider.notifier).dismiss();
-    _isHidden = true;
-    await windowManager.hide();
-  }
+  /// Turns the window into [target], out of sight, and only then moves it
+  /// where it belongs.
+  ///
+  /// The order matters, and is why the window is *shown* off-screen rather than
+  /// hidden while it changes shape: a Flutter window resized while hidden comes
+  /// back as a black rectangle, and one resized on screen shows the old
+  /// surface squashed into the new frame.
+  Future<void> _enter(ShellMode target) async {
+    if (!_initialised) return;
+    final from = state.mode;
+    if (from == target && state.revealed) return;
+    _busy = true;
+    try {
+      if (from == ShellMode.settings && !_isHidden) {
+        _settingsBounds = await windowManager.getBounds();
+      }
+      if (target == ShellMode.settings || target == ShellMode.hidden) {
+        _resting = target;
+      }
 
-  Future<void> _onReminderShown() async {
-    if (state == ShellMode.trayMenu) {
-      // The reminder is the thing to look at, not the menu.
-      _shownForReminder = _wasHiddenBeforeMenu;
-      await closeTrayMenu(showApp: true);
-      return;
+      if (target == ShellMode.hidden) {
+        if (!_isHidden) await windowManager.hide();
+        _isHidden = true;
+        state = const ShellState(ShellMode.hidden, revealed: true);
+        return;
+      }
+
+      final spec = await _specFor(target);
+
+      // Out of sight first. A window that is visible has to be hidden to
+      // change its taskbar presence anyway.
+      if (!_isHidden) {
+        await windowManager.hide();
+        _isHidden = true;
+      }
+      await _setHiddenFromTaskbar(spec.hiddenFromTaskbar);
+      await windowManager.setPosition(_offscreen);
+      await windowManager.show(inactive: true);
+      _isHidden = false;
+
+      // Re-shape.
+      if (spec.frameless) {
+        await windowManager.setAsFrameless();
+        await windowManager.setHasShadow(false);
+      } else {
+        await windowManager.setTitleBarStyle(TitleBarStyle.normal);
+      }
+      await windowManager.setBackgroundColor(
+        spec.transparent ? const Color(0x00000000) : const Color(0xFF000000),
+      );
+      await windowManager.setAlwaysOnTop(spec.alwaysOnTop);
+      await windowManager.setBounds(
+        spec.rect.translate(_offscreen.dx, _offscreen.dy),
+      );
+
+      // Only now that the window has its new size: the settings screen records
+      // the size it is given (see `ShellHost`) and must not record another
+      // mode's.
+      state = ShellState(target);
+      // Time to lay out and paint the new surface at its new size.
+      await _settle();
+
+      if (target == ShellMode.prewarm) {
+        // Stays where it is: the whole point is that nobody sees it.
+        state = ShellState(target, revealed: true);
+        return;
+      }
+      await windowManager.setPosition(spec.rect.topLeft);
+      if (spec.takeFocus) await windowManager.focus();
+      state = ShellState(target, revealed: true);
+    } finally {
+      _busy = false;
     }
-    if (_isHidden) {
-      _shownForReminder = true;
-      await _showWindow();
+  }
+
+  Future<void> _setHiddenFromTaskbar(bool hidden) async {
+    try {
+      await _windowChannel.invokeMethod<void>('setToolWindow', hidden);
+    } on MissingPluginException {
+      // An older runner without the channel: the popup just shows in the
+      // taskbar while it is up.
     }
   }
 
-  Future<void> _onReminderDone() async {
-    if (!_shownForReminder || state != ShellMode.app) return;
-    _shownForReminder = false;
-    _isHidden = true;
-    await windowManager.hide();
+  /// A moment for Flutter to lay out and paint after a change of size.
+  Future<void> _settle() async {
+    await Future<void>.delayed(const Duration(milliseconds: 120));
+    WidgetsBinding.instance.scheduleForcedFrame();
+    await Future<void>.delayed(const Duration(milliseconds: 60));
+  }
+
+  Future<_WindowSpec> _specFor(ShellMode mode) async {
+    final cursor = await screenRetriever.getCursorScreenPoint();
+    final area = _usableArea(await _displayAt(cursor));
+
+    switch (mode) {
+      case ShellMode.splash:
+        return _WindowSpec(
+          rect: _centred(area, kSplashSize),
+          frameless: true,
+          transparent: true,
+          alwaysOnTop: true,
+          hiddenFromTaskbar: true,
+          takeFocus: false,
+        );
+      case ShellMode.reminder:
+      case ShellMode.prewarm:
+        return _WindowSpec(
+          rect: _centred(area, kReminderWindowSize),
+          frameless: true,
+          transparent: true,
+          alwaysOnTop: true,
+          hiddenFromTaskbar: true,
+          takeFocus: false,
+        );
+      case ShellMode.trayMenu:
+        return _WindowSpec(
+          rect: _menuRect(cursor, area),
+          frameless: true,
+          transparent: false,
+          alwaysOnTop: true,
+          hiddenFromTaskbar: true,
+          takeFocus: true,
+        );
+      case ShellMode.settings:
+        return _WindowSpec(
+          rect: _settingsBounds ?? _centred(area, kSettingsWindowSize),
+          frameless: false,
+          transparent: false,
+          alwaysOnTop: false,
+          hiddenFromTaskbar: false,
+          takeFocus: true,
+        );
+      case ShellMode.hidden:
+        throw StateError('hidden has no window to describe');
+    }
   }
 
   Future<Display> _displayAt(Offset point) async {
     final displays = await screenRetriever.getAllDisplays();
     for (final display in displays) {
-      if (_usableArea(display).inflate(_trayMenuGap * 2).contains(point)) {
+      if (_usableArea(display).inflate(_screenGap * 2).contains(point)) {
         return display;
       }
     }
@@ -284,28 +522,50 @@ class AppShellNotifier extends Notifier<ShellMode>
     return Rect.fromLTWH(origin.dx, origin.dy, size.width, size.height);
   }
 
-  /// Where the popup goes: centred on the cursor (which is on the tray icon),
+  /// A [size] window in the middle of [area], shrunk to fit it if need be.
+  Rect _centred(Rect area, Size size) {
+    final fitted = Size(
+      math.min(size.width, area.width - _screenGap * 2),
+      math.min(size.height, area.height - _screenGap * 2),
+    );
+    return Rect.fromCenter(
+      center: area.center,
+      width: fitted.width,
+      height: fitted.height,
+    );
+  }
+
+  /// Where the menu goes: centred on the cursor (which is on the tray icon),
   /// above it when the icon is in the lower half of the screen and below it
   /// otherwise, and always fully inside the usable area.
-  Rect _menuRect(Offset cursor, Display display) {
-    final area = _usableArea(display);
+  Rect _menuRect(Offset cursor, Rect area) {
     const size = kTrayMenuSize;
     final above = cursor.dy > area.center.dy;
     final left = (cursor.dx - size.width / 2).clamp(
-      area.left + _trayMenuGap,
-      area.right - size.width - _trayMenuGap,
+      area.left + _screenGap,
+      area.right - size.width - _screenGap,
     );
     final top = (above
-            ? cursor.dy - size.height - _trayMenuGap
-            : cursor.dy + _trayMenuGap)
+            ? cursor.dy - size.height - _screenGap
+            : cursor.dy + _screenGap)
         .clamp(
-      area.top + _trayMenuGap,
-      area.bottom - size.height - _trayMenuGap,
+      area.top + _screenGap,
+      area.bottom - size.height - _screenGap,
     );
     return Rect.fromLTWH(left, top, size.width, size.height);
   }
+
+  void _log(String message, Object error, StackTrace stackTrace) {
+    developer.log(
+      message,
+      name: 'dhikr_reminder.shell',
+      level: 900,
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
 }
 
-final appShellProvider = NotifierProvider<AppShellNotifier, ShellMode>(
+final appShellProvider = NotifierProvider<AppShellNotifier, ShellState>(
   AppShellNotifier.new,
 );

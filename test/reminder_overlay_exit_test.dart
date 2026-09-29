@@ -18,13 +18,13 @@ class _QuietScheduler extends DhikrReminderScheduler {
   DateTime? build() => null;
 }
 
-/// Mounts [DhikrReminderOverlay] over a bare home and returns the container
+/// Mounts the reminder surface under its host and returns the container
 /// driving it.
 Future<ProviderContainer> _pumpOverlay(WidgetTester tester) async {
-  // Mirror the real desktop window (windows/runner/main.cpp opens 1280×800)
-  // so the card lays out at the width it ships at instead of the 800×600
-  // test default, which squeezes the frame's tip row into an overflow.
-  tester.view.physicalSize = const Size(1280, 800);
+  // Mirror the real reminder window (`kReminderWindowSize`) so the card lays
+  // out at the size it ships at instead of the 800x600 test default, which
+  // squeezes the frame's tip row into an overflow.
+  tester.view.physicalSize = const Size(1120, 700);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
 
@@ -40,7 +40,7 @@ Future<ProviderContainer> _pumpOverlay(WidgetTester tester) async {
           return const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: DhikrReminderOverlay(child: SizedBox.expand()),
+            home: DhikrReminderHost(child: DhikrReminderProviderSurface()),
           );
         },
       ),

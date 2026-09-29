@@ -1,5 +1,7 @@
 #include "flutter_window.h"
 
+#include <flutter/standard_method_codec.h>
+
 #include <optional>
 
 #include "flutter/generated_plugin_registrant.h"
@@ -27,13 +29,45 @@ bool FlutterWindow::OnCreate() {
   RegisterPlugins(flutter_controller_->engine());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
-  flutter_controller_->engine()->SetNextFrameCallback([&]() {
-    this->Show();
-  });
+  // The window is deliberately NOT shown here (the stock runner shows it after
+  // the first frame). The app lives in the tray and decides for itself when
+  // and as what its one window appears -- splash, reminder popup, settings --
+  // so opening the app must not put a window on screen by itself.
 
-  // Flutter can complete the first frame before the "show window" callback is
-  // registered. The following call ensures a frame is pending to ensure the
-  // window is shown. It is a no-op if the first frame hasn't completed yet.
+  // Window tweaks window_manager has no (working) API for. `setToolWindow`
+  // keeps the window out of the taskbar and Alt+Tab, which the splash and the
+  // reminder popup must not appear in. Takes effect the next time the window
+  // is shown, so the Dart side calls it while the window is hidden.
+  window_channel_ =
+      std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+          flutter_controller_->engine()->messenger(), "dhikr_reminder/window",
+          &flutter::StandardMethodCodec::GetInstance());
+  window_channel_->SetMethodCallHandler(
+      [this](const flutter::MethodCall<flutter::EncodableValue>& call,
+             std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>>
+                 result) {
+        if (call.method_name() == "setToolWindow") {
+          const auto* enable = std::get_if<bool>(call.arguments());
+          if (enable == nullptr) {
+            result->Error("bad-args", "setToolWindow expects a bool");
+            return;
+          }
+          HWND hwnd = GetHandle();
+          LONG_PTR style = ::GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+          if (*enable) {
+            style = (style | WS_EX_TOOLWINDOW) & ~WS_EX_APPWINDOW;
+          } else {
+            style = (style & ~WS_EX_TOOLWINDOW) | WS_EX_APPWINDOW;
+          }
+          ::SetWindowLongPtr(hwnd, GWL_EXSTYLE, style);
+          result->Success();
+        } else {
+          result->NotImplemented();
+        }
+      });
+
+  // Flutter can complete the first frame before anything asks for one; keep a
+  // frame pending so the engine is warm by the time the window is first shown.
   flutter_controller_->ForceRedraw();
 
   return true;

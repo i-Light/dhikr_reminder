@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dhikr_reminder/app.dart';
 import 'package:dhikr_reminder/core/window/app_shell.dart';
 import 'package:flutter/widgets.dart';
@@ -16,4 +18,6 @@ Future<void> main() async {
       child: const DhikrReminderApp(),
     ),
   );
+  // The window starts hidden; this is what brings it up, as the splash.
+  unawaited(container.read(appShellProvider.notifier).start());
 }
