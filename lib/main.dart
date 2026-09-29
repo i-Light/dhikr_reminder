@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dhikr_reminder/app.dart';
+import 'package:dhikr_reminder/core/update/update_controller.dart';
 import 'package:dhikr_reminder/core/window/app_shell.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,4 +21,6 @@ Future<void> main() async {
   );
   // The window starts hidden; this is what brings it up, as the splash.
   unawaited(container.read(appShellProvider.notifier).start());
+  // Keeps the installed copy current; a no-op for `flutter run` and the .zip.
+  container.read(updateProvider.notifier).start();
 }

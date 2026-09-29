@@ -2,8 +2,8 @@
 
 A small Windows desktop app that pops a dhikr on screen every few minutes. Click
 anywhere on the card to count it off; it fades once you reach its target, and the
-next one arrives on the interval. Nothing else — no accounts, no database, no
-network.
+next one arrives on the interval. Nothing else — no accounts, no database. The only
+network use is the updater below.
 
 It is a slice of [gratovo_toolbox](https://github.com/i-Light/gratovo_code)
 lifted out into its own project: the reminder overlay, the toast system it rides
@@ -52,6 +52,7 @@ lib/
     constants/app_colors.dart
     theme/                     palette, GradientText / GradientBox
     toast/                     the reminder overlay, toasts, dust, glow, border frame
+    update/                    the silent self-updater (GitHub Releases -> Setup)
     widgets/                   CollapsibleCard (what the settings card is built from)
   features/settings/
     application/               dhikr persistence + the reminder scheduler
@@ -106,6 +107,30 @@ an uninstaller. Pushing a `vX.Y.Z` tag (matching `pubspec.yaml`'s version) makes
 `.github/workflows/release.yml` build it and attach both files to a GitHub
 Release. `ci.yml` runs format, `flutter analyze --fatal-infos` and `flutter test`
 on every push and pull request.
+
+## Automatic updates
+
+An app installed with the Setup wizard keeps itself up to date with nothing for
+the person to do. Two minutes after launch, and every six hours after that, it
+asks GitHub for the latest release (`lib/core/update/`). If that is newer than
+the running version it downloads the release's `*-setup.exe` in the background,
+checks its size, SHA-256 and `MZ` header, waits until no reminder is showing and
+the settings window is closed, then runs it with `/VERYSILENT` and quits. A
+PowerShell one-liner outlives the app, waits for Setup to finish and starts the
+app again — even if the install failed, so a broken update never leaves the
+reminders switched off. The dhikr list and interval live in `%APPDATA%` and are
+untouched.
+
+What it deliberately does **not** touch: `flutter run` builds and the portable
+`.zip` (no `unins000.exe` beside the exe), and an all-users install in
+`Program Files` (the folder is not writable without the UAC prompt this exists
+to avoid). Failures — no network, GitHub rate limit, a bad download — are logged
+(`dhikr_reminder.update`) and retried in 15 minutes; nothing is shown.
+
+To ship an update: bump `version:` in `pubspec.yaml`, commit, and push the
+matching `vX.Y.Z` tag. The installer is not code-signed yet, so Windows
+SmartScreen may warn on a first manual download, and antivirus may look harder
+at a silently launched installer than it would at a signed one.
 
 ## Assets and fonts
 

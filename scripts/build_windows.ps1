@@ -15,10 +15,10 @@
     entry and an uninstaller.
 
     gratovo_toolbox ships a far larger build_windows.ps1. This one deliberately
-    leaves out what that script also does there -- bumping pubspec's version,
-    pushing a v* tag, and driving GitHub Releases for the shipped app's own
-    updater -- because this app has no updater to feed. Tag a release by hand
-    and .github\workflows\release.yml builds it.
+    leaves out what that script also does there -- bumping pubspec's version and
+    pushing a v* tag. Tag a release by hand and .github/workflows/release.yml
+    builds it; the installed app then finds it on its own (lib/core/update/),
+    which is why the release must carry the *-setup.exe, not just the .zip.
 
 .EXAMPLE
     .\scripts\build_windows.ps1

@@ -46,6 +46,14 @@ WizardStyle=modern
 ; that does not need to touch the whole machine.
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
+; The in-app updater (lib/core/update/) runs this same installer silently and
+; starts the app again itself, whether or not the install succeeded, so Setup's
+; own restart is turned off -- with both, a successful update could leave two
+; copies running. It also decides whether a copy is *installed* (and so may
+; update itself) by the unins000.exe Setup writes into {app}: keep the default
+; uninstaller name, and keep UninstallFilesDir at its default ({app}).
+CloseApplications=yes
+RestartApplications=no
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 

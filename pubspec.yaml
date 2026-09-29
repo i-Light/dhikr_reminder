@@ -35,6 +35,11 @@ dependencies:
   window_manager: ^0.5.2
   screen_retriever: ^0.2.2
 
+  # The auto-updater (lib/core/update/): the running app's own version, and the
+  # SHA-256 the downloaded installer is checked against.
+  package_info_plus: ^9.0.0
+  crypto: ^3.0.7
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
