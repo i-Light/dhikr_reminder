@@ -21,6 +21,6 @@ Future<void> main() async {
   );
   // The window starts hidden; this is what brings it up, as the splash.
   unawaited(container.read(appShellProvider.notifier).start());
-  // Keeps the installed copy current; a no-op for `flutter run` and the .zip.
+  // Keeps the installed copy current; installs nothing for `flutter run`.
   container.read(updateProvider.notifier).start();
 }

@@ -99,4 +99,87 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get trayQuit => 'Close app';
+
+  @override
+  String get updateTitle => 'Updates';
+
+  @override
+  String get updateSubtitle => 'Keep Dhikr Reminder up to date';
+
+  @override
+  String updateVersion(String version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get updateNeverChecked => 'Not checked yet';
+
+  @override
+  String get updateChecking => 'Checking for updates…';
+
+  @override
+  String get updateUpToDate => 'You\'re up to date';
+
+  @override
+  String updateLastChecked(String time) {
+    return 'Last checked $time';
+  }
+
+  @override
+  String updateAvailable(String version) {
+    return 'Version $version is available';
+  }
+
+  @override
+  String get updateAvailableManual =>
+      'This copy was not installed with the setup program, so it cannot update itself. Download the new setup from the releases page.';
+
+  @override
+  String get updateAvailableAutoOff =>
+      'Automatic updates are off. Press Update now to install it.';
+
+  @override
+  String updateDownloading(String version) {
+    return 'Downloading version $version…';
+  }
+
+  @override
+  String updateReady(String version) {
+    return 'Version $version is ready to install';
+  }
+
+  @override
+  String get updateReadyHint =>
+      'It installs by itself once this window is closed and no reminder is showing.';
+
+  @override
+  String updateInstalling(String version) {
+    return 'Installing version $version…';
+  }
+
+  @override
+  String get updateFailed => 'Couldn\'t check for updates';
+
+  @override
+  String get updateFailedHint =>
+      'Check your connection. It will try again shortly.';
+
+  @override
+  String get updateCheckButton => 'Check for updates';
+
+  @override
+  String get updateInstallButton => 'Update now';
+
+  @override
+  String get updateRestartButton => 'Restart and update';
+
+  @override
+  String get updateDownloadPageButton => 'Open download page';
+
+  @override
+  String get updateAutoLabel => 'Update automatically';
+
+  @override
+  String get updateAutoSubtitle =>
+      'Download new versions in the background and install them when the app is idle';
 }

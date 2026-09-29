@@ -359,6 +359,6 @@ void main() {
 
     expect(
         identical(container.read(updateProvider.notifier), notifier), isTrue);
-    expect(container.read(updateProvider), UpdatePhase.idle);
+    expect(container.read(updateProvider).phase, UpdatePhase.idle);
   });
 }

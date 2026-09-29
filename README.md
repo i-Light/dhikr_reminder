@@ -58,7 +58,7 @@ lib/
     application/               dhikr persistence + the reminder scheduler
     presentation/              home_screen.dart + the azkar settings card
   l10n/                        app_en.arb, app_ar.arb (generated: l10n/gen/)
-scripts/                       build_windows.ps1, installer.iss
+scripts/                       build_windows.ps1 (build + release), installer.iss
 test/                          the scheduler's weighted pick + the tap counter
 ```
 
@@ -94,19 +94,34 @@ is generated from them by `flutter gen-l10n` (configured in `l10n.yaml`) and
 committed, so CI can assert it is up to date. Add a string to both ARB files, run
 `flutter gen-l10n`, and never edit `lib/l10n/gen/` by hand.
 
-## Building
+## Building and releasing
+
+Only the installer is built — there is no portable `.zip`. It needs
+[Inno Setup 7](https://jrsoftware.org/isdl.php) installed.
 
 ```
-.\scripts\build_windows.ps1              # dist\dhikr_reminder-<ver>-windows-x64{.zip,}
-.\scripts\build_windows.ps1 -Installer   # + dist\dhikr_reminder-<ver>-setup.exe
+.\scripts\build_windows.ps1                      # dist\dhikr_reminder-<ver>-setup.exe, version untouched
+.\scripts\build_windows.ps1 -InstallHere         # ...and install it on this PC over the current copy
+.\scripts\build_windows.ps1 -Mode Publish        # bump, tag, push, publish a GitHub Release
 ```
 
-The `.zip` is portable and always produced; the installer needs
-[Inno Setup 6](https://jrsoftware.org/isdl.php) and gives a Start-menu entry plus
-an uninstaller. Pushing a `vX.Y.Z` tag (matching `pubspec.yaml`'s version) makes
-`.github/workflows/release.yml` build it and attach both files to a GitHub
-Release. `ci.yml` runs format, `flutter analyze --fatal-infos` and `flutter test`
-on every push and pull request.
+`CTRL + SHIFT + B` runs the same script through the *Release* task in
+`.vscode/tasks.json`; which of the two modes it uses, and whether it also
+installs on this PC, is chosen by commenting lines in and out of that task's
+`args`.
+
+`-Mode Publish` runs `flutter analyze` and `flutter test`, raises the version in
+`pubspec.yaml` (patch by default; `-Bump minor` / `-Bump major`; the build number
+after the `+` always goes up by one), builds, commits `Release vX.Y.Z`, tags it,
+pushes the branch and the tag, and creates a GitHub Release with the installer
+attached. It refuses to start with uncommitted changes, so the release commit
+holds only the version bump, and it needs a GitHub token: `GH_TOKEN` /
+`GITHUB_TOKEN` if set, otherwise the sign-in Git Credential Manager keeps for
+github.com (the first publish may open a browser to create it). `-DryRun` checks
+all of that and prints the plan without changing anything.
+
+`ci.yml` runs `flutter analyze --fatal-infos` and `flutter test` on every push
+and pull request. Releases are made by the script, not by CI.
 
 ## Automatic updates
 
@@ -121,16 +136,25 @@ app again — even if the install failed, so a broken update never leaves the
 reminders switched off. The dhikr list and interval live in `%APPDATA%` and are
 untouched.
 
-What it deliberately does **not** touch: `flutter run` builds and the portable
-`.zip` (no `unins000.exe` beside the exe), and an all-users install in
-`Program Files` (the folder is not writable without the UAC prompt this exists
-to avoid). Failures — no network, GitHub rate limit, a bad download — are logged
-(`dhikr_reminder.update`) and retried in 15 minutes; nothing is shown.
+The settings screen has an **Updates** card (`update_card.dart`): the running
+version, what the updater is doing (checking, downloading, ready, installing, up
+to date, or failed), a *Check for updates* button, *Update now* / *Restart and
+update* to skip the wait for an idle moment, and an *Update automatically*
+switch. With that switch off it still checks, and says a new version exists, but
+installs only when told to.
 
-To ship an update: bump `version:` in `pubspec.yaml`, commit, and push the
-matching `vX.Y.Z` tag. The installer is not code-signed yet, so Windows
-SmartScreen may warn on a first manual download, and antivirus may look harder
-at a silently launched installer than it would at a signed one.
+What it deliberately does **not** install for: `flutter run` builds and any copy
+without the `unins000.exe` Setup writes beside the exe, and an all-users install
+in `Program Files` (the folder is not writable without the UAC prompt this
+exists to avoid). Those still learn that a newer version exists, and the card
+offers the download page instead. Failures — no network, GitHub rate limit, a
+bad download — are logged (`dhikr_reminder.update`), shown on the card, and
+retried in 15 minutes.
+
+To ship an update, run the *Release* task in Publish mode. The installer is not
+code-signed yet, so Windows SmartScreen may warn on a first manual download, and
+antivirus may look harder at a silently launched installer than it would at a
+signed one.
 
 ## Assets and fonts
 

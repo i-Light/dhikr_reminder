@@ -1,14 +1,14 @@
 ; Inno Setup script for the Dhikr Reminder Windows build.
 ;
-; Not invoked directly -- scripts/build_windows.ps1 -Installer calls ISCC with
-; the three defines below already filled in:
+; Not invoked directly -- scripts/build_windows.ps1 calls ISCC with the three
+; defines below already filled in:
 ;
-;   ISCC.exe /DAppVersion=0.1.0 /DSourceDir=...\dist\dhikr_reminder-0.1.0-windows-x64 ^
+;   ISCC.exe /DAppVersion=0.1.0 /DSourceDir=...\build\windows\x64\runner\Release ^
 ;            /DOutputDir=...\dist scripts\installer.iss
 ;
-; Requires Inno Setup 6 (https://jrsoftware.org/isdl.php). The .zip the build
-; script always produces is the no-dependency alternative; this exists for
-; people who would rather get a normal Start-menu entry and an uninstaller.
+; Requires Inno Setup 7 (https://jrsoftware.org/isdl.php). The setup .exe is the
+; only thing shipped: it gives a Start-menu entry and an uninstaller, and is
+; what the app's own updater downloads and runs (lib/core/update/).
 
 #ifndef AppVersion
   #define AppVersion "0.0.0"

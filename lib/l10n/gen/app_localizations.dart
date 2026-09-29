@@ -265,6 +265,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close app'**
   String get trayQuit;
+
+  /// No description provided for @updateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Updates'**
+  String get updateTitle;
+
+  /// No description provided for @updateSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Dhikr Reminder up to date'**
+  String get updateSubtitle;
+
+  /// No description provided for @updateVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version}'**
+  String updateVersion(String version);
+
+  /// No description provided for @updateNeverChecked.
+  ///
+  /// In en, this message translates to:
+  /// **'Not checked yet'**
+  String get updateNeverChecked;
+
+  /// No description provided for @updateChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking for updates…'**
+  String get updateChecking;
+
+  /// No description provided for @updateUpToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re up to date'**
+  String get updateUpToDate;
+
+  /// No description provided for @updateLastChecked.
+  ///
+  /// In en, this message translates to:
+  /// **'Last checked {time}'**
+  String updateLastChecked(String time);
+
+  /// No description provided for @updateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version} is available'**
+  String updateAvailable(String version);
+
+  /// No description provided for @updateAvailableManual.
+  ///
+  /// In en, this message translates to:
+  /// **'This copy was not installed with the setup program, so it cannot update itself. Download the new setup from the releases page.'**
+  String get updateAvailableManual;
+
+  /// No description provided for @updateAvailableAutoOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic updates are off. Press Update now to install it.'**
+  String get updateAvailableAutoOff;
+
+  /// No description provided for @updateDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading version {version}…'**
+  String updateDownloading(String version);
+
+  /// No description provided for @updateReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version} is ready to install'**
+  String updateReady(String version);
+
+  /// No description provided for @updateReadyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'It installs by itself once this window is closed and no reminder is showing.'**
+  String get updateReadyHint;
+
+  /// No description provided for @updateInstalling.
+  ///
+  /// In en, this message translates to:
+  /// **'Installing version {version}…'**
+  String updateInstalling(String version);
+
+  /// No description provided for @updateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t check for updates'**
+  String get updateFailed;
+
+  /// No description provided for @updateFailedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection. It will try again shortly.'**
+  String get updateFailedHint;
+
+  /// No description provided for @updateCheckButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for updates'**
+  String get updateCheckButton;
+
+  /// No description provided for @updateInstallButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Update now'**
+  String get updateInstallButton;
+
+  /// No description provided for @updateRestartButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart and update'**
+  String get updateRestartButton;
+
+  /// No description provided for @updateDownloadPageButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Open download page'**
+  String get updateDownloadPageButton;
+
+  /// No description provided for @updateAutoLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Update automatically'**
+  String get updateAutoLabel;
+
+  /// No description provided for @updateAutoSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Download new versions in the background and install them when the app is idle'**
+  String get updateAutoSubtitle;
 }
 
 class _AppLocalizationsDelegate

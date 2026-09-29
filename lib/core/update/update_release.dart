@@ -1,5 +1,5 @@
 /// A `major.minor.patch` version, as written in `pubspec.yaml` and in the
-/// `vX.Y.Z` tags `release.yml` builds from.
+/// `vX.Y.Z` tags `build_windows.ps1 -Mode Publish` creates.
 class AppVersion implements Comparable<AppVersion> {
   const AppVersion(this.major, this.minor, this.patch);
 
@@ -62,9 +62,8 @@ class UpdateRelease {
   /// Lowercase hex, when GitHub reported a digest for the asset.
   final String? sha256;
 
-  /// The setup exe `build_windows.ps1 -Installer` produces
-  /// (`dhikr_reminder-<ver>-setup.exe`). The portable `.zip` beside it is not
-  /// something a running app can swap in for itself.
+  /// The setup exe `build_windows.ps1` produces
+  /// (`dhikr_reminder-<ver>-setup.exe`) — the only file a release carries.
   static final _installerName = RegExp(r'-setup\.exe$', caseSensitive: false);
 
   /// Builds a release from one entry of GitHub's `releases/latest` JSON, or

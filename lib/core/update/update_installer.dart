@@ -42,8 +42,8 @@ class UpdateInstaller {
   /// Two conditions, both of which have to hold:
   ///
   ///  * **`unins000.exe` sits beside the exe.** Inno writes it on install, so
-  ///    this is what tells an installed copy from the portable `.zip` or a
-  ///    `flutter run` build. Running the installer for either would put a
+  ///    this is what tells an installed copy from a `flutter run` build or an
+  ///    unpacked copy. Running the installer for either would put a
   ///    second, unrelated copy in `%LOCALAPPDATA%\Programs` and leave the one
   ///    the person is using untouched.
   ///  * **The folder is writable.** An all-users install in `Program Files`
