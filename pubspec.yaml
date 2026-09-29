@@ -66,5 +66,6 @@ flutter:
     # The reminder card's frame â€” see border_frame.dart.
     - assets/images/frame_corner.svg
     - assets/images/mandala_background.svg
-    # The system-tray icon â€” see core/window/app_shell.dart.
-    - assets/images/tray_icon.ico
+    # The app icon: the tray icon and the .exe icon are both drawn from it, see
+    # core/window/svg_icon.dart and tool/generate_app_icon.dart.
+    - assets/images/app_icon.svg

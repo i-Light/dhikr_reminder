@@ -50,3 +50,5 @@ app.*.map.json
 # Staged build output + artifacts from scripts/build_windows.ps1
 /dist/
 
+# Generated from assets/images/app_icon.svg by tool/generate_app_icon.dart
+/windows/runner/resources/app_icon.ico

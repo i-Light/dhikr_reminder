@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:dhikr_reminder/core/window/svg_icon.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
 import 'package:flutter/foundation.dart';
@@ -75,7 +76,6 @@ const kSettingsWindowSize = Size(960, 720);
 /// inside this.
 const kSplashDuration = Duration(milliseconds: 1800);
 
-const _trayIconAsset = 'assets/images/tray_icon.ico';
 const _trayTooltip = 'Dhikr Reminder';
 
 /// Gap between a popup and the tray icon it opened from, and between a popup
@@ -203,7 +203,9 @@ class AppShellNotifier extends Notifier<ShellState>
     if (_initialised || kIsWeb || !Platform.isWindows) return;
     try {
       await windowManager.ensureInitialized();
-      await trayManager.setIcon(_trayIconAsset);
+      final icons = await _buildTrayIcons();
+      _quittingIconPath = icons.quitting;
+      await trayManager.setIcon(icons.normal);
       await trayManager.setToolTip(_trayTooltip);
       trayManager.addListener(this);
       windowManager.addListener(this);
@@ -322,15 +324,70 @@ class AppShellNotifier extends Notifier<ShellState>
   }
 
   /// Really exits, past the hide-to-tray on close.
+  ///
+  /// The window is hidden first: tearing down the engine takes a moment, and
+  /// until then the tray menu would sit on screen frozen. The process is also
+  /// ended outright if a graceful shutdown has not finished shortly after, so
+  /// a stuck teardown can never leave the app hanging around.
   Future<void> quit() async {
+    if (_quitting) return;
+    _quitting = true;
+    // The app is going away regardless, so a stalled shutdown must not survive
+    // any of the awaits below.
+    Timer(const Duration(seconds: 2), () => exit(0));
+    try {
+      await windowManager.hide();
+    } catch (_) {}
+    try {
+      // Until the process is really gone the icon is what the person sees.
+      final dimmed = _quittingIconPath;
+      if (dimmed != null) await trayManager.setIcon(dimmed);
+      await trayManager.setToolTip('$_trayTooltip — closing…');
+    } catch (_) {}
     try {
       await trayManager.destroy();
     } catch (_) {
       // The icon going with the process anyway is fine; quitting must not
       // depend on it.
     }
-    await windowManager.setPreventClose(false);
-    await windowManager.destroy();
+    try {
+      await windowManager.setPreventClose(false);
+      await windowManager.destroy();
+    } catch (_) {
+      exit(0);
+    }
+  }
+
+  bool _quitting = false;
+
+  /// A grayed, faded copy of the tray icon (see [_buildQuittingIcon]), shown
+  /// while the app shuts down. Null if it could not be made.
+  String? _quittingIconPath;
+
+  /// Draws the tray icon, and the grayed-out one shown while quitting, from
+  /// the app's one SVG ([kAppIconSvgAsset]) into the temp directory, where the
+  /// tray can load them from (it takes a file path, not an asset). Both are
+  /// made now so quitting never waits on drawing.
+  Future<({String normal, String? quitting})> _buildTrayIcons() async {
+    final svg = await rootBundle.loadString(kAppIconSvgAsset);
+    final normal = await _writeIcon('tray', await renderSvgAsIco(svg));
+    try {
+      final dimmed = await renderSvgAsIco(svg, dimmed: true);
+      return (normal: normal, quitting: await _writeIcon('tray_quitting', dimmed));
+    } catch (error, stackTrace) {
+      // Only the closing animation is lost; the tray icon itself is fine.
+      _log('Could not build the shutting-down tray icon.', error, stackTrace);
+      return (normal: normal, quitting: null);
+    }
+  }
+
+  Future<String> _writeIcon(String name, List<int> bytes) async {
+    final file = File(
+      '${Directory.systemTemp.path}${Platform.pathSeparator}'
+      'dhikr_reminder_$name.ico',
+    );
+    await file.writeAsBytes(bytes, flush: true);
+    return file.path;
   }
 
   // ---- reminder ------------------------------------------------------------

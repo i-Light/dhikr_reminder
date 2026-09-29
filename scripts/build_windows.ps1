@@ -326,11 +326,13 @@ try {
         $version = $newVersion
     }
 
+    # The .exe's icon is drawn from assets/images/app_icon.svg, the app's one
+    # icon; the generated .ico is git-ignored, so it is made fresh every build.
+    Write-Host 'Generating the app icon from assets/images/app_icon.svg' -ForegroundColor Cyan
+    Invoke-Native 'generate app icon' { flutter test --no-pub tool/generate_app_icon.dart }
+
     Write-Host "Building $name v$version (Release) for Windows x64" -ForegroundColor Cyan
 
-    # A bad ARB file wants to fail here, next to the pub get that produced it,
-    # not 40s later inside the Windows toolchain's own output.
-    Invoke-Native 'flutter gen-l10n' { flutter gen-l10n }
     Invoke-Native 'flutter build windows' { flutter build windows --release }
 
     # Flutter has moved this folder around across releases, so search for the

@@ -22,10 +22,12 @@ jobs:
     # Linux, not the windows-2022 the release uses: a fraction of the cost per
     # minute, and everything here is platform-neutral Dart (the scheduler's
     # weighted pick, the tap counter). The Windows runner stays reserved for
-    # release.yml, where the .exe actually has to be compiled.
-    runs-on: ubuntu-latest
+    # release.yml, where the .exe actually has to be compiled. Pinned rather
+    # than ubuntu-latest so the OS only changes when we change it, together
+    # with the Flutter pin below.
+    runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: subosito/flutter-action@v2
         with:
