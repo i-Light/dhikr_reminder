@@ -340,6 +340,7 @@ class _DhikrRow extends StatelessWidget {
                   value: entry.amount,
                   min: dhikrAmountMin,
                   max: dhikrAmountMax,
+                  wheelSteps: _amountWheelSteps,
                   semanticsLabel: '${entry.name} amount',
                   onChanged: (value) =>
                       onChanged(entry.copyWith(amount: value)),
@@ -414,16 +415,24 @@ class _DhikrNameFieldState extends State<_DhikrNameField> {
   }
 }
 
+/// Values the amount field's mouse wheel snaps between.
+const _amountWheelSteps = [1, 3, 5, 7, 9, 10, 15, 33, 34, 100, 1000];
+
 /// A single-number counter box: typed like a text field, spun like a wheel —
 /// same interaction model as `TimecodeField`'s segments (mouse wheel and
 /// arrow keys bump the value, wrapping at both ends), generalized to one
 /// value with an arbitrary `[min, max]` range instead of three fixed-width
 /// h:mm:ss segments.
+///
+/// With [wheelSteps], the wheel instead hops between those values and only
+/// reacts while the field has focus, ignoring [min]/[max]; arrow keys and
+/// typing still respect them.
 class _CounterField extends StatefulWidget {
   const _CounterField({
     required this.value,
     required this.max,
     this.min = 0,
+    this.wheelSteps,
     required this.semanticsLabel,
     required this.onChanged,
   });
@@ -431,6 +440,7 @@ class _CounterField extends StatefulWidget {
   final int value;
   final int min;
   final int max;
+  final List<int>? wheelSteps;
   final String semanticsLabel;
   final ValueChanged<int> onChanged;
 
@@ -477,10 +487,10 @@ class _CounterFieldState extends State<_CounterField> {
     _commit(parsed);
   }
 
-  void _commit(int value) {
-    final clamped = value.clamp(widget.min, widget.max);
-    if (_controller.text != '$clamped') _controller.text = '$clamped';
-    if (clamped != widget.value) widget.onChanged(clamped);
+  void _commit(int value, {bool clamp = true}) {
+    final next = clamp ? value.clamp(widget.min, widget.max) : value;
+    if (_controller.text != '$next') _controller.text = '$next';
+    if (next != widget.value) widget.onChanged(next);
   }
 
   void _bump(int delta) {
@@ -490,13 +500,34 @@ class _CounterFieldState extends State<_CounterField> {
     _commit((next < 0 ? next + span : next) + widget.min);
   }
 
+  /// Jumps to the next of [_CounterField.wheelSteps] above (or below) the
+  /// current value — which may be a custom one — wrapping at both ends like
+  /// [_bump]. The steps are taken as given: `[min, max]` plays no part here.
+  void _stepPreset(List<int> wheelSteps, int direction) {
+    if (wheelSteps.isEmpty) return;
+    final current = int.tryParse(_controller.text) ?? widget.value;
+    final steps = [...wheelSteps]..sort();
+    final next = direction > 0
+        ? steps.firstWhere((s) => s > current, orElse: () => steps.first)
+        : steps.lastWhere((s) => s < current, orElse: () => steps.last);
+    _commit(next, clamp: false);
+  }
+
   void _onPointerSignal(PointerSignalEvent event) {
     if (event is! PointerScrollEvent) return;
+    final wheelSteps = widget.wheelSteps;
+    // With preset steps, only a focused field reacts, so wheeling over it on
+    // the way down the page scrolls the page instead of silently changing a
+    // setting.
+    if (wheelSteps != null && !_focusNode.hasFocus) return;
     final dy = event.scrollDelta.dy;
     if (dy == 0) return;
+    final direction = dy < 0 ? 1 : -1;
     GestureBinding.instance.pointerSignalResolver.register(
       event,
-      (_) => _bump(dy < 0 ? 1 : -1),
+      (_) => wheelSteps == null
+          ? _bump(direction)
+          : _stepPreset(wheelSteps, direction),
     );
   }
 
