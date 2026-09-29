@@ -33,6 +33,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'How often a reminder pops up, in minutes';
 
   @override
+  String get settingsDhikrSoundLabel => 'Sound';
+
+  @override
+  String get settingsDhikrSoundSubtitle =>
+      'Play a sound when a reminder pops up';
+
+  @override
+  String get settingsDhikrUseChanceLabel => 'Weighted chance';
+
+  @override
+  String get settingsDhikrUseChanceSubtitle =>
+      'Off: every dhikr is equally likely. On: set how often each one comes up';
+
+  @override
   String get settingsDhikrNameColumn => 'Dhikr';
 
   @override
@@ -62,4 +76,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dhikrReminderTouchEverywhereTip => 'Touch anywhere to count';
+
+  @override
+  String get trayOpenApp => 'Open app';
+
+  @override
+  String get trayNextDhikr => 'Next dhikr';
+
+  @override
+  String trayNextDhikrIn(String time) {
+    return 'in $time';
+  }
+
+  @override
+  String get trayNextDhikrPending => 'Waiting for settings';
+
+  @override
+  String get traySoundOn => 'Sound on';
+
+  @override
+  String get traySoundOff => 'Sound off';
+
+  @override
+  String get trayQuit => 'Close app';
 }

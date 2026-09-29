@@ -33,6 +33,19 @@ class AppLocalizationsAr extends AppLocalizations {
       'كل قد ايه يظهر تذكير الذكر، بالدقايق';
 
   @override
+  String get settingsDhikrSoundLabel => 'الصوت';
+
+  @override
+  String get settingsDhikrSoundSubtitle => 'تشغيل صوت لما يظهر التذكير';
+
+  @override
+  String get settingsDhikrUseChanceLabel => 'نسبة الظهور';
+
+  @override
+  String get settingsDhikrUseChanceSubtitle =>
+      'مقفول: كل الأذكار فرصتها واحدة. مفتوح: حدد كل ذكر يظهر قد ايه';
+
+  @override
   String get settingsDhikrNameColumn => 'الذكر';
 
   @override
@@ -62,4 +75,27 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get dhikrReminderTouchEverywhereTip => 'أضغط فى اى مكان للعد';
+
+  @override
+  String get trayOpenApp => 'فتح التطبيق';
+
+  @override
+  String get trayNextDhikr => 'الذكر الجاي';
+
+  @override
+  String trayNextDhikrIn(String time) {
+    return 'بعد $time';
+  }
+
+  @override
+  String get trayNextDhikrPending => 'مستني الإعدادات';
+
+  @override
+  String get traySoundOn => 'الصوت شغال';
+
+  @override
+  String get traySoundOff => 'الصوت مقفول';
+
+  @override
+  String get trayQuit => 'إغلاق التطبيق';
 }

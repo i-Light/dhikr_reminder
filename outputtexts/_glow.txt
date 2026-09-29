@@ -1,0 +1,6 @@
+﻿dhikr_reminder_overlay.dart:508: child: MouseGlow(
+mouse_glow_overlay.dart:38: /// MouseGlow(child: _DhikrReminderCard(...))
+mouse_glow_overlay.dart:44: class MouseGlow extends StatefulWidget {
+mouse_glow_overlay.dart:45: const MouseGlow({super.key, required this.child});
+mouse_glow_overlay.dart:50: State<MouseGlow> createState() => _MouseGlowState();
+mouse_glow_overlay.dart:53: class _MouseGlowState extends State<MouseGlow> {

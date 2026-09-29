@@ -1,0 +1,9 @@
+﻿00:00 +0: loading E:/IMA work/Code/dhikr_reminder/test/dhikr_reminder_test.dart
+00:00 +0: DhikrReminderScheduler.pickWeighted never picks an entry muted to chance 0
+00:00 +1: DhikrReminderScheduler.pickWeighted returns null when every entry is muted
+00:00 +2: DhikrReminderScheduler.pickWeighted returns null for an empty list
+00:00 +3: DhikrReminderScheduler.pickWeighted picks the only un-muted entry every time
+00:00 +4: DhikrReminderScheduler.pickWeighted chance is a weight: 3x the chance lands roughly 3x as often
+00:00 +5: ActiveDhikrReminder counts up to the target and reports completion
+00:00 +6: ActiveDhikrReminder an entry with no target counts up freely and never completes
+00:00 +7: All tests passed!

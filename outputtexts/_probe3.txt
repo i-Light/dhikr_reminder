@@ -1,0 +1,178 @@
+Launching lib/impeller_probe.dart on Windows in debug mode...
+Building Windows application...                                    11.4s
+√ Built build\windows\x64\runner\Debug\dhikr_reminder.exe
+[IMPORTANT:flutter/shell/platform/embedder/embedder_surface_gl_impeller.cc(126)] Using the Impeller rendering backend (OpenGLESSDF).
+PROBE-BEGIN
+Syncing files to device Windows...                                  99ms
+
+Flutter run key commands.
+r Hot reload. 
+R Hot restart.
+h List all available interactive commands.
+d Detach (terminate "flutter run" but leave application running).
+c Clear the screen
+q Quit (terminate the application on the device).
+
+A Dart VM Service on Windows is available at: http://127.0.0.1:60333/9kM0b6RIJvw=/
+The Flutter DevTools debugger and profiler on Windows is available at: http://127.0.0.1:60333/9kM0b6RIJvw=/devtools/?uri=ws://127.0.0.1:60333/9kM0b6RIJvw=/ws
+PROBE: 0 baseline-text-no-opacity
+PROBE: 1 opacity-0.5 + Text
+PROBE: 2 opacity-0.5 + CustomPaint solid circles
+PROBE: 3 opacity-0.5 + CustomPaint MaskFilter.blur circles
+PROBE: 4 opacity-0.5 + LinearGradient DecoratedBox
+PROBE: 5 opacity-0.5 + BoxShadow(outer blur) container
+PROBE: 6 opacity-0.5 + ShaderMask(srcIn) + Text
+PROBE: 7 opacity-0.5 + SvgPicture.asset
+PROBE: 8 opacity-0.5 + SvgPicture + ColorFilter.mode
+PROBE: 9 opacity-1.0 + CustomPaint MaskFilter.blur circles
+PROBE: 10 opacity-0.45 + TextField(outline border)
+PROBE: 11 opacity-0.5 + radial gradient shader paint
+PROBE: 12 fade-transition-0.3..0.7 + BoxShadow(outer blur)
+PROBE: 13 no-opacity + BoxShadow(outer blur)
+PROBE: 14 opacity-0.5 + RepaintBoundary(blur circles)
+PROBE: 15 opacity-1.0 + RepaintBoundary(blur circles)
+PROBE: 16 animated-opacity-1.0 + blur circles (no repaint boundary)
+PROBE: 17 animated-opacity-1.0 + RepaintBoundary(blur circles)
+PROBE: 18 animated-opacity-1.0 + tint + HolyDustBackground (app combo)
+PROBE: 19 opacity-1.0 + tint + HolyDustBackground (plain Opacity)
+PROBE: 20 no-opacity + tint + HolyDustBackground (fix candidate)
+PROBE: 21 opacity-0.4 + Positioned.fill BoxShadow(outer blur 60) [app glow 1b]
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+[ERROR:flutter/impeller/entity/contents/contents.cc(119)] Break on 'impeller::ImpellerValidationBreak' to inspect point of failure: Contents::SetInheritedOpacity should never be called when Contents::CanAcceptOpacity returns false.
+PROBE: 22 opacity-0.5 + Stack[card + BlendMode.overlay glow]
+PROBE: 23 opacity-1.0 + Stack[card + BlendMode.overlay glow]
+PROBE: 24 opacity-0.5 + Stack[card + BlendMode.plus glow] [control]
+PROBE: 25 opacity-0.4 + Stack[dust + BlendMode.overlay glow] [both together]
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+Lost connection to device.

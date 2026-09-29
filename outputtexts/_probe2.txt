@@ -1,0 +1,65 @@
+﻿07:52:35.772 Launching lib/impeller_probe.dart on Windows in debug mode...
+07:52:47.811 Building Windows application...                                    11.9s
+07:52:47.812 ΓêÜ Built build\windows\x64\runner\Debug\dhikr_reminder.exe
+07:52:47.932 [IMPORTANT:flutter/shell/platform/embedder/embedder_surface_gl_impeller.cc(126)] Using the Impeller rendering backend (OpenGLESSDF).
+07:52:49.814 PROBE-BEGIN
+07:52:50.146 Syncing files to device Windows...                                  97ms
+07:52:50.149 
+07:52:50.151 Flutter run key commands.
+07:52:50.151 r Hot reload. 
+07:52:50.151 R Hot restart.
+07:52:50.152 h List all available interactive commands.
+07:52:50.152 d Detach (terminate "flutter run" but leave application running).
+07:52:50.152 c Clear the screen
+07:52:50.152 q Quit (terminate the application on the device).
+07:52:50.152 
+07:52:50.153 A Dart VM Service on Windows is available at: http://127.0.0.1:61187/wLe5Vu7cDmc=/
+07:52:50.154 The Flutter DevTools debugger and profiler on Windows is available at: http://127.0.0.1:61187/wLe5Vu7cDmc=/devtools/?uri=ws://127.0.0.1:61187/wLe5Vu7cDmc=/ws
+07:52:50.220 PROBE: 0 baseline-text-no-opacity
+07:52:51.755 PROBE: 1 opacity-0.5 + Text
+07:52:53.546 PROBE: 2 opacity-0.5 + CustomPaint solid circles
+07:52:55.351 PROBE: 3 opacity-0.5 + CustomPaint MaskFilter.blur circles
+07:52:57.152 PROBE: 4 opacity-0.5 + LinearGradient DecoratedBox
+07:52:58.950 PROBE: 5 opacity-0.5 + BoxShadow(outer blur) container
+07:53:00.752 PROBE: 6 opacity-0.5 + ShaderMask(srcIn) + Text
+07:53:02.546 PROBE: 7 opacity-0.5 + SvgPicture.asset
+07:53:04.349 PROBE: 8 opacity-0.5 + SvgPicture + ColorFilter.mode
+07:53:06.154 PROBE: 9 opacity-1.0 + CustomPaint MaskFilter.blur circles
+07:53:07.957 PROBE: 10 opacity-0.45 + TextField(outline border)
+07:53:09.746 PROBE: 11 opacity-0.5 + radial gradient shader paint
+07:53:11.556 PROBE: 12 fade-transition-0.3..0.7 + BoxShadow(outer blur)
+07:53:13.361 PROBE: 13 no-opacity + BoxShadow(outer blur)
+07:53:15.151 PROBE: 14 opacity-0.5 + RepaintBoundary(blur circles)
+07:53:16.951 PROBE: 15 opacity-1.0 + RepaintBoundary(blur circles)
+07:53:18.749 PROBE: 16 animated-opacity-1.0 + blur circles (no repaint boundary)
+07:53:20.547 PROBE: 17 animated-opacity-1.0 + RepaintBoundary(blur circles)
+07:53:22.349 PROBE: 18 animated-opacity-1.0 + tint + HolyDustBackground (app combo)
+07:53:24.149 PROBE: 19 opacity-1.0 + tint + HolyDustBackground (plain Opacity)
+07:53:25.957 PROBE: 20 no-opacity + tint + HolyDustBackground (fix candidate)
+07:53:27.759 PROBE-END
+07:53:27.775 PROBE-END
+07:53:27.791 PROBE-END
+07:53:27.808 PROBE-END
+07:53:27.826 PROBE-END
+07:53:27.841 PROBE-END
+07:53:27.860 PROBE-END
+07:53:27.874 PROBE-END
+07:53:27.893 PROBE-END
+07:53:27.896 PROBE-END
+07:53:27.911 PROBE-END
+07:53:27.925 PROBE-END
+07:53:27.944 PROBE-END
+07:53:27.958 PROBE-END
+07:53:27.975 PROBE-END
+07:53:27.992 PROBE-END
+07:53:28.008 PROBE-END
+07:53:28.025 PROBE-END
+07:53:28.041 PROBE-END
+07:53:28.059 PROBE-END
+07:53:28.076 PROBE-END
+07:53:28.093 PROBE-END
+07:53:28.108 PROBE-END
+07:53:28.126 PROBE-END
+07:53:28.142 PROBE-END
+07:53:28.159 PROBE-END
+07:53:28.261 Lost connection to device.

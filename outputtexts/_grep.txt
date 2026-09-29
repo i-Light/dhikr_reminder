@@ -1,0 +1,33 @@
+﻿8: import 'package:dhikr_reminder/core/widgets/mouse_glow_overlay.dart';
+252: child: FadeTransition(opacity: animation, child: child),
+337: late final AnimationController _glowController = AnimationController(
+347: late final Animation<double> _glowOpacity = TweenSequence<double>([
+358: ]).animate(_glowController);
+361: // tap trigger as `_glowController`, but scoped to the text's own shadow
+369: // Same jump-up-then-ease-back-down shape as `_glowOpacity`: invisible on
+372: // static shadows below, rather than a `FadeTransition`.
+398: _glowController.forward(from: 0);
+409: _glowController.dispose();
+449: boxShadow: [
+450: BoxShadow(
+453: blurStyle: BlurStyle.outer,
+457: BoxShadow(
+460: blurStyle: BlurStyle.outer,
+463: BoxShadow(
+466: blurStyle: BlurStyle.outer,
+476: // `FadeTransition` around this container: a composited opacity
+484: child: TweenAnimationBuilder<double>(
+488: // animates on the first frame, and TweenAnimationBuilder
+498: return AnimatedBuilder(
+499: animation: _glowController,
+501: // frame — exactly what `FadeTransition` used to apply to the
+508: boxShadow: [
+509: BoxShadow(
+511: alpha: completion * _glowOpacity.value,
+513: blurStyle: BlurStyle.outer,
+560: child: TweenAnimationBuilder<double>(
+638: // state-driven glow. `AnimatedBuilder` here layers
+642: // way the card's own `_glowOpacity` flashes the
+645: AnimatedBuilder(
+711: child: AnimatedBuilder(
+759: child: FadeTransition(opacity: animation, child: child),

@@ -1,0 +1,41 @@
+﻿impeller_probe.dart:23: 'opacity-0.5 + CustomPaint MaskFilter.blur circles',
+impeller_probe.dart:25: 'opacity-0.5 + BoxShadow(outer blur) container',
+impeller_probe.dart:26: 'opacity-0.5 + ShaderMask(srcIn) + Text',
+impeller_probe.dart:29: 'opacity-1.0 + CustomPaint MaskFilter.blur circles',
+impeller_probe.dart:32: 'fade-transition-0.3..0.7 + BoxShadow(outer blur)',
+impeller_probe.dart:33: 'no-opacity + BoxShadow(outer blur)',
+impeller_probe.dart:126: Widget _boxShadow() {
+impeller_probe.dart:131: boxShadow: const <BoxShadow>[
+impeller_probe.dart:132: BoxShadow(
+impeller_probe.dart:149: BlendMode.srcIn,
+impeller_probe.dart:187: 5 => _boxShadow(),
+impeller_probe.dart:188: 6 => ShaderMask(
+impeller_probe.dart:189: blendMode: BlendMode.srcIn,
+impeller_probe.dart:192: ).createShader(bounds),
+impeller_probe.dart:209: 12 => _boxShadow(),
+impeller_probe.dart:210: 13 => _boxShadow(),
+impeller_probe.dart:217: return Opacity(opacity: opacity, child: caseWidget);
+impeller_probe.dart:245: paint.maskFilter = null;
+impeller_probe.dart:259: paint.maskFilter =
+impeller_probe.dart:260: blur ? MaskFilter.blur(BlurStyle.normal, radius * 2.2) : null;
+core\theme\gradient_text.dart:6: /// A [ShaderMask] over a plain [Text]: size, weight, letter-spacing and
+core\theme\gradient_text.dart:63: return ShaderMask(
+core\theme\gradient_text.dart:64: blendMode: BlendMode.srcIn,
+core\theme\gradient_text.dart:65: shaderCallback: (bounds) => effectiveGradient.createShader(
+core\theme\gradient_widgets.dart:87: return Opacity(
+core\toast\border_frame.dart:65: colorize ? ColorFilter.mode(cornerColor, BlendMode.srcIn) : null,
+core\toast\border_frame.dart:157: return Opacity(
+core\toast\dhikr_reminder_overlay.dart:214: AnimatedOpacity(
+core\toast\dhikr_reminder_overlay.dart:449: boxShadow: [
+core\toast\dhikr_reminder_overlay.dart:450: BoxShadow(
+core\toast\dhikr_reminder_overlay.dart:457: BoxShadow(
+core\toast\dhikr_reminder_overlay.dart:463: BoxShadow(
+core\toast\dhikr_reminder_overlay.dart:484: boxShadow: [
+core\toast\dhikr_reminder_overlay.dart:485: BoxShadow(
+core\toast\dust_particles_overlay.dart:94: ..maskFilter = MaskFilter.blur(BlurStyle.normal, p.radius * 2.8);
+core\toast\toast_card.dart:51: boxShadow: [
+core\toast\toast_card.dart:52: BoxShadow(
+core\widgets\mouse_glow_overlay.dart:28: /// card and don't isolate with a RepaintBoundary). Try BlendMode.plus,
+core\widgets\mouse_glow_overlay.dart:30: static const BlendMode blendMode = BlendMode.overlay;
+core\widgets\mouse_glow_overlay.dart:87: _paint.blendMode = GlowConfig.blendMode;
+features\settings\presentation\widgets\dhikr_settings_card.dart:254: child: AnimatedOpacity(

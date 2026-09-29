@@ -1,5 +1,24 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+
+/// Stop positions across a glowing particle's halo, in fractions of its
+/// total extent (see [_glowFalloff]).
+const List<double> _glowStops = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0];
+
+/// The gaussian falloff sampled at [_glowStops]: `exp(-7.58 t²)`, where `t`
+/// is the fraction of the way out from the halo's centre. Constant for every
+/// particle because the extent/sigma ratio of the old blur was fixed (see
+/// [HolyDustPainter.paint]).
+const List<double> _glowFalloff = [1.0, 0.738, 0.297, 0.065, 0.008, 0.0];
+
+/// Peak alpha of the halo as a fraction of the particle's current alpha:
+/// `0.35` (the pre-blur paint alpha) times `1 - exp(-a²/2σ²) ≈ 0.33`, the
+/// centre value a gaussian blur leaves on a disc of radius `a = 2.5r` when
+/// blurred with `σ = 2.8r` — i.e. the brightest point of the old
+/// mask-filtered halo, kept identical.
+const double _glowPeakFactor = 0.35 * 0.33;
 
 class DustParticle {
   DustParticle({
@@ -87,12 +106,33 @@ class HolyDustPainter extends CustomPainter {
       final double currentAlpha =
           (p.baseOpacity * (0.4 + 0.6 * twinkle)).clamp(0.0, 1.0);
 
-      // 4. Draw halo
+      // 4. Draw halo. The old code painted a solid circle (radius
+      // `p.radius * 2.5`, alpha `currentAlpha * 0.35`) under
+      // `MaskFilter.blur(BlurStyle.normal, p.radius * 2.8)`, which costs a
+      // gaussian blur pass per glowing particle on every frame the dust
+      // ticker runs — the single biggest per-frame cost in the open-card
+      // baseline. A blurred disc is just a soft radial falloff, so the same
+      // shape is drawn directly as a radial gradient evaluated on the
+      // existing render target: no offscreen pass, no mask filter.
+      //
+      // The falloff samples that same gaussian. Extent = disc radius + 3σ
+      // = `(2.5 + 3 * 2.8) = 10.9` particle radii, and because that ratio
+      // to σ is fixed, the normalized shape (and the centre peak, see
+      // [_glowPeakFactor]) is identical for every particle — only the size
+      // and the twinkle alpha change per frame.
       if (p.hasGlow) {
-        _glowPaint
-          ..color = p.color.withValues(alpha: currentAlpha * 0.35)
-          ..maskFilter = MaskFilter.blur(BlurStyle.normal, p.radius * 2.8);
-        canvas.drawCircle(offset, p.radius * 2.5, _glowPaint);
+        final double extent = p.radius * 10.9;
+        final double peak = currentAlpha * _glowPeakFactor;
+        _glowPaint.shader = ui.Gradient.radial(
+          offset,
+          extent,
+          [
+            for (final falloff in _glowFalloff)
+              p.color.withValues(alpha: peak * falloff),
+          ],
+          _glowStops,
+        );
+        canvas.drawCircle(offset, extent, _glowPaint);
       }
 
       // 5. Draw core dot

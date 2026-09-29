@@ -67,6 +67,50 @@ void main() {
     });
   });
 
+  group('DhikrReminderScheduler.pickReminder', () {
+    final entries = [
+      const DhikrEntry(id: 1, name: 'zero', chance: 0),
+      const DhikrEntry(id: 2, name: 'low', chance: 1),
+      const DhikrEntry(id: 3, name: 'max', chance: dhikrChanceMax),
+    ];
+
+    test('with chance off, every entry is equally likely, even chance 0', () {
+      final counts = <int, int>{1: 0, 2: 0, 3: 0};
+      for (var seed = 0; seed < 3000; seed++) {
+        final picked = DhikrReminderScheduler.pickReminder(
+          entries,
+          Random(seed),
+          useChance: false,
+        );
+        counts[picked!.id] = counts[picked.id]! + 1;
+      }
+
+      for (final count in counts.values) {
+        expect(count, inInclusiveRange(800, 1200));
+      }
+    });
+
+    test('with chance on, chance 0 is still never picked', () {
+      for (var seed = 0; seed < 200; seed++) {
+        expect(
+          DhikrReminderScheduler.pickReminder(
+            entries,
+            Random(seed),
+            useChance: true,
+          )?.id,
+          isNot(1),
+        );
+      }
+    });
+
+    test('with chance off and no entries, there is nothing to pick', () {
+      expect(
+        DhikrReminderScheduler.pickReminder([], Random(1), useChance: false),
+        isNull,
+      );
+    });
+  });
+
   group('ActiveDhikrReminder', () {
     test('counts up to the target and reports completion', () {
       const reminder = ActiveDhikrReminder(

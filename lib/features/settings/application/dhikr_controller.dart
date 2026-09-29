@@ -9,6 +9,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 const _dhikrPrefsKey = 'dhikr_reminder.dhikr.entries';
 const _dhikrNextIdPrefsKey = 'dhikr_reminder.dhikr.nextId';
 const _dhikrIntervalPrefsKey = 'dhikr_reminder.dhikr.reminderIntervalMinutes';
+const _dhikrUseChancePrefsKey = 'dhikr_reminder.dhikr.useChance';
+const _dhikrMutedPrefsKey = 'dhikr_reminder.dhikr.muted';
 
 /// Bounds for [DhikrSettings.intervalMinutes] — how many minutes sit between
 /// one reminder toast and the next.
@@ -151,6 +153,8 @@ class DhikrSettings {
     required this.entries,
     required this.intervalMinutes,
     required this.isLoaded,
+    this.useChance = false,
+    this.isMuted = false,
   });
 
   /// What the app shows before the first prefs read completes: the seeds,
@@ -158,10 +162,23 @@ class DhikrSettings {
   const DhikrSettings.loading()
       : entries = _defaultDhikrEntries,
         intervalMinutes = dhikrReminderIntervalDefault,
+        useChance = false,
+        isMuted = false,
         isLoaded = false;
 
   final List<DhikrEntry> entries;
   final int intervalMinutes;
+
+  /// Whether [DhikrEntry.chance] takes part in picking the next reminder.
+  /// Off by default: with it off every entry is treated as being at
+  /// [dhikrChanceMax], so they are all equally likely, and the stored chances
+  /// are left untouched for whenever it is switched back on.
+  final bool useChance;
+
+  /// Silences the sound a reminder makes. Toggled from the tray menu as well
+  /// as the settings card, so it applies immediately rather than waiting on
+  /// the card's Save button.
+  final bool isMuted;
 
   /// True once the persisted values have been read (or the read has failed
   /// and the defaults stand as the real answer). Nothing should schedule a
@@ -171,11 +188,15 @@ class DhikrSettings {
   DhikrSettings copyWith({
     List<DhikrEntry>? entries,
     int? intervalMinutes,
+    bool? useChance,
+    bool? isMuted,
     bool? isLoaded,
   }) {
     return DhikrSettings(
       entries: entries ?? this.entries,
       intervalMinutes: intervalMinutes ?? this.intervalMinutes,
+      useChance: useChance ?? this.useChance,
+      isMuted: isMuted ?? this.isMuted,
       isLoaded: isLoaded ?? this.isLoaded,
     );
   }
@@ -202,6 +223,8 @@ class DhikrSettingsNotifier extends Notifier<DhikrSettings> {
   Future<void> _loadPersisted() async {
     var entries = _defaultDhikrEntries;
     var intervalMinutes = dhikrReminderIntervalDefault;
+    var useChance = false;
+    var isMuted = false;
     try {
       final prefs = await SharedPreferences.getInstance();
       _nextId = prefs.getInt(_dhikrNextIdPrefsKey) ?? _nextId;
@@ -236,6 +259,8 @@ class DhikrSettingsNotifier extends Notifier<DhikrSettings> {
           dhikrReminderIntervalMax,
         );
       }
+      useChance = prefs.getBool(_dhikrUseChancePrefsKey) ?? useChance;
+      isMuted = prefs.getBool(_dhikrMutedPrefsKey) ?? isMuted;
     } catch (error, stackTrace) {
       developer.log(
         'Failed to load persisted dhikr settings; keeping defaults.',
@@ -248,6 +273,8 @@ class DhikrSettingsNotifier extends Notifier<DhikrSettings> {
     state = DhikrSettings(
       entries: entries,
       intervalMinutes: intervalMinutes,
+      useChance: useChance,
+      isMuted: isMuted,
       isLoaded: true,
     );
   }
@@ -277,6 +304,16 @@ class DhikrSettingsNotifier extends Notifier<DhikrSettings> {
         minutes.clamp(dhikrReminderIntervalMin, dhikrReminderIntervalMax);
     state = state.copyWith(intervalMinutes: clamped, isLoaded: true);
     await _persist((prefs) => prefs.setInt(_dhikrIntervalPrefsKey, clamped));
+  }
+
+  Future<void> updateUseChance(bool value) async {
+    state = state.copyWith(useChance: value, isLoaded: true);
+    await _persist((prefs) => prefs.setBool(_dhikrUseChancePrefsKey, value));
+  }
+
+  Future<void> updateMuted(bool value) async {
+    state = state.copyWith(isMuted: value, isLoaded: true);
+    await _persist((prefs) => prefs.setBool(_dhikrMutedPrefsKey, value));
   }
 
   Future<void> _persist(

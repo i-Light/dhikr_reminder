@@ -1,9 +1,12 @@
 import 'package:dhikr_reminder/core/theme/app_theme.dart';
 import 'package:dhikr_reminder/core/toast/dhikr_reminder_overlay.dart';
 import 'package:dhikr_reminder/core/toast/toast_overlay.dart';
+import 'package:dhikr_reminder/core/window/app_shell.dart';
+import 'package:dhikr_reminder/core/window/tray_menu_panel.dart';
 import 'package:dhikr_reminder/features/settings/presentation/home_screen.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Root widget of the standalone dhikr reminder.
 ///
@@ -41,9 +44,63 @@ class DhikrReminderApp extends StatelessWidget {
       //
       // Reminder above toast, so a reminder that fires while a toast is up
       // still reads as the more urgent of the two.
+      //
+      // While the window is doubling as the tray popup (see
+      // `AppShellNotifier`), the overlay stays mounted — the timer must not
+      // stop — and so does the app; see [_ShellHost].
       builder: (context, child) => DhikrReminderOverlay(
-        child: ToastOverlay(child: child ?? const SizedBox.shrink()),
+        child: _ShellHost(
+          app: ToastOverlay(child: child ?? const SizedBox.shrink()),
+        ),
       ),
+    );
+  }
+}
+
+/// Shows either the app or, while the window is the tray popup, the menu.
+///
+/// The app is never unmounted for the menu: doing so would throw away the
+/// navigator and with it the settings card's unsaved draft. Instead it is
+/// taken out of view and pinned to the size it last had, so it is not laid out
+/// at popup size (which would squash the settings page) while it waits.
+class _ShellHost extends ConsumerStatefulWidget {
+  const _ShellHost({required this.app});
+
+  final Widget app;
+
+  @override
+  ConsumerState<_ShellHost> createState() => _ShellHostState();
+}
+
+class _ShellHostState extends ConsumerState<_ShellHost> {
+  Size _appSize = Size.zero;
+
+  @override
+  Widget build(BuildContext context) {
+    final isMenu = ref.watch(appShellProvider) == ShellMode.trayMenu;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (!isMenu) _appSize = constraints.biggest;
+        final pinned = isMenu && !_appSize.isEmpty;
+        return Stack(
+          children: [
+            Offstage(
+              offstage: isMenu,
+              // Same widget in both modes (only its arguments change) so the
+              // app keeps its state across the switch.
+              child: OverflowBox(
+                alignment: Alignment.topLeft,
+                minWidth: pinned ? _appSize.width : null,
+                maxWidth: pinned ? _appSize.width : null,
+                minHeight: pinned ? _appSize.height : null,
+                maxHeight: pinned ? _appSize.height : null,
+                child: widget.app,
+              ),
+            ),
+            if (isMenu) const Positioned.fill(child: TrayMenuPanel()),
+          ],
+        );
+      },
     );
   }
 }

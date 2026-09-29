@@ -1,0 +1,32 @@
+﻿880: _alpha = ui.Color.getAlphaFromOpacity(opacity),
+884: bool get alwaysNeedsCompositing => child != null && _alpha > 0;
+887: bool get isRepaintBoundary => alwaysNeedsCompositing;
+889: int _alpha;
+906: final bool didNeedCompositing = alwaysNeedsCompositing;
+907: final wasVisible = _alpha != 0;
+909: _alpha = ui.Color.getAlphaFromOpacity(_opacity);
+910: if (didNeedCompositing != alwaysNeedsCompositing) {
+914: if (wasVisible != (_alpha != 0) && !alwaysIncludeSemantics) {
+937: return _alpha > 0;
+943: layer.alpha = _alpha;
+949: if (child == null || _alpha == 0) {
+957: if (child != null && (_alpha != 0 || alwaysIncludeSemantics)) {
+982: int? _alpha;
+991: updatedLayer.alpha = _alpha;
+1053: final int? oldAlpha = _alpha;
+1054: _alpha = ui.Color.getAlphaFromOpacity(opacity.value);
+1055: if (oldAlpha != _alpha) {
+1057: _currentlyIsRepaintBoundary = _alpha! > 0;
+1062: if (oldAlpha == 0 || _alpha == 0) {
+1076: if (_alpha == 0) {
+1084: if (child != null && (_alpha != 0 || alwaysIncludeSemantics)) {
+1175: bool get alwaysNeedsCompositing => child != null;
+1326: bool get alwaysNeedsCompositing => child != null;
+2089: final bool didNeedCompositing = alwaysNeedsCompositing;
+2091: if (didNeedCompositing != alwaysNeedsCompositing) {
+2602: bool get alwaysNeedsCompositing => child != null && _filterQuality != null;
+2639: final bool didNeedCompositing = alwaysNeedsCompositing;
+2641: if (didNeedCompositing != alwaysNeedsCompositing) {
+4499: bool get alwaysNeedsCompositing => true;
+4656: bool get alwaysNeedsCompositing => true;
+4800: final bool alwaysNeedsCompositing = true;

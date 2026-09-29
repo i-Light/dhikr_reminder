@@ -1,0 +1,58 @@
+Launching lib/impeller_probe.dart on Windows in debug mode...
+Building Windows application...                                    18.3s
+√ Built build\windows\x64\runner\Debug\dhikr_reminder.exe
+[IMPORTANT:flutter/shell/platform/embedder/embedder_surface_gl_impeller.cc(126)] Using the Impeller rendering backend (OpenGLESSDF).
+PROBE-BEGIN
+Syncing files to device Windows...                                  92ms
+
+Flutter run key commands.
+r Hot reload. 
+R Hot restart.
+h List all available interactive commands.
+d Detach (terminate "flutter run" but leave application running).
+c Clear the screen
+q Quit (terminate the application on the device).
+
+A Dart VM Service on Windows is available at: http://127.0.0.1:51585/6ndmcbi5dXU=/
+The Flutter DevTools debugger and profiler on Windows is available at: http://127.0.0.1:51585/6ndmcbi5dXU=/devtools/?uri=ws://127.0.0.1:51585/6ndmcbi5dXU=/ws
+PROBE: 0 baseline-text-no-opacity
+PROBE: 1 opacity-0.5 + Text
+PROBE: 2 opacity-0.5 + CustomPaint solid circles
+PROBE: 3 opacity-0.5 + CustomPaint MaskFilter.blur circles
+PROBE: 4 opacity-0.5 + LinearGradient DecoratedBox
+PROBE: 5 opacity-0.5 + BoxShadow(outer blur) container
+PROBE: 6 opacity-0.5 + ShaderMask(srcIn) + Text
+PROBE: 7 opacity-0.5 + SvgPicture.asset
+PROBE: 8 opacity-0.5 + SvgPicture + ColorFilter.mode
+PROBE: 9 opacity-1.0 + CustomPaint MaskFilter.blur circles
+PROBE: 10 opacity-0.45 + TextField(outline border)
+PROBE: 11 opacity-0.5 + radial gradient shader paint
+PROBE: 12 fade-transition-0.3..0.7 + BoxShadow(outer blur)
+PROBE: 13 no-opacity + BoxShadow(outer blur)
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+PROBE-END
+Lost connection to device.

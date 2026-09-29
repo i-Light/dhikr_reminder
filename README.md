@@ -23,6 +23,13 @@ Hot reload works as usual, and because the reminder scheduler lives in
 `MaterialApp.builder`, a hot restart that rebuilds the whole widget tree does not
 lose the running timer.
 
+**Closing the window hides it to the system tray** instead of quitting. Left-click
+the tray icon to bring the app back; right-click it for a small themed menu —
+open the app, the countdown to the next dhikr, a sound on/off toggle (the icon
+changes with the state) and close-for-real. A reminder that comes due while the
+window is hidden raises it, and hides it again once the reminder is done. The
+tray code is in `lib/core/window/`; it only runs on Windows.
+
 Two conveniences worth knowing about:
 
 - **A reminder pops by itself 3 seconds after launch in debug builds.** The

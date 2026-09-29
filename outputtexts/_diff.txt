@@ -1,0 +1,83 @@
+﻿diff --git a/lib/core/toast/dhikr_reminder_overlay.dart b/lib/core/toast/dhikr_reminder_overlay.dart
+index 2f1e0d3..814b43f 100644
+--- a/lib/core/toast/dhikr_reminder_overlay.dart
++++ b/lib/core/toast/dhikr_reminder_overlay.dart
+@@ -468,32 +468,60 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
+                     ),
+                   ],
+                 ),
+               ),
+             ),
+             // 1b. Duplicated biggest glow (the blurRadius: 60 shadow above),
+-            // isolated onto its own layer whose opacity ΓÇö not scale ΓÇö pulses
+-            // from 0 up to its max strength and back on every tap.
++            // whose strength pulses from 0.4 up to its max and back on every
++            // tap. The pulse rides the shadow's own alpha rather than a
++            // `FadeTransition` around this container: a composited opacity
++            // layer over a decoration that paints *only* an outer-blur shadow
++            // makes Impeller break on
++            // "Contents::SetInheritedOpacity should never be called when
++            // Contents::CanAcceptOpacity returns false" once per frame ΓÇö see
++            // impeller_investigation.md. Folding the same value into the
++            // shadow's colour is visually equivalent and costs no layer.
+             Positioned.fill(
+-              child: FadeTransition(
+-                opacity: _glowOpacity,
+-                child: AnimatedContainer(
+-                  duration: DhikrTimers.layoutTransition,
+-                  curve: Curves.easeOutCubic,
+-                  decoration: BoxDecoration(
+-                    borderRadius: BorderRadius.circular(35),
+-                    boxShadow: [
+-                      BoxShadow(
+-                        color: accent.withValues(
+-                            alpha: reminder.isComplete ? 0 : 1),
+-                        blurStyle: BlurStyle.outer,
+-                        blurRadius: 60,
+-                      ),
+-                    ],
+-                  ),
++              child: TweenAnimationBuilder<double>(
++                // Carries the `isComplete` ease that `AnimatedContainer` used to
++                // give this shadow: 1 while the reminder is open, eased down to
++                // 0 once it is completed. `begin` mirrors `end` so nothing
++                // animates on the first frame, and TweenAnimationBuilder
++                // retargets from wherever it currently is, so a tap pulse
++                // mid-flight never restarts this ease.
++                tween: Tween(
++                  begin: reminder.isComplete ? 0.0 : 1.0,
++                  end: reminder.isComplete ? 0.0 : 1.0,
+                 ),
++                duration: DhikrTimers.layoutTransition,
++                curve: Curves.easeOutCubic,
++                builder: (context, completion, _) {
++                  return AnimatedBuilder(
++                    animation: _glowController,
++                    // The pulse reads the controller's value directly on each
++                    // frame ΓÇö exactly what `FadeTransition` used to apply to the
++                    // whole layer ΓÇö so the flash keeps its 180ms attack instead
++                    // of being re-eased.
++                    builder: (context, _) {
++                      return Container(
++                        decoration: BoxDecoration(
++                          borderRadius: BorderRadius.circular(35),
++                          boxShadow: [
++                            BoxShadow(
++                              color: accent.withValues(
++                                alpha: completion * _glowOpacity.value,
++                              ),
++                              blurStyle: BlurStyle.outer,
++                              blurRadius: 60,
++                            ),
++                          ],
++                        ),
++                      );
++                    },
++                  );
++                },
+               ),
+             ),
+             // 2. Foreground Card Layer
+             AnimatedContainer(
+               clipBehavior: Clip.antiAlias,
+               duration: DhikrTimers.layoutTransition,

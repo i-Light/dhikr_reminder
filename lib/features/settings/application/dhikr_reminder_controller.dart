@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// A dhikr reminder currently on screen, plus how many times it's been
@@ -33,7 +34,14 @@ class ActiveDhikrReminderNotifier extends Notifier<ActiveDhikrReminder?> {
   @override
   ActiveDhikrReminder? build() => null;
 
-  void show(DhikrEntry entry) => state = ActiveDhikrReminder(entry: entry);
+  void show(DhikrEntry entry) {
+    state = ActiveDhikrReminder(entry: entry);
+    if (!ref.read(dhikrSettingsProvider).isMuted) {
+      // Fire-and-forget: a platform without a system alert sound just stays
+      // silent, and a reminder must never fail to appear over a missing beep.
+      unawaited(SystemSound.play(SystemSoundType.alert).catchError((_) {}));
+    }
+  }
 
   void increment() {
     final current = state;
@@ -50,50 +58,74 @@ final activeDhikrReminderProvider =
 );
 
 /// Fires a dhikr reminder every [DhikrSettings.intervalMinutes] minutes,
-/// picking which one with a weighted roll over [DhikrEntry.chance].
+/// picking which one with [pickReminder] — a weighted roll over
+/// [DhikrEntry.chance] when [DhikrSettings.useChance] is on, a flat one when
+/// it is off.
+///
+/// Its state is when the next reminder is due (`null` until the saved settings
+/// have loaded), which is what the tray menu's countdown reads.
 ///
 /// Stays idle until [DhikrSettings.isLoaded] — before the saved settings come
 /// back from disk the only entries on hand are the seed defaults, every one of
 /// them at full chance, so scheduling against them meant a restart could pop up
 /// a dhikr the user had muted (chance 0) or deleted outright.
 ///
-/// A `Notifier<void>` rather than a plain service class so it can `ref.watch`
+/// A `Notifier` rather than a plain service class so it can `ref.watch`
 /// the interval and reschedule its own timer whenever it changes — the same
 /// "rebuild tears down and re-sets-up its own side effect" shape
 /// `NotificationCenter` uses for its per-toast timers, just at the
 /// provider's own `build()` instead of per entry. Kept alive for the app's
 /// lifetime by `DhikrReminderOverlay` watching it once at the root, same as
 /// `ToastOverlay` keeps `NotificationCenter`'s timers alive by existing.
-class DhikrReminderScheduler extends Notifier<void> {
+class DhikrReminderScheduler extends Notifier<DateTime?> {
   final _random = Random();
 
   @override
-  void build() {
+  DateTime? build() {
     // Watched narrowly: the timer should restart when the interval changes,
     // not every time an entry is edited in the settings card — a full rebuild
     // per keystroke would keep pushing the next reminder back indefinitely.
     final isLoaded = ref.watch(dhikrSettingsProvider.select((s) => s.isLoaded));
-    if (!isLoaded) return;
-    final intervalMinutes =
-        ref.watch(dhikrSettingsProvider.select((s) => s.intervalMinutes));
-    final timer = Timer.periodic(
-      // search for minutes / intervalMinutes
-      // schedule is also good keyword
-      Duration(minutes: intervalMinutes),
-      (_) => _fire(),
+    if (!isLoaded) return null;
+    final interval = Duration(
+      minutes:
+          ref.watch(dhikrSettingsProvider.select((s) => s.intervalMinutes)),
     );
+    final timer = Timer.periodic(interval, (_) {
+      _fire();
+      state = DateTime.now().add(interval);
+    });
     ref.onDispose(timer.cancel);
+    return DateTime.now().add(interval);
   }
 
   void _fire() {
     // Never interrupts a reminder already in progress — the person is still
     // working through the last one.
     if (ref.read(activeDhikrReminderProvider) != null) return;
-    final entry =
-        pickWeighted(ref.read(dhikrSettingsProvider).entries, _random);
+    final settings = ref.read(dhikrSettingsProvider);
+    final entry = pickReminder(
+      settings.entries,
+      _random,
+      useChance: settings.useChance,
+    );
     if (entry != null) {
       ref.read(activeDhikrReminderProvider.notifier).show(entry);
     }
+  }
+
+  /// Which entry a reminder should show. With [useChance] off, every entry —
+  /// including one whose chance is 0 — counts as being at [dhikrChanceMax];
+  /// the chances stay on the entries themselves, unread, so switching the
+  /// option back on picks up where it left off.
+  static DhikrEntry? pickReminder(
+    List<DhikrEntry> entries,
+    Random random, {
+    required bool useChance,
+  }) {
+    if (useChance) return pickWeighted(entries, random);
+    if (entries.isEmpty) return null;
+    return entries[random.nextInt(entries.length)];
   }
 
   /// Weighted random pick over `chance`: an entry's odds are its own chance
@@ -116,6 +148,6 @@ class DhikrReminderScheduler extends Notifier<void> {
 }
 
 final dhikrReminderSchedulerProvider =
-    NotifierProvider<DhikrReminderScheduler, void>(
+    NotifierProvider<DhikrReminderScheduler, DateTime?>(
   DhikrReminderScheduler.new,
 );

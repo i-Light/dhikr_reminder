@@ -140,6 +140,30 @@ abstract class AppLocalizations {
   /// **'How often a reminder pops up, in minutes'**
   String get settingsDhikrIntervalSubtitle;
 
+  /// No description provided for @settingsDhikrSoundLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound'**
+  String get settingsDhikrSoundLabel;
+
+  /// No description provided for @settingsDhikrSoundSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Play a sound when a reminder pops up'**
+  String get settingsDhikrSoundSubtitle;
+
+  /// No description provided for @settingsDhikrUseChanceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Weighted chance'**
+  String get settingsDhikrUseChanceLabel;
+
+  /// No description provided for @settingsDhikrUseChanceSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Off: every dhikr is equally likely. On: set how often each one comes up'**
+  String get settingsDhikrUseChanceSubtitle;
+
   /// No description provided for @settingsDhikrNameColumn.
   ///
   /// In en, this message translates to:
@@ -199,6 +223,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Touch anywhere to count'**
   String get dhikrReminderTouchEverywhereTip;
+
+  /// No description provided for @trayOpenApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Open app'**
+  String get trayOpenApp;
+
+  /// No description provided for @trayNextDhikr.
+  ///
+  /// In en, this message translates to:
+  /// **'Next dhikr'**
+  String get trayNextDhikr;
+
+  /// No description provided for @trayNextDhikrIn.
+  ///
+  /// In en, this message translates to:
+  /// **'in {time}'**
+  String trayNextDhikrIn(String time);
+
+  /// No description provided for @trayNextDhikrPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for settings'**
+  String get trayNextDhikrPending;
+
+  /// No description provided for @traySoundOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound on'**
+  String get traySoundOn;
+
+  /// No description provided for @traySoundOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound off'**
+  String get traySoundOff;
+
+  /// No description provided for @trayQuit.
+  ///
+  /// In en, this message translates to:
+  /// **'Close app'**
+  String get trayQuit;
 }
 
 class _AppLocalizationsDelegate

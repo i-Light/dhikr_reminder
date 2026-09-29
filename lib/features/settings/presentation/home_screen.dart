@@ -49,10 +49,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// debug demo both just take the first un-muted entry — the point is to see
   /// the card, not to sample the weighting.
   void _showTestReminder() {
-    final entries = ref
-        .read(dhikrSettingsProvider)
-        .entries
-        .where((entry) => entry.chance > 0)
+    final settings = ref.read(dhikrSettingsProvider);
+    // With the chance option off nothing is excluded, whatever chance an
+    // entry has stored.
+    final entries = settings.entries
+        .where((entry) => !settings.useChance || entry.chance > 0)
         .toList();
     if (entries.isEmpty) return;
     ref.read(activeDhikrReminderProvider.notifier).show(entries.first);

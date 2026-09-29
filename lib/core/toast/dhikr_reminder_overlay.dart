@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:dhikr_reminder/core/constants/app_colors.dart';
 import 'package:dhikr_reminder/core/toast/border_frame.dart';
+import 'package:dhikr_reminder/core/toast/dhikr_fit_text.dart';
 import 'package:dhikr_reminder/core/toast/dust_particles_overlay.dart';
+import 'package:dhikr_reminder/core/toast/outer_glow.dart';
 import 'package:dhikr_reminder/core/widgets/mouse_glow_overlay.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
@@ -69,8 +70,8 @@ class DhikrTimers {
 /// future color tweak means editing a field here, not hunting through the
 /// widget tree for the right `.withValues(alpha: ...)`.
 @immutable
-class _DhikrPalette {
-  const _DhikrPalette({
+class DhikrPalette {
+  const DhikrPalette({
     required this.accent,
     required this.cardFill,
     required this.progressTrack,
@@ -121,13 +122,13 @@ class _DhikrPalette {
   // Not `of(context)`: nothing here reads the theme. The palette is a fixed
   // gold scheme that only changes shape between "in progress" and "done", so
   // passing a BuildContext through it would be a lie about what varies.
-  factory _DhikrPalette.forState({required bool isComplete}) {
+  factory DhikrPalette.forState({required bool isComplete}) {
     final brand = isComplete ? _doneGradient : _normalGradient;
     final accent = isComplete
         ? brand.colors.first.withValues(alpha: 1)
         : const Color.fromARGB(255, 231, 170, 72);
 
-    return _DhikrPalette(
+    return DhikrPalette(
       progressTrack: accent.withValues(alpha: 0.3),
       accent: accent,
       cardFill: LinearGradient(
@@ -155,10 +156,12 @@ class _DhikrPalette {
 /// screen at a time, so it's a single card rather than an animated stack.
 ///
 /// Also the one place `dhikrReminderSchedulerProvider` gets watched — that
-/// `Notifier<void>` has no state of its own to render, only a side-effecting
-/// `Timer` in its `build()`, but a `NotifierProvider` still needs a live
-/// listener to stay built at all, so watching it here is what keeps the
-/// reminder timer running for the app's lifetime.
+/// notifier's state (the next due time) is for the tray menu, not for this
+/// widget to render; what matters here is the side-effecting `Timer` in its
+/// `build()`, but a `NotifierProvider` still needs a live listener to stay
+/// built at all, so watching it here (selecting nothing, so a new due time
+/// does not rebuild the overlay) is what keeps the reminder timer running for
+/// the app's lifetime.
 class DhikrReminderOverlay extends ConsumerStatefulWidget {
   const DhikrReminderOverlay({super.key, required this.child});
 
@@ -180,7 +183,7 @@ class _DhikrReminderOverlayState extends ConsumerState<DhikrReminderOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(dhikrReminderSchedulerProvider);
+    ref.watch(dhikrReminderSchedulerProvider.select((_) => null));
     final reminder = ref.watch(activeDhikrReminderProvider);
 
     // Reaching the target count is a state change, not a user action, so
@@ -241,15 +244,16 @@ class _DhikrReminderOverlayState extends ConsumerState<DhikrReminderOverlay> {
                     alignment: Alignment.center,
                     child: AnimatedSwitcher(
                       duration: DhikrTimers.cardEntrance,
-                      transitionBuilder: (child, animation) => ScaleTransition(
-                        scale: Tween<double>(begin: 0.88, end: 1).animate(
-                          CurvedAnimation(
-                            parent: animation,
-                            curve: Curves.easeOutCubic,
-                            reverseCurve: Curves.easeInCubic,
-                          ),
-                        ),
-                        child: FadeTransition(opacity: animation, child: child),
+                      // The scale+fade the switcher always ran, routed
+                      // through [_SnapshotExitTransition] so the *exit*
+                      // plays against a frozen texture of the card instead
+                      // of re-rasterizing the whole card (glow blurs, text
+                      // shadows, SVG frame and all) on every frame of the
+                      // fade — see the class docs below.
+                      transitionBuilder: (child, animation) =>
+                          _SnapshotExitTransition(
+                        animation: animation,
+                        child: child,
                       ),
                       child: reminder == null
                           ? const SizedBox.shrink(key: ValueKey('empty'))
@@ -276,6 +280,103 @@ class _DhikrReminderOverlayState extends ConsumerState<DhikrReminderOverlay> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Wraps [child] in the reminder card's exit transition — the same
+/// scale+fade `AnimatedSwitcher` always ran — but freezes the card to a
+/// texture the instant its exit begins.
+///
+/// The switcher gives every child its own animation: it runs forward while
+/// the child enters and in reverse while it exits. On the first
+/// `AnimationStatus.reverse`, this widget flips its [SnapshotWidget]
+/// controller on, and the snapshot render object captures the card into a
+/// `ui.Image` during that frame's paint. From then on the scale and fade
+/// composite a single texture instead of re-running the card's glow blurs,
+/// text shadows, SVG frame and everything else on every frame of the exit —
+/// GPU cost drops to a texture draw, and the visual is identical because the
+/// card isn't supposed to change while leaving. Any animation still ticking
+/// inside the card is simply frozen with it (that's `SnapshotWidget`'s
+/// documented behaviour for short transitions).
+///
+/// The capture sits *below* the scale and fade, so what it records is the
+/// untransformed card — the transition math is untouched.
+class _SnapshotExitTransition extends StatefulWidget {
+  const _SnapshotExitTransition({
+    required this.animation,
+    required this.child,
+  });
+
+  /// This child's switcher animation: forward on entry, reverse on exit.
+  final Animation<double> animation;
+
+  final Widget child;
+
+  @override
+  State<_SnapshotExitTransition> createState() =>
+      _SnapshotExitTransitionState();
+}
+
+class _SnapshotExitTransitionState extends State<_SnapshotExitTransition> {
+  final SnapshotController _snapshot = SnapshotController();
+
+  /// The scale curve, created once in [initState] and disposed in [dispose]
+  /// because [CurvedAnimation] registers a status listener on its parent for
+  /// its lifetime (see its own docs). Never changes for a given switcher
+  /// entry — the switcher reuses one animation per child for its whole
+  /// life, entry included.
+  late final CurvedAnimation _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _scale = CurvedAnimation(
+      parent: widget.animation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    widget.animation.addStatusListener(_handleStatus);
+  }
+
+  void _handleStatus(AnimationStatus status) {
+    // Reverse is the exit (forward is the entrance). Flipping the controller
+    // here — still in the frame's build phase — makes the snapshot render
+    // object capture the freshly painted card in this same frame's paint, so
+    // there is never a half-captured frame.
+    if (status == AnimationStatus.reverse &&
+        !_snapshot.allowSnapshotting &&
+        mounted) {
+      _snapshot.allowSnapshotting = true;
+    }
+  }
+
+  @override
+  void dispose() {
+    // Both removals are safe even if the switcher already disposed its
+    // animation first — listeners may be removed from a disposed animation,
+    // and [SnapshotController]'s render object does the same with ours.
+    widget.animation.removeStatusListener(_handleStatus);
+    _scale.dispose();
+    _snapshot.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: Tween<double>(begin: 0.88, end: 1).animate(_scale),
+      child: FadeTransition(
+        opacity: widget.animation,
+        child: SnapshotWidget(
+          // Off until an exit starts; the switcher's reverse status turns it
+          // on above. Re-captures instead of stretching if the card is mid
+          // layout transition when the exit begins.
+          autoresize: true,
+          controller: _snapshot,
+          child: widget.child,
+        ),
+      ),
     );
   }
 }
@@ -390,6 +491,11 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
   late final List<_ConfettiParticle> _particles =
       _ConfettiParticle.generate(16);
 
+  /// Falloff sprites shared by the card's two outer-glow layers (glow
+  /// layer 1 and 1b), so the 60-blur shape is baked once and drawn twice.
+  /// Owned here so the images are disposed with the card.
+  final GlowSpriteStore _glowSprites = GlowSpriteStore();
+
   @override
   void didUpdateWidget(covariant _DhikrReminderCard oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -409,6 +515,7 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
     _glowController.dispose();
     _textGlowController.dispose();
     _confettiController.dispose();
+    _glowSprites.dispose();
     super.dispose();
   }
 
@@ -422,11 +529,21 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
     final entry = reminder.entry;
     final progress = reminder.hasTarget ? reminder.count / entry.amount : null;
 
-    final palette = _DhikrPalette.forState(isComplete: reminder.isComplete);
+    final palette = DhikrPalette.forState(isComplete: reminder.isComplete);
     final accent = palette.accent;
+
+    // Everything about the dhikr text that affects its layout, minus the size:
+    // [DhikrFitText] measures with this and solves for the size itself.
+    final dhikrTextStyle = (theme.textTheme.displayLarge ?? const TextStyle())
+        .copyWith(fontFamily: 'Naksh', wordSpacing: 12, height: 1.6);
 
     final widgetWidth = widget.maxWidth * 0.75;
     final widgetHeight = widget.maxHeight * 0.75;
+
+    // The glow layers bake their sprites at the current display density;
+    // re-set on every build so a density change re-bakes them (see
+    // [GlowSpriteStore.devicePixelRatio]).
+    _glowSprites.devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
 
     return Material(
       color: Colors.transparent,
@@ -438,59 +555,87 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
           children: [
             // 1. Isolated Background Glow Layer — static, no longer tied to
             // the tap animation. Its own alpha still reacts to `isComplete`
-            // via `AnimatedContainer`'s implicit transition, but nothing
-            // here scales or fades on tap anymore.
+            // via the eased transition below, but nothing here scales or
+            // fades on tap anymore.
+            //
+            // The three outer-blur shadows it used to paint through an
+            // `AnimatedContainer` decoration are drawn by
+            // [AmbientGlowPainter] instead: at rest every shadow is a
+            // pre-rendered sprite from [_glowSprites], so the frames the
+            // dust ticker keeps producing re-draw textures rather than
+            // re-running screen-sized gaussian blur passes — only the 1.5s
+            // `isComplete` ease itself still paints the lerped decoration
+            // live, which is exactly what AnimatedContainer recorded before.
             Positioned.fill(
-              child: AnimatedContainer(
+              child: TweenAnimationBuilder<double>(
+                // Carries the `isComplete` ease that AnimatedContainer used
+                // to give this layer: 0 while the reminder is in progress,
+                // eased to 1 once complete. `begin` mirrors `end` so nothing
+                // animates on the first frame, and TweenAnimationBuilder
+                // retargets from wherever it currently is, exactly like the
+                // implicit AnimatedContainer did.
+                tween: Tween<double>(
+                  begin: reminder.isComplete ? 1.0 : 0.0,
+                  end: reminder.isComplete ? 1.0 : 0.0,
+                ),
                 duration: DhikrTimers.layoutTransition,
                 curve: Curves.easeOutCubic,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(35),
-                  boxShadow: [
-                    BoxShadow(
-                      color: accent.withValues(
-                          alpha: reminder.isComplete ? 0.35 : 0),
-                      blurStyle: BlurStyle.outer,
-                      blurRadius: 28,
-                      spreadRadius: reminder.isComplete ? 1 : 0,
+                builder: (context, progress, _) {
+                  return CustomPaint(
+                    painter: AmbientGlowPainter(
+                      store: _glowSprites,
+                      accent: accent,
+                      progress: progress,
                     ),
-                    BoxShadow(
-                      color: accent.withValues(
-                          alpha: reminder.isComplete ? 0 : 0.68),
-                      blurStyle: BlurStyle.outer,
-                      blurRadius: 60,
-                    ),
-                    BoxShadow(
-                      color: accent.withValues(
-                          alpha: reminder.isComplete ? 0 : 0.48),
-                      blurStyle: BlurStyle.outer,
-                      blurRadius: 10,
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
             // 1b. Duplicated biggest glow (the blurRadius: 60 shadow above),
-            // isolated onto its own layer whose opacity — not scale — pulses
-            // from 0 up to its max strength and back on every tap.
+            // whose strength pulses from 0.4 up to its max and back on every
+            // tap. The pulse rides the shadow's own alpha rather than a
+            // `FadeTransition` around this container: a composited opacity
+            // layer over a decoration that paints *only* an outer-blur shadow
+            // makes Impeller break on
+            // "Contents::SetInheritedOpacity should never be called when
+            // Contents::CanAcceptOpacity returns false" once per frame — see
+            // impeller_investigation.md. Folding the same value into the
+            // shadow's colour is visually equivalent and costs no layer.
             Positioned.fill(
-              child: FadeTransition(
-                opacity: _glowOpacity,
-                child: AnimatedContainer(
-                  duration: DhikrTimers.layoutTransition,
-                  curve: Curves.easeOutCubic,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(35),
-                    boxShadow: [
-                      BoxShadow(
-                        color: accent.withValues(
-                            alpha: reminder.isComplete ? 0 : 1),
-                        blurStyle: BlurStyle.outer,
-                        blurRadius: 60,
-                      ),
-                    ],
-                  ),
+              child: TweenAnimationBuilder<double>(
+                // Carries the `isComplete` ease that `AnimatedContainer` used to
+                // give this shadow: 1 while the reminder is open, eased down to
+                // 0 once it is completed. `begin` mirrors `end` so nothing
+                // animates on the first frame, and TweenAnimationBuilder
+                // retargets from wherever it currently is, so a tap pulse
+                // mid-flight never restarts this ease.
+                tween: Tween(
+                  begin: reminder.isComplete ? 0.0 : 1.0,
+                  end: reminder.isComplete ? 0.0 : 1.0,
                 ),
+                duration: DhikrTimers.layoutTransition,
+                curve: Curves.easeOutCubic,
+                builder: (context, completion, _) {
+                  return AnimatedBuilder(
+                    animation: _glowController,
+                    // The pulse reads the controller's value directly on each
+                    // frame — exactly what `FadeTransition` used to apply to the
+                    // whole layer — so the flash keeps its 180ms attack instead
+                    // of being re-eased.
+                    builder: (context, _) {
+                      return CustomPaint(
+                        // No blur pass: the 60-blur halo is the baked
+                        // sprite, re-tinted every frame the pulse or the
+                        // completion ease moves (see [PulseGlowPainter]).
+                        painter: PulseGlowPainter(
+                          store: _glowSprites,
+                          accent: accent,
+                          alpha: completion * _glowOpacity.value,
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
             ),
             // 2. Foreground Card Layer
@@ -614,70 +759,59 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
                             // way the card's own `_glowOpacity` flashes the
                             // outer card glow, but with its own controller so
                             // it's free to be tuned independently later.
-                            AnimatedBuilder(
-                              animation: _textGlowController,
-                              builder: (context, _) {
-                                final glowColor = !reminder.isComplete
-                                    ? const Color.fromARGB(255, 255, 215, 128)
-                                    : accent;
-                                return Text(
-                                  entry.name,
-                                  textAlign: TextAlign.center,
-                                  style: theme.textTheme.displayLarge?.copyWith(
-                                    fontSize: entry.name.length < 41
-                                        ? lerpDouble(
-                                            60,
-                                            140,
-                                            clampDouble(
-                                              25 / entry.name.length,
-                                              0,
-                                              1,
-                                            ))
-                                        : lerpDouble(
-                                            30,
-                                            58,
-                                            clampDouble(
-                                              41 / entry.name.length,
-                                              0,
-                                              1,
-                                            ),
-                                          ),
-                                    fontFamily: 'Naksh',
-                                    wordSpacing: 12,
-                                    height: 1.6,
-                                    shadows: [
-                                      Shadow(
-                                        color: (!reminder.isComplete
-                                                ? const Color(0xFFE8B058)
-                                                : accent)
-                                            .withValues(alpha: 0.85),
-                                        blurRadius: 10,
-                                      ),
-                                      Shadow(
-                                        color: (!reminder.isComplete
-                                                ? const Color(0xFFD48B28)
-                                                : accent)
-                                            .withValues(alpha: 0.60),
-                                        blurRadius: 24,
-                                      ),
-                                      Shadow(
-                                        color: (!reminder.isComplete
-                                                ? const Color(0xFFB36715)
-                                                : accent)
-                                            .withValues(alpha: 0.35),
-                                        blurRadius: 30,
-                                      ),
-                                      Shadow(
-                                        offset: const Offset(-3, -12),
-                                        color: glowColor.withValues(
-                                          alpha: 0.6 + _textGlowOpacity.value,
+                            DhikrFitText(
+                              text: entry.name,
+                              style: dhikrTextStyle,
+                              // Keeps the text clear of the corner ornaments
+                              // and the "touch anywhere" hint pinned to the
+                              // frame's bottom edge.
+                              reserve: const EdgeInsets.symmetric(vertical: 24),
+                              builder: (context, fontSize) => AnimatedBuilder(
+                                animation: _textGlowController,
+                                builder: (context, _) {
+                                  final glowColor = !reminder.isComplete
+                                      ? const Color.fromARGB(255, 255, 215, 128)
+                                      : accent;
+                                  return Text(
+                                    entry.name,
+                                    textAlign: TextAlign.center,
+                                    textScaler: TextScaler.noScaling,
+                                    style: dhikrTextStyle.copyWith(
+                                      fontSize: fontSize,
+                                      shadows: [
+                                        Shadow(
+                                          color: (!reminder.isComplete
+                                                  ? const Color(0xFFE8B058)
+                                                  : accent)
+                                              .withValues(alpha: 0.85),
+                                          blurRadius: 10,
                                         ),
-                                        blurRadius: 60,
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
+                                        Shadow(
+                                          color: (!reminder.isComplete
+                                                  ? const Color(0xFFD48B28)
+                                                  : accent)
+                                              .withValues(alpha: 0.60),
+                                          blurRadius: 24,
+                                        ),
+                                        Shadow(
+                                          color: (!reminder.isComplete
+                                                  ? const Color(0xFFB36715)
+                                                  : accent)
+                                              .withValues(alpha: 0.35),
+                                          blurRadius: 30,
+                                        ),
+                                        Shadow(
+                                          offset: const Offset(-3, -12),
+                                          color: glowColor.withValues(
+                                            alpha: 0.6 + _textGlowOpacity.value,
+                                          ),
+                                          blurRadius: 60,
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
                             IgnorePointer(
                               child: AnimatedBuilder(

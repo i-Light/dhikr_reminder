@@ -9,6 +9,10 @@
   "settingsDhikrSubtitle": "غير كمية تكرار الأذكار، والعدد، وضيف، وشيل أذكار",
   "settingsDhikrIntervalLabel": "الفاصل الزمني للتذكير",
   "settingsDhikrIntervalSubtitle": "كل قد ايه يظهر تذكير الذكر، بالدقايق",
+  "settingsDhikrSoundLabel": "الصوت",
+  "settingsDhikrSoundSubtitle": "تشغيل صوت لما يظهر التذكير",
+  "settingsDhikrUseChanceLabel": "نسبة الظهور",
+  "settingsDhikrUseChanceSubtitle": "مقفول: كل الأذكار فرصتها واحدة. مفتوح: حدد كل ذكر يظهر قد ايه",
   "settingsDhikrNameColumn": "الذكر",
   "settingsDhikrAmountColumn": "العدد",
   "settingsDhikrChanceColumn": "نسبة الظهور",
@@ -20,5 +24,14 @@
   "commonSave": "حفظ",
 
   "dhikrReminderTitle": "تذكير باللَّه",
-  "dhikrReminderTouchEverywhereTip": "أضغط فى اى مكان للعد"
+  "dhikrReminderTouchEverywhereTip": "أضغط فى اى مكان للعد",
+
+  "trayOpenApp": "فتح التطبيق",
+  "trayNextDhikr": "الذكر الجاي",
+  "trayNextDhikrIn": "بعد {time}",
+  "@trayNextDhikrIn": { "placeholders": { "time": { "type": "String" } } },
+  "trayNextDhikrPending": "مستني الإعدادات",
+  "traySoundOn": "الصوت شغال",
+  "traySoundOff": "الصوت مقفول",
+  "trayQuit": "إغلاق التطبيق"
 }

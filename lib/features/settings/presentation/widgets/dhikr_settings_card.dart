@@ -22,6 +22,7 @@ class DhikrCard extends ConsumerStatefulWidget {
 class _DhikrCardState extends ConsumerState<DhikrCard> {
   List<DhikrEntry>? _local;
   int? _localInterval;
+  bool? _localUseChance;
 
   @override
   Widget build(BuildContext context) {
@@ -35,9 +36,11 @@ class _DhikrCardState extends ConsumerState<DhikrCard> {
     if (settings.isLoaded) {
       _local ??= settings.entries;
       _localInterval ??= settings.intervalMinutes;
+      _localUseChance ??= settings.useChance;
     }
     final local = _local ?? settings.entries;
     final interval = _localInterval ?? settings.intervalMinutes;
+    final useChance = _localUseChance ?? settings.useChance;
 
     void updateEntry(int index, DhikrEntry entry) {
       setState(() {
@@ -101,6 +104,23 @@ class _DhikrCardState extends ConsumerState<DhikrCard> {
               ),
             ],
           ),
+          _SwitchRow(
+            icon: settings.isMuted ? Icons.volume_off : Icons.volume_up,
+            title: l10n.settingsDhikrSoundLabel,
+            subtitle: l10n.settingsDhikrSoundSubtitle,
+            // Applies immediately, like the tray menu's mute toggle it mirrors
+            // — it is not part of the draft that Save commits.
+            value: !settings.isMuted,
+            onChanged: (on) =>
+                ref.read(dhikrSettingsProvider.notifier).updateMuted(!on),
+          ),
+          _SwitchRow(
+            icon: Icons.balance,
+            title: l10n.settingsDhikrUseChanceLabel,
+            subtitle: l10n.settingsDhikrUseChanceSubtitle,
+            value: useChance,
+            onChanged: (value) => setState(() => _localUseChance = value),
+          ),
           const Divider(),
           Row(
             children: [
@@ -129,46 +149,48 @@ class _DhikrCardState extends ConsumerState<DhikrCard> {
                   )
                 ]),
               ),
-              SizedBox(
-                width: 150,
-                child: Row(spacing: 16, children: [
-                  // A scale icon, not a percent sign: the number is a weight
-                  // relative to the other entries, and a "%" was quietly
-                  // promising a probability this has never computed.
-                  Icon(Icons.balance, color: headerStyle?.color),
-                  Text(
-                    l10n.settingsDhikrChanceColumn,
-                    style: headerStyle,
-                    textAlign: TextAlign.center,
-                  )
-                ]),
-              ),
+              if (useChance)
+                SizedBox(
+                  width: 150,
+                  child: Row(spacing: 16, children: [
+                    // A scale icon, not a percent sign: the number is a weight
+                    // relative to the other entries, and a "%" was quietly
+                    // promising a probability this has never computed.
+                    Icon(Icons.balance, color: headerStyle?.color),
+                    Text(
+                      l10n.settingsDhikrChanceColumn,
+                      style: headerStyle,
+                      textAlign: TextAlign.center,
+                    )
+                  ]),
+                ),
             ],
           ),
           // Spelled out rather than left to the column header, because
           // "chance" reads as a percentage to everyone who has not been told
           // otherwise, and the difference shows up the first time someone sets
           // one entry to 1 and wonders why it still appears constantly.
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: 12,
-            children: [
-              const SizedBox(width: 32),
-              Icon(
-                Icons.info_outline,
-                size: 16,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              Expanded(
-                child: Text(
-                  l10n.settingsDhikrChanceExplainer,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+          if (useChance)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 12,
+              children: [
+                const SizedBox(width: 32),
+                Icon(
+                  Icons.info_outline,
+                  size: 16,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                Expanded(
+                  child: Text(
+                    l10n.settingsDhikrChanceExplainer,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
           ConstrainedBox(
             constraints: const BoxConstraints(maxHeight: _listMaxHeight),
             child: ListView.separated(
@@ -178,6 +200,7 @@ class _DhikrCardState extends ConsumerState<DhikrCard> {
               itemBuilder: (context, i) => _DhikrRow(
                 key: ValueKey(local[i].id),
                 entry: local[i],
+                showChance: useChance,
                 onChanged: (entry) => updateEntry(i, entry),
                 onDelete: () => deleteEntry(i),
               ),
@@ -204,6 +227,7 @@ class _DhikrCardState extends ConsumerState<DhikrCard> {
                               ref.read(dhikrSettingsProvider.notifier);
                           await notifier.updateEntries(local);
                           await notifier.updateInterval(interval);
+                          await notifier.updateUseChance(useChance);
                           if (!context.mounted) return;
                           AppToast.success(context, l10n.settingsDhikrSaved);
                         }
@@ -220,15 +244,64 @@ class _DhikrCardState extends ConsumerState<DhikrCard> {
   }
 }
 
+/// An icon, a two-line label and a [Switch], laid out to line up with the
+/// interval row above it.
+class _SwitchRow extends StatelessWidget {
+  const _SwitchRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      spacing: 16,
+      children: [
+        const SizedBox(width: 24),
+        Icon(icon, color: theme.colorScheme.onSurfaceVariant),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: theme.textTheme.bodyMedium),
+              Text(
+                subtitle,
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
+            ],
+          ),
+        ),
+        Switch(value: value, onChanged: onChanged),
+      ],
+    );
+  }
+}
+
 class _DhikrRow extends StatelessWidget {
   const _DhikrRow({
     super.key,
     required this.entry,
+    required this.showChance,
     required this.onChanged,
     required this.onDelete,
   });
 
   final DhikrEntry entry;
+
+  /// False while the chance option is off: the field is hidden, and a stored
+  /// chance of 0 stops dimming the row, since it no longer excludes anything.
+  final bool showChance;
   final ValueChanged<DhikrEntry> onChanged;
   final VoidCallback onDelete;
 
@@ -253,7 +326,7 @@ class _DhikrRow extends StatelessWidget {
         Expanded(
           child: AnimatedOpacity(
             duration: const Duration(milliseconds: 200),
-            opacity: entry.chance == 0 ? 0.45 : 1,
+            opacity: showChance && entry.chance == 0 ? 0.45 : 1,
             child: Row(
               children: [
                 Expanded(
@@ -275,14 +348,16 @@ class _DhikrRow extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 12),
-        _CounterField(
-          value: entry.chance,
-          min: dhikrChanceMin,
-          max: dhikrChanceMax,
-          semanticsLabel: '${entry.name} chance',
-          onChanged: (value) => onChanged(entry.copyWith(chance: value)),
-        ),
+        if (showChance) ...[
+          const SizedBox(width: 12),
+          _CounterField(
+            value: entry.chance,
+            min: dhikrChanceMin,
+            max: dhikrChanceMax,
+            semanticsLabel: '${entry.name} chance',
+            onChanged: (value) => onChanged(entry.copyWith(chance: value)),
+          ),
+        ],
       ],
     );
   }
