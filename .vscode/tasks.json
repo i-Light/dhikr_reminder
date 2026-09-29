@@ -16,8 +16,8 @@
         // Builds only the installer (dist\dhikr_reminder-<ver>-setup.exe);
         // needs Inno Setup 7. Keep exactly ONE of these two modes uncommented.
         // Local: build as-is. The version is not bumped
-        "-Mode", "Local", "-InstallHere",
-        // "-Mode", "Publish"//, "-Bump", "minor"//, "major"
+        // "-Mode", "Local", "-InstallHere",
+        "-Mode", "Publish"//, "-Bump", "minor"//, "major"
         // Publish: run analyze + tests, bump the version in pubspec.yaml,
         // build, commit + tag + push, and publish the installer as a GitHub
         // Release (installed copies update themselves from it). Needs a clean
