@@ -162,10 +162,22 @@ function Get-GitHubToken {
     }
     # Whatever Git itself pushes with (Git Credential Manager, GitHub Desktop's
     # sign-in): no separate token to create for the common case.
+    #
+    # The request goes in through a file and cmd.exe's `<`, not a PowerShell
+    # pipe: from a VS Code task (no console) Windows PowerShell 5.1 does not
+    # hand the piped text to git intact, and `git credential fill` answers
+    # "credential missing protocol field" with nothing on stdout.
+    $requestFile = [IO.Path]::GetTempFileName()
     $previous = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
-    try { $reply = "protocol=https`nhost=github.com`n`n" | git credential fill 2>$null }
-    finally { $ErrorActionPreference = $previous }
+    try {
+        [IO.File]::WriteAllBytes($requestFile, [Text.Encoding]::ASCII.GetBytes("protocol=https`nhost=github.com`n`n"))
+        $reply = cmd.exe /c "git credential fill < `"$requestFile`" 2>nul"
+    }
+    finally {
+        $ErrorActionPreference = $previous
+        Remove-Item -LiteralPath $requestFile -Force -ErrorAction SilentlyContinue
+    }
     foreach ($line in $reply) {
         if ($line -like 'password=*') { return $line.Substring('password='.Length) }
     }
