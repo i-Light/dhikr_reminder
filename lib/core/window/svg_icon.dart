@@ -6,7 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 /// Where the app's one icon lives. Everything else — the tray icon, the tray
 /// icon while quitting, the .exe's own icon (see `tool/generate_app_icon.dart`)
 /// — is drawn from this file, so replacing it is the whole job.
-const kAppIconSvgAsset = 'assets/images/app_icon.svg';
+const kAppIconSvgAsset = 'assets/images/logo.svg';
 
 /// The sizes packed into every generated .ico. Windows picks the nearest one
 /// for the tray (16 px at 100% scaling, up to 32 px at 200%), the taskbar and
@@ -23,7 +23,10 @@ Future<Uint8List> renderSvgAsIco(
   List<int> sizes = kAppIconSizes,
   bool dimmed = false,
 }) async {
-  final info = await vg.loadPicture(SvgStringLoader(svg), null);
+  final info = await vg.loadPicture(
+    SvgStringLoader(inlineUsedImages(svg)),
+    null,
+  );
   try {
     final images = <Uint8List>[];
     for (final size in sizes) {
@@ -33,6 +36,49 @@ Future<Uint8List> renderSvgAsIco(
   } finally {
     info.picture.dispose();
   }
+}
+
+/// Rewrites every `<use xlink:href="#id"/>` that points at an `<image id="id">`
+/// into an `<image>` drawn in place.
+///
+/// Design tools (Affinity, for one) export raster parts of a logo — gradient
+/// meshes, textures — as an `<image>` in `<defs>` shown through `<use>`.
+/// flutter_svg silently skips such a `<use>`, so those parts vanish from the
+/// icon. Inlining lets the SVG stay exactly as exported.
+String inlineUsedImages(String svg) {
+  final images = <String, String>{}; // id -> attributes other than the id
+  final imageTag = RegExp(r'<image\b([^>]*?)/?>', dotAll: true);
+  for (final match in imageTag.allMatches(svg)) {
+    final attributes = match.group(1)!;
+    final id = RegExp(r'\bid="([^"]*)"').firstMatch(attributes)?.group(1);
+    if (id == null) continue;
+    images[id] = attributes.replaceFirst(RegExp(r'\s*\bid="[^"]*"'), '');
+  }
+  if (images.isEmpty) return svg;
+
+  return svg.replaceAllMapped(
+    RegExp(r'<use\b([^>]*?)/?>', dotAll: true),
+    (use) {
+      final attributes = use.group(1)!;
+      final ref = RegExp(r'''(?:xlink:)?href\s*=\s*["']#([^"']*)["']''')
+          .firstMatch(attributes)
+          ?.group(1);
+      final found = images[ref];
+      if (found == null) return use.group(0)!;
+      var image = found;
+      // The <use>'s own x/y/width/height win over the image's, as in SVG.
+      String? own(String name) =>
+          RegExp('\\b$name="([^"]*)"').firstMatch(attributes)?.group(1);
+      final merged = StringBuffer();
+      for (final name in const ['x', 'y', 'width', 'height']) {
+        final value = own(name);
+        if (value == null) continue;
+        image = image.replaceAll(RegExp('\\s*\\b$name="[^"]*"'), '');
+        merged.write(' $name="${value.replaceAll('px', '')}"');
+      }
+      return '<image$image$merged/>';
+    },
+  );
 }
 
 Future<Uint8List> _renderPng(PictureInfo info, int size, bool dimmed) async {
@@ -51,9 +97,8 @@ Future<Uint8List> _renderPng(PictureInfo info, int size, bool dimmed) async {
         ]),
     );
   }
-  final scale = size / (info.size.width > info.size.height
-      ? info.size.width
-      : info.size.height);
+  final scale = size /
+      (info.size.width > info.size.height ? info.size.width : info.size.height);
   canvas
     ..translate(
       (size - info.size.width * scale) / 2,
@@ -75,7 +120,8 @@ Future<Uint8List> _renderPng(PictureInfo info, int size, bool dimmed) async {
 /// each image can simply be a PNG.
 Uint8List _packIco(List<int> sizes, List<Uint8List> pngs) {
   final headerLength = 6 + 16 * pngs.length;
-  final total = headerLength + pngs.fold<int>(0, (sum, png) => sum + png.length);
+  final total =
+      headerLength + pngs.fold<int>(0, (sum, png) => sum + png.length);
   final bytes = Uint8List(total);
   final view = ByteData.sublistView(bytes);
   view

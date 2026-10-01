@@ -1,5 +1,5 @@
 // Draws the .exe's icon (windows/runner/resources/app_icon.ico) from the app's
-// one icon, assets/images/app_icon.svg.
+// one icon, assets/images/logo.svg.
 //
 // Run by scripts/build_windows.ps1 before every build:
 //

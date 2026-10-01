@@ -326,14 +326,23 @@ try {
         $version = $newVersion
     }
 
-    # The .exe's icon is drawn from assets/images/app_icon.svg, the app's one
+    # The .exe's icon is drawn from assets/images/logo.svg, the app's one
     # icon; the generated .ico is git-ignored, so it is made fresh every build.
-    Write-Host 'Generating the app icon from assets/images/app_icon.svg' -ForegroundColor Cyan
+    Write-Host 'Generating the app icon from assets/images/logo.svg' -ForegroundColor Cyan
     Invoke-Native 'generate app icon' { flutter test --no-pub tool/generate_app_icon.dart }
 
     Write-Host "Building $name v$version (Release) for Windows x64" -ForegroundColor Cyan
 
-    Invoke-Native 'flutter build windows' { flutter build windows --release }
+    # `flutter run` (debug) leaves a ~70 MB kernel_blob.bin in build\flutter_assets,
+    # and the release build copies that whole folder into the bundle -- so the
+    # "release" installer silently ships the debug-mode Dart code next to the
+    # real AOT app.so. Clear it out so only release assets get bundled.
+    $staleAssets = Join-Path $RepoRoot 'build\flutter_assets'
+    if (Test-Path -LiteralPath $staleAssets) { Remove-Item -LiteralPath $staleAssets -Recurse -Force }
+
+    # --split-debug-info moves the symbol tables out of app.so (it is not
+    # obfuscated, only smaller); the symbols are kept in build\symbols.
+    Invoke-Native 'flutter build windows' { flutter build windows --release --split-debug-info=build/symbols }
 
     # Flutter has moved this folder around across releases, so search for the
     # .exe under the Release folder instead of hardcoding one layout.
@@ -347,6 +356,11 @@ try {
     # The .exe is nothing without data\ (flutter_assets, icudtl.dat).
     if (-not (Test-Path (Join-Path $builtRoot 'data\flutter_assets'))) {
         throw 'Built folder is missing data\flutter_assets - refusing to ship an .exe that cannot start.'
+    }
+    # A release bundle runs from data\app.so; a kernel_blob.bin next to it is
+    # debug-mode leftovers (~70 MB of dead weight).
+    if (Test-Path (Join-Path $builtRoot 'data\flutter_assets\kernel_blob.bin')) {
+        throw 'Built folder contains kernel_blob.bin (debug leftovers) - refusing to package a bloated installer.'
     }
 
     New-Item -ItemType Directory -Path $OutDir -Force | Out-Null

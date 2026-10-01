@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.14)
 project(runner LANGUAGES CXX)
 
-# resources/app_icon.ico is generated from assets/images/app_icon.svg, not
+# resources/app_icon.ico is generated from assets/images/logo.svg, not
 # committed. scripts/build_windows.ps1 makes it on every release build; after a
 # fresh checkout, `flutter run` needs it made once by hand.
 if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/resources/app_icon.ico")
   message(FATAL_ERROR "windows/runner/resources/app_icon.ico is missing. "
-    "Generate it from assets/images/app_icon.svg with: "
+    "Generate it from assets/images/logo.svg with: "
     "flutter test tool/generate_app_icon.dart")
 endif()
 

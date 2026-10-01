@@ -15,7 +15,9 @@
       "name": "Dhikr Reminder (Windows)",
       "request": "launch",
       "type": "dart",
-      "deviceId": "windows"
+      "deviceId": "windows",
+      // Regenerates windows/runner/resources/app_icon.ico from logo.svg.
+      "preLaunchTask": "Generate app icon"
     },
     {
       // No Chrome configuration here on purpose: `flutter create` was run for
