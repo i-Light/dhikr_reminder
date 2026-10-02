@@ -5,6 +5,12 @@ anywhere on the card to count it off; it fades once you reach its target, and th
 next one arrives on the interval. Nothing else — no accounts, no database. The only
 network use is the updater below.
 
+Opening the app (left-click its tray icon) shows two pages behind one bottom bar:
+the azkar **settings** the reminders are drawn from, and a searchable **dhikr
+library** (موسوعة الأذكار). The library is content, not user data — its entries live
+in `lib/features/library/data/` and nothing there can be edited or saved from the
+app.
+
 It is a slice of [gratovo_toolbox](https://github.com/i-Light/gratovo_code)
 lifted out into its own project: the reminder overlay, the toast system it rides
 on, the azkar settings card and the providers behind them. The reminder code is
@@ -50,17 +56,44 @@ lib/
   app.dart                     MaterialApp, theme, locales, and the two overlays
   core/
     constants/app_colors.dart
+    navigation/main_shell.dart the two pages behind one bottom bar
     theme/                     palette, GradientText / GradientBox
     toast/                     the reminder overlay, toasts, dust, glow, border frame
     update/                    the silent self-updater (GitHub Releases -> Setup)
     widgets/                   CollapsibleCard (what the settings card is built from)
+  features/library/
+    domain/dhikr_item.dart     one entry, its tags, and the tashkeel stripper
+    data/                      every entry — one `const` list per section
+    application/               the view state: search, tag filter, tashkeel, size
+    presentation/              the library page, the card, the two popups
   features/settings/
     application/               dhikr persistence + the reminder scheduler
     presentation/              home_screen.dart + the azkar settings card
   l10n/                        app_en.arb, app_ar.arb (generated: l10n/gen/)
 scripts/                       build_windows.ps1 (build + release), installer.iss
-test/                          the scheduler's weighted pick + the tap counter
+test/                          the weighted pick, the tap counter, the library
 ```
+
+### The dhikr library
+
+`dhikrLibrary` (`features/library/data/dhikr_library.dart`) is one `const` list,
+assembled from the per-section files under `data/sections/`. The split is only so
+no single file runs to thousands of lines — the screen never cares which file an
+entry lives in, only about its `tags`.
+
+- **Search** is tashkeel-insensitive: `matchesQuery` strips the diacritics off both
+  the needle and the haystack, so typing `الله` finds a vocalised `اللَّه`. It looks
+  at the text, the subtitle, the reference and the description.
+- **The tag filter** is additive: an empty selection means "no filter", and each
+  further group *widens* the list rather than replacing the last one.
+- **The tashkeel toggle** is a formatting change at render time — `stripTashkeel`
+  removes the vowel marks and leaves the letters, so the data is stored vocalised
+  once and never duplicated.
+- **The text size and the tashkeel choice** are remembered in
+  `SharedPreferences`; the search text and the tag filter deliberately are not.
+- The dhikr itself renders in the bundled `Naksh` face (the reminder card's own),
+  at a line height tall enough that the tashkeel of one line cannot collide with
+  the next.
 
 ### The one rule that matters
 

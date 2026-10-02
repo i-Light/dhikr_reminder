@@ -1,3 +1,4 @@
+import 'package:dhikr_reminder/core/navigation/main_shell.dart';
 import 'package:dhikr_reminder/core/theme/app_theme.dart';
 import 'package:dhikr_reminder/core/toast/dhikr_reminder_overlay.dart';
 import 'package:dhikr_reminder/core/toast/toast_overlay.dart';
@@ -5,7 +6,6 @@ import 'package:dhikr_reminder/core/window/app_shell.dart';
 import 'package:dhikr_reminder/core/window/reminder_prewarm.dart';
 import 'package:dhikr_reminder/core/window/splash_surface.dart';
 import 'package:dhikr_reminder/core/window/tray_menu_panel.dart';
-import 'package:dhikr_reminder/features/settings/presentation/home_screen.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,7 +31,9 @@ class DhikrReminderApp extends StatelessWidget {
       locale: const Locale('ar', 'EG'),
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
-      home: const HomeScreen(),
+      // `MainShell` is the app's own two pages (settings, the azkar library)
+      // behind one bottom bar — see `core/navigation/main_shell.dart`.
+      home: const MainShell(),
       // `DhikrReminderHost` sits in `builder`, above everything the window can
       // show, and that placement is the whole reason the reminders work: it is
       // the only place `dhikrReminderSchedulerProvider` is watched, and a

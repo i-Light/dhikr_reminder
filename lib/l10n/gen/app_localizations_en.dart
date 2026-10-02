@@ -182,4 +182,162 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get updateAutoSubtitle =>
       'Download new versions in the background and install them when the app is idle';
+
+  @override
+  String get navSettings => 'Settings';
+
+  @override
+  String get navLibrary => 'Dhikr Library';
+
+  @override
+  String get libraryTitle => 'Dhikr Library';
+
+  @override
+  String get librarySubtitle =>
+      'Search every dhikr and dua, and filter by group.';
+
+  @override
+  String get librarySearchHint => 'Search azkar and duas…';
+
+  @override
+  String get librarySearchClear => 'Clear search';
+
+  @override
+  String libraryResultsCount(int count) {
+    return '$count entries';
+  }
+
+  @override
+  String get libraryEmptyTitle => 'Nothing matches your search';
+
+  @override
+  String get libraryEmptyHint => 'Try another word, or clear the filters.';
+
+  @override
+  String get libraryEmptyAction => 'Clear filters';
+
+  @override
+  String get libraryQuickSettings => 'Quick settings';
+
+  @override
+  String get libraryTashkeelLabel => 'Show tashkeel';
+
+  @override
+  String get libraryTashkeelSubtitle => 'Show the vowel marks on the letters';
+
+  @override
+  String get libraryFontSizeLabel => 'Font size';
+
+  @override
+  String get libraryFontIncrease => 'Increase font size';
+
+  @override
+  String get libraryFontDecrease => 'Decrease font size';
+
+  @override
+  String libraryFontValue(int size) {
+    return '$size px';
+  }
+
+  @override
+  String get libraryClose => 'Close';
+
+  @override
+  String get libraryFilterTitle => 'Filter by group';
+
+  @override
+  String get libraryFilterSubtitle =>
+      'Pick one or more groups; with none picked, everything shows';
+
+  @override
+  String get libraryFilterAll => 'All';
+
+  @override
+  String get libraryFilterClear => 'Clear filters';
+
+  @override
+  String libraryFilterCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get tagMorning => 'Morning adhkar';
+
+  @override
+  String get tagEvening => 'Evening adhkar';
+
+  @override
+  String get tagAfterPrayer => 'After-prayer adhkar';
+
+  @override
+  String get tagTasabih => 'Tasabih';
+
+  @override
+  String get tagSleep => 'Before sleep';
+
+  @override
+  String get tagWaking => 'On waking';
+
+  @override
+  String get tagPrayer => 'In prayer';
+
+  @override
+  String get tagJawamiDuas => 'Comprehensive duas';
+
+  @override
+  String get tagPropheticDuas => 'Prophetic duas';
+
+  @override
+  String get tagQuranicDuas => 'Quranic duas';
+
+  @override
+  String get tagProphetsDuas => 'Duas of the prophets';
+
+  @override
+  String get tagMisc => 'Miscellaneous';
+
+  @override
+  String get tagAdhan => 'Adhan adhkar';
+
+  @override
+  String get tagMosque => 'Mosque adhkar';
+
+  @override
+  String get tagWudu => 'Wudu adhkar';
+
+  @override
+  String get tagHome => 'Home adhkar';
+
+  @override
+  String get tagKhalaa => 'Washroom adhkar';
+
+  @override
+  String get tagFood => 'Food adhkar';
+
+  @override
+  String get tagHajjUmrah => 'Hajj & Umrah adhkar';
+
+  @override
+  String get tagKhatmQuran => 'Finishing the Quran';
+
+  @override
+  String get tagVirtueOfDua => 'Virtue of dua';
+
+  @override
+  String get tagVirtueOfDhikr => 'Virtue of dhikr';
+
+  @override
+  String get tagVirtueOfSuras => 'Virtue of the surahs';
+
+  @override
+  String get tagVirtueOfQuran => 'Virtue of the Quran';
+
+  @override
+  String get tagAsmaAllah => 'The 99 names of Allah';
+
+  @override
+  String get tagDuasForDeceased => 'Duas for the deceased';
+
+  @override
+  String get tagRuqyah => 'Ruqyah';
 }

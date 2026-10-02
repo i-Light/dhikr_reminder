@@ -397,6 +397,306 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Download new versions in the background and install them when the app is idle'**
   String get updateAutoSubtitle;
+
+  /// No description provided for @navSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get navSettings;
+
+  /// No description provided for @navLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'Dhikr Library'**
+  String get navLibrary;
+
+  /// No description provided for @libraryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Dhikr Library'**
+  String get libraryTitle;
+
+  /// No description provided for @librarySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search every dhikr and dua, and filter by group.'**
+  String get librarySubtitle;
+
+  /// No description provided for @librarySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search azkar and duas…'**
+  String get librarySearchHint;
+
+  /// No description provided for @librarySearchClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get librarySearchClear;
+
+  /// No description provided for @libraryResultsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} entries'**
+  String libraryResultsCount(int count);
+
+  /// No description provided for @libraryEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing matches your search'**
+  String get libraryEmptyTitle;
+
+  /// No description provided for @libraryEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another word, or clear the filters.'**
+  String get libraryEmptyHint;
+
+  /// No description provided for @libraryEmptyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get libraryEmptyAction;
+
+  /// No description provided for @libraryQuickSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick settings'**
+  String get libraryQuickSettings;
+
+  /// No description provided for @libraryTashkeelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show tashkeel'**
+  String get libraryTashkeelLabel;
+
+  /// No description provided for @libraryTashkeelSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the vowel marks on the letters'**
+  String get libraryTashkeelSubtitle;
+
+  /// No description provided for @libraryFontSizeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Font size'**
+  String get libraryFontSizeLabel;
+
+  /// No description provided for @libraryFontIncrease.
+  ///
+  /// In en, this message translates to:
+  /// **'Increase font size'**
+  String get libraryFontIncrease;
+
+  /// No description provided for @libraryFontDecrease.
+  ///
+  /// In en, this message translates to:
+  /// **'Decrease font size'**
+  String get libraryFontDecrease;
+
+  /// No description provided for @libraryFontValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} px'**
+  String libraryFontValue(int size);
+
+  /// No description provided for @libraryClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get libraryClose;
+
+  /// No description provided for @libraryFilterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by group'**
+  String get libraryFilterTitle;
+
+  /// No description provided for @libraryFilterSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick one or more groups; with none picked, everything shows'**
+  String get libraryFilterSubtitle;
+
+  /// No description provided for @libraryFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get libraryFilterAll;
+
+  /// No description provided for @libraryFilterClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get libraryFilterClear;
+
+  /// No description provided for @libraryFilterCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String libraryFilterCount(int count);
+
+  /// No description provided for @tagMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Morning adhkar'**
+  String get tagMorning;
+
+  /// No description provided for @tagEvening.
+  ///
+  /// In en, this message translates to:
+  /// **'Evening adhkar'**
+  String get tagEvening;
+
+  /// No description provided for @tagAfterPrayer.
+  ///
+  /// In en, this message translates to:
+  /// **'After-prayer adhkar'**
+  String get tagAfterPrayer;
+
+  /// No description provided for @tagTasabih.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasabih'**
+  String get tagTasabih;
+
+  /// No description provided for @tagSleep.
+  ///
+  /// In en, this message translates to:
+  /// **'Before sleep'**
+  String get tagSleep;
+
+  /// No description provided for @tagWaking.
+  ///
+  /// In en, this message translates to:
+  /// **'On waking'**
+  String get tagWaking;
+
+  /// No description provided for @tagPrayer.
+  ///
+  /// In en, this message translates to:
+  /// **'In prayer'**
+  String get tagPrayer;
+
+  /// No description provided for @tagJawamiDuas.
+  ///
+  /// In en, this message translates to:
+  /// **'Comprehensive duas'**
+  String get tagJawamiDuas;
+
+  /// No description provided for @tagPropheticDuas.
+  ///
+  /// In en, this message translates to:
+  /// **'Prophetic duas'**
+  String get tagPropheticDuas;
+
+  /// No description provided for @tagQuranicDuas.
+  ///
+  /// In en, this message translates to:
+  /// **'Quranic duas'**
+  String get tagQuranicDuas;
+
+  /// No description provided for @tagProphetsDuas.
+  ///
+  /// In en, this message translates to:
+  /// **'Duas of the prophets'**
+  String get tagProphetsDuas;
+
+  /// No description provided for @tagMisc.
+  ///
+  /// In en, this message translates to:
+  /// **'Miscellaneous'**
+  String get tagMisc;
+
+  /// No description provided for @tagAdhan.
+  ///
+  /// In en, this message translates to:
+  /// **'Adhan adhkar'**
+  String get tagAdhan;
+
+  /// No description provided for @tagMosque.
+  ///
+  /// In en, this message translates to:
+  /// **'Mosque adhkar'**
+  String get tagMosque;
+
+  /// No description provided for @tagWudu.
+  ///
+  /// In en, this message translates to:
+  /// **'Wudu adhkar'**
+  String get tagWudu;
+
+  /// No description provided for @tagHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home adhkar'**
+  String get tagHome;
+
+  /// No description provided for @tagKhalaa.
+  ///
+  /// In en, this message translates to:
+  /// **'Washroom adhkar'**
+  String get tagKhalaa;
+
+  /// No description provided for @tagFood.
+  ///
+  /// In en, this message translates to:
+  /// **'Food adhkar'**
+  String get tagFood;
+
+  /// No description provided for @tagHajjUmrah.
+  ///
+  /// In en, this message translates to:
+  /// **'Hajj & Umrah adhkar'**
+  String get tagHajjUmrah;
+
+  /// No description provided for @tagKhatmQuran.
+  ///
+  /// In en, this message translates to:
+  /// **'Finishing the Quran'**
+  String get tagKhatmQuran;
+
+  /// No description provided for @tagVirtueOfDua.
+  ///
+  /// In en, this message translates to:
+  /// **'Virtue of dua'**
+  String get tagVirtueOfDua;
+
+  /// No description provided for @tagVirtueOfDhikr.
+  ///
+  /// In en, this message translates to:
+  /// **'Virtue of dhikr'**
+  String get tagVirtueOfDhikr;
+
+  /// No description provided for @tagVirtueOfSuras.
+  ///
+  /// In en, this message translates to:
+  /// **'Virtue of the surahs'**
+  String get tagVirtueOfSuras;
+
+  /// No description provided for @tagVirtueOfQuran.
+  ///
+  /// In en, this message translates to:
+  /// **'Virtue of the Quran'**
+  String get tagVirtueOfQuran;
+
+  /// No description provided for @tagAsmaAllah.
+  ///
+  /// In en, this message translates to:
+  /// **'The 99 names of Allah'**
+  String get tagAsmaAllah;
+
+  /// No description provided for @tagDuasForDeceased.
+  ///
+  /// In en, this message translates to:
+  /// **'Duas for the deceased'**
+  String get tagDuasForDeceased;
+
+  /// No description provided for @tagRuqyah.
+  ///
+  /// In en, this message translates to:
+  /// **'Ruqyah'**
+  String get tagRuqyah;
 }
 
 class _AppLocalizationsDelegate
