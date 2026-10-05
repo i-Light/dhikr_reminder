@@ -42,6 +42,11 @@ const dhikrAmountMax = 1000;
 const _dhikrSchemaVersion = 2;
 const _dhikrSchemaPrefsKey = 'dhikr_reminder.dhikr.schema';
 
+/// Bounds for [DhikrEntry.dailyGoal]; 0 means the dhikr has no daily goal.
+const dailyGoalMin = 1;
+const dailyGoalMax = 100000;
+const dailyGoalDefault = 100;
+
 /// One azkar reminder: how many repetitions and how likely it is to be the
 /// one picked when a reminder fires. Per-device, same as
 /// `PythonEnvironmentSettings`.
@@ -51,6 +56,7 @@ class DhikrEntry {
     required this.name,
     this.amount = dhikrAmountMin,
     this.chance = dhikrChanceDefault,
+    this.dailyGoal = 0,
   });
 
   /// Stable across renames/reordering — rows are keyed on this, not their
@@ -65,12 +71,22 @@ class DhikrEntry {
   /// exist. 0 means this dhikr never fires as a reminder.
   final int chance;
 
-  DhikrEntry copyWith({String? name, int? amount, int? chance}) {
+  /// How many times to say this dhikr each day, or 0 for no goal (the
+  /// default). Only a dhikr with a goal shows a day counter.
+  final int dailyGoal;
+
+  DhikrEntry copyWith({
+    String? name,
+    int? amount,
+    int? chance,
+    int? dailyGoal,
+  }) {
     return DhikrEntry(
       id: id,
       name: name ?? this.name,
       amount: amount ?? this.amount,
       chance: chance ?? this.chance,
+      dailyGoal: dailyGoal ?? this.dailyGoal,
     );
   }
 
@@ -79,6 +95,7 @@ class DhikrEntry {
         'name': name,
         'amount': amount,
         'chance': chance,
+        'dailyGoal': dailyGoal,
       };
 
   /// [rescaleChance] converts a weight saved on the old 0-100 scale. Applied
@@ -101,6 +118,7 @@ class DhikrEntry {
           .clamp(dhikrAmountMin, dhikrAmountMax),
       chance: (rescaleChance ? _rescaleChance(storedChance) : storedChance)
           .clamp(dhikrChanceMin, dhikrChanceMax),
+      dailyGoal: (json['dailyGoal'] as int? ?? 0).clamp(0, dailyGoalMax),
     );
   }
 
