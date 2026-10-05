@@ -7,7 +7,11 @@ import 'package:dhikr_reminder/core/window/app_shell.dart';
 import 'package:dhikr_reminder/core/window/reminder_prewarm.dart';
 import 'package:dhikr_reminder/core/window/splash_surface.dart';
 import 'package:dhikr_reminder/core/window/tray_menu_panel.dart';
+import 'package:dhikr_reminder/features/mobile_reminders/mobile_reminder_host.dart';
+import 'package:dhikr_reminder/features/mobile_reminders/mobile_reminder_screen.dart';
+import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
+import 'package:dhikr_reminder/platform/app_platform.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -22,7 +26,7 @@ class DhikrReminderApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
-      title: 'Dhikr Reminder',
+      title: 'ذِكر',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
@@ -46,10 +50,43 @@ class DhikrReminderApp extends ConsumerWidget {
       // calls come from widgets (the settings card's Save) that can be built
       // and thrown away at any time.
       builder: (context, child) => DhikrReminderHost(
-        child: _ShellHost(
-          app: ToastOverlay(child: child ?? const SizedBox.shrink()),
+        child: MobileReminderHost(
+          child: ref.watch(appPlatformProvider).usesNotifications
+              ? _MobileShell(
+                  app: ToastOverlay(child: child ?? const SizedBox.shrink()),
+                )
+              : _ShellHost(
+                  app: ToastOverlay(child: child ?? const SizedBox.shrink()),
+                ),
         ),
       ),
+    );
+  }
+}
+
+/// The phone's version of [_ShellHost]: the app itself, with the full-screen
+/// counter laid over it while a reminder is active.
+class _MobileShell extends ConsumerWidget {
+  const _MobileShell({required this.app});
+
+  final Widget app;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final active = ref.watch(activeDhikrReminderProvider) != null;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        app,
+        // Its own Overlay: this sits in `MaterialApp.builder`, above the
+        // Navigator, so there is no Overlay for the close button's tooltip.
+        if (active)
+          Overlay(
+            initialEntries: [
+              OverlayEntry(builder: (_) => const MobileReminderScreen()),
+            ],
+          ),
+      ],
     );
   }
 }

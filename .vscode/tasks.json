@@ -7,12 +7,13 @@
       // assets/images/logo.svg without a manual step.
       "label": "Generate app icon",
       "type": "process",
-      // Skipped when the .ico is already newer than the SVG.
+      // Draws the .exe icon and the Android launcher/notification icons; skipped
+      // when they are all already newer than the SVG.
       "command": "powershell.exe",
       "args": [
         "-NoProfile",
         "-Command",
-        "$svg = 'assets/images/logo.svg'; $ico = 'windows/runner/resources/app_icon.ico'; if (-not (Test-Path $ico) -or (Get-Item $svg).LastWriteTime -gt (Get-Item $ico).LastWriteTime) { flutter test --no-pub tool/generate_app_icon.dart; exit $LASTEXITCODE }"
+        "$svg = 'assets/images/logo.svg'; $outs = @('windows/runner/resources/app_icon.ico', 'android/app/src/main/res/drawable-xxxhdpi/ic_notification.png'); $stale = $outs | Where-Object { -not (Test-Path $_) -or (Get-Item $svg).LastWriteTime -gt (Get-Item $_).LastWriteTime }; if ($stale) { flutter test --no-pub tool/generate_app_icon.dart; exit $LASTEXITCODE }"
       ],
       "options": { "cwd": "${workspaceFolder}" },
       "group": "none",

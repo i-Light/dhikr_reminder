@@ -81,13 +81,24 @@ String inlineUsedImages(String svg) {
   );
 }
 
-Future<Uint8List> _renderPng(PictureInfo info, int size, bool dimmed) async {
+Future<Uint8List> _renderPng(
+  PictureInfo info,
+  int size,
+  bool dimmed, {
+  double inset = 0,
+  ui.Color? background,
+  bool silhouette = false,
+}) async {
   final recorder = ui.PictureRecorder();
   final canvas = ui.Canvas(recorder);
+  final bounds = ui.Rect.fromLTWH(0, 0, size.toDouble(), size.toDouble());
+  if (background != null) {
+    canvas.drawRect(bounds, ui.Paint()..color = background);
+  }
   if (dimmed) {
     // Luminance into every channel (grayscale), alpha down to 60%.
     canvas.saveLayer(
-      ui.Rect.fromLTWH(0, 0, size.toDouble(), size.toDouble()),
+      bounds,
       ui.Paint()
         ..colorFilter = const ui.ColorFilter.matrix(<double>[
           0.2126, 0.7152, 0.0722, 0, 0, //
@@ -97,7 +108,20 @@ Future<Uint8List> _renderPng(PictureInfo info, int size, bool dimmed) async {
         ]),
     );
   }
-  final scale = size /
+  if (silhouette) {
+    // Every visible pixel becomes white, keeping only the shape (what an
+    // Android status-bar icon is allowed to be).
+    canvas.saveLayer(
+      bounds,
+      ui.Paint()
+        ..colorFilter = const ui.ColorFilter.mode(
+          ui.Color(0xFFFFFFFF),
+          ui.BlendMode.srcIn,
+        ),
+    );
+  }
+  final drawSize = size * (1 - 2 * inset);
+  final scale = drawSize /
       (info.size.width > info.size.height ? info.size.width : info.size.height);
   canvas
     ..translate(
@@ -106,6 +130,7 @@ Future<Uint8List> _renderPng(PictureInfo info, int size, bool dimmed) async {
     )
     ..scale(scale)
     ..drawPicture(info.picture);
+  if (silhouette) canvas.restore();
   if (dimmed) canvas.restore();
 
   final picture = recorder.endRecording();
@@ -114,6 +139,37 @@ Future<Uint8List> _renderPng(PictureInfo info, int size, bool dimmed) async {
   image.dispose();
   picture.dispose();
   return data!.buffer.asUint8List();
+}
+
+/// Renders [svg] into a square PNG of [size] pixels.
+///
+/// [inset] keeps that fraction of the size free on every side (Android's
+/// adaptive icons crop to the middle 61%, so their picture needs one);
+/// [background] fills the square first; [silhouette] draws the shape in plain
+/// white, for a status-bar icon.
+Future<Uint8List> renderSvgAsPng(
+  String svg,
+  int size, {
+  double inset = 0,
+  ui.Color? background,
+  bool silhouette = false,
+}) async {
+  final info = await vg.loadPicture(
+    SvgStringLoader(inlineUsedImages(svg)),
+    null,
+  );
+  try {
+    return await _renderPng(
+      info,
+      size,
+      false,
+      inset: inset,
+      background: background,
+      silhouette: silhouette,
+    );
+  } finally {
+    info.picture.dispose();
+  }
 }
 
 /// An .ico is a small directory followed by the images; since Windows Vista
