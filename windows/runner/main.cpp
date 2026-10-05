@@ -7,7 +7,8 @@
 
 namespace {
 
-constexpr wchar_t kWindowTitle[] = L"Dhikr Reminder";
+// "ذِكر", escaped so the file's encoding cannot matter.
+constexpr wchar_t kWindowTitle[] = L"\u0630\u0650\u0643\u0631";
 constexpr wchar_t kSingleInstanceMutex[] = L"Local\\DhikrReminder.SingleInstance";
 constexpr wchar_t kRunnerWindowClass[] = L"FLUTTER_RUNNER_WIN32_WINDOW";
 
