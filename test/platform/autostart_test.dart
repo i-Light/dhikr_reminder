@@ -2,6 +2,7 @@ import 'package:dhikr_reminder/platform/app_platform.dart';
 import 'package:dhikr_reminder/platform/autostart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakeAutostart implements AutostartService {
   bool enabled = false;
@@ -27,6 +28,28 @@ void main() {
 
     expect(fake.enabled, isTrue);
     expect(container.read(autostartProvider).value, isTrue);
+  });
+
+  test('it turns itself on the first time, and then respects the switch',
+      () async {
+    SharedPreferences.setMockInitialValues({});
+    final fake = _FakeAutostart();
+    ProviderContainer fresh() => ProviderContainer(overrides: [
+          appPlatformProvider.overrideWithValue(
+            const AppPlatform(PlatformKind.windows, isRelease: true),
+          ),
+          autostartServiceProvider.overrideWithValue(fake),
+        ]);
+
+    final first = fresh();
+    addTearDown(first.dispose);
+    expect(await first.read(autostartProvider.future), isTrue);
+
+    await first.read(autostartProvider.notifier).set(false);
+
+    final second = fresh();
+    addTearDown(second.dispose);
+    expect(await second.read(autostartProvider.future), isFalse);
   });
 
   test('without the capability the service does nothing', () async {

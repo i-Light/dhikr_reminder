@@ -2,6 +2,9 @@ import 'dart:io';
 
 import 'package:dhikr_reminder/platform/app_platform.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+const _firstRunDonePrefsKey = 'dhikr_reminder.autostart.firstRunDone';
 
 /// Starting with the operating system: the platform's side of the "Start with
 /// Windows" switch.
@@ -57,9 +60,27 @@ final autostartServiceProvider = Provider<AutostartService>((ref) {
 
 /// Whether the app starts with the system. Only meaningful where
 /// `AppPlatform.canAutostart` is true; elsewhere it is simply false.
+///
+/// On by default: the first time the switch is available it turns itself on,
+/// once. Switching it off afterwards is respected, because the first run is
+/// remembered separately from the setting.
 class AutostartNotifier extends AsyncNotifier<bool> {
   @override
-  Future<bool> build() => ref.read(autostartServiceProvider).isEnabled();
+  Future<bool> build() async {
+    final service = ref.read(autostartServiceProvider);
+    if (ref.read(appPlatformProvider).canAutostart) {
+      final prefs = await SharedPreferences.getInstance();
+      if (!(prefs.getBool(_firstRunDonePrefsKey) ?? false)) {
+        await prefs.setBool(_firstRunDonePrefsKey, true);
+        try {
+          await service.setEnabled(true);
+        } on ProcessException {
+          // Left off; the switch shows what Windows really has.
+        }
+      }
+    }
+    return service.isEnabled();
+  }
 
   Future<void> set(bool enabled) async {
     await ref.read(autostartServiceProvider).setEnabled(enabled);
