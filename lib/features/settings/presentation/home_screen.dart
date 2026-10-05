@@ -5,6 +5,7 @@ import 'package:dhikr_reminder/core/locale/locale_controller.dart';
 import 'package:dhikr_reminder/core/window/svg_icon.dart';
 import 'package:dhikr_reminder/core/window/tray_menu_panel.dart'
     show formatCountdown;
+import 'package:dhikr_reminder/features/mobile_reminders/overlay_service.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
 import 'package:dhikr_reminder/features/settings/presentation/widgets/update_card.dart';
@@ -290,6 +291,27 @@ class _StatTile extends StatelessWidget {
   }
 }
 
+/// The test button. On a phone with "display over other apps" allowed it shows
+/// the same floating card a real reminder does; otherwise the in-app one.
+Future<void> _showTestReminder(BuildContext context, WidgetRef ref) async {
+  final reminders = ref.read(activeDhikrReminderProvider.notifier);
+  final entry = reminders.testEntry();
+  if (entry == null) return;
+  if (ref.read(appPlatformProvider).usesNotifications) {
+    final l10n = AppLocalizations.of(context);
+    final shown = await ref.read(reminderOverlayProvider).showNow(
+          dhikrId: entry.id,
+          text: entry.name,
+          amount: entry.amount,
+          title: l10n.dhikrReminderTitle,
+          closeLabel: l10n.commonClose,
+          tip: l10n.dhikrReminderTouchEverywhereTip,
+        );
+    if (shown) return;
+  }
+  reminders.show(entry);
+}
+
 /// The countdown to the next reminder, a pause/resume control and the button
 /// that shows a reminder right now.
 class _NextReminderCard extends ConsumerStatefulWidget {
@@ -386,8 +408,7 @@ class _NextReminderCardState extends ConsumerState<_NextReminderCard> {
                   ),
                 ),
                 OutlinedButton.icon(
-                  onPressed:
-                      ref.read(activeDhikrReminderProvider.notifier).showTest,
+                  onPressed: () => _showTestReminder(context, ref),
                   icon: const Icon(Icons.play_arrow_rounded),
                   label: Text(l10n.commonTestReminder),
                 ),

@@ -47,8 +47,7 @@ class OverlayService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startAsForeground()
-        val reminder = intent?.getIntExtra(ReminderAlarms.EXTRA_ID, -1)
-            ?.let { ReminderStore.find(this, it) }
+        val reminder = reminderFrom(intent)
         // Never interrupts a card that is still being counted.
         if (reminder == null || card != null) {
             if (card == null) stopSelf()
@@ -56,6 +55,22 @@ class OverlayService : Service() {
         }
         show(reminder)
         return START_NOT_STICKY
+    }
+
+    /** A planned reminder named by its id, or one carried whole by the intent. */
+    private fun reminderFrom(intent: Intent?): ReminderStore.Planned? {
+        intent ?: return null
+        val text = intent.getStringExtra(EXTRA_TEXT)
+        if (text != null) {
+            return ReminderStore.Planned(
+                -1,
+                0L,
+                intent.getIntExtra(EXTRA_DHIKR_ID, 0),
+                text,
+                intent.getIntExtra(EXTRA_AMOUNT, 1),
+            )
+        }
+        return ReminderStore.find(this, intent.getIntExtra(ReminderAlarms.EXTRA_ID, -1))
     }
 
     override fun onDestroy() {
@@ -267,6 +282,17 @@ class OverlayService : Service() {
         private const val IDLE_TIMEOUT_MS = 3 * 60 * 1000L
         private const val DONE_DWELL_MS = 1600L
         private const val HapticFeedback_TAP = HapticFeedbackConstants.VIRTUAL_KEY
+
+        private const val EXTRA_TEXT = "reminder_text"
+        private const val EXTRA_DHIKR_ID = "reminder_dhikr_id"
+        private const val EXTRA_AMOUNT = "reminder_amount"
+
+        /** A reminder to show right now, not one from the plan. */
+        fun intentNow(context: Context, dhikrId: Int, text: String, amount: Int): Intent =
+            Intent(context, OverlayService::class.java)
+                .putExtra(EXTRA_TEXT, text)
+                .putExtra(EXTRA_DHIKR_ID, dhikrId)
+                .putExtra(EXTRA_AMOUNT, amount)
 
         fun intent(context: Context, reminderId: Int): Intent =
             Intent(context, OverlayService::class.java).putExtra(ReminderAlarms.EXTRA_ID, reminderId)

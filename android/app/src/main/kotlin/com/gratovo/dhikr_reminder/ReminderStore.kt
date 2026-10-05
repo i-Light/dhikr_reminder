@@ -58,6 +58,15 @@ object ReminderStore {
             .apply()
     }
 
+    /** The card's texts alone, for a reminder shown outside the plan. */
+    fun saveLabels(context: Context, title: String, closeLabel: String, tip: String) {
+        prefs(context).edit()
+            .putString(KEY_TITLE, title)
+            .putString(KEY_CLOSE, closeLabel)
+            .putString(KEY_TIP, tip)
+            .apply()
+    }
+
     fun plan(context: Context): List<Planned> {
         val raw = prefs(context).getString(KEY_PLAN, null) ?: return emptyList()
         return try {

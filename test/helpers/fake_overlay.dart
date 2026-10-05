@@ -13,6 +13,7 @@ class FakeOverlay implements ReminderOverlay {
   String? closeLabel;
   String? tip;
   int cancels = 0;
+  String? shownNow;
   int permissionRequests = 0;
   int drains = 0;
 
@@ -33,6 +34,20 @@ class FakeOverlay implements ReminderOverlay {
     this.title = title;
     this.closeLabel = closeLabel;
     this.tip = tip;
+  }
+
+  @override
+  Future<bool> showNow({
+    required int dhikrId,
+    required String text,
+    required int amount,
+    required String title,
+    required String closeLabel,
+    required String tip,
+  }) async {
+    if (!allowed) return false;
+    shownNow = text;
+    return true;
   }
 
   @override

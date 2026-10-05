@@ -24,6 +24,17 @@ abstract class ReminderOverlay {
     required String tip,
   });
 
+  /// Shows one reminder card right now, outside the plan. Returns false when
+  /// drawing over other apps is not allowed.
+  Future<bool> showNow({
+    required int dhikrId,
+    required String text,
+    required int amount,
+    required String title,
+    required String closeLabel,
+    required String tip,
+  });
+
   /// Cancels every scheduled reminder.
   Future<void> cancel();
 
@@ -74,6 +85,30 @@ class ChannelReminderOverlay implements ReminderOverlay {
       });
     } on MissingPluginException {
       // No overlay on this platform.
+    }
+  }
+
+  @override
+  Future<bool> showNow({
+    required int dhikrId,
+    required String text,
+    required int amount,
+    required String title,
+    required String closeLabel,
+    required String tip,
+  }) async {
+    try {
+      return await _channel.invokeMethod<bool>('showNow', {
+            'dhikrId': dhikrId,
+            'text': text,
+            'amount': amount,
+            'title': title,
+            'closeLabel': closeLabel,
+            'tip': tip,
+          }) ??
+          false;
+    } on MissingPluginException {
+      return false;
     }
   }
 

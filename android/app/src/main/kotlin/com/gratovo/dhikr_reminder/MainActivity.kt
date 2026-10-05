@@ -57,6 +57,28 @@ class MainActivity : FlutterActivity() {
                 result.success(null)
             }
 
+            "showNow" -> {
+                if (!Settings.canDrawOverlays(this)) {
+                    result.success(false)
+                } else {
+                    ReminderStore.saveLabels(
+                        this,
+                        call.argument<String>("title") ?: "",
+                        call.argument<String>("closeLabel") ?: "",
+                        call.argument<String>("tip") ?: "",
+                    )
+                    startForegroundService(
+                        OverlayService.intentNow(
+                            this,
+                            call.argument<Int>("dhikrId") ?: 0,
+                            call.argument<String>("text") ?: "",
+                            call.argument<Int>("amount") ?: 1,
+                        ),
+                    )
+                    result.success(true)
+                }
+            }
+
             "cancel" -> {
                 ReminderAlarms.cancelAll(this)
                 result.success(null)

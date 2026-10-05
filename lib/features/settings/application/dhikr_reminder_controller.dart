@@ -48,14 +48,18 @@ class ActiveDhikrReminderNotifier extends Notifier<ActiveDhikrReminder?> {
   /// `@visibleForTesting`, and this is app code. The point is to see the card,
   /// not to sample the weighting, so it just takes the first eligible entry.
   void showTest() {
+    final entry = testEntry();
+    if (entry != null) show(entry);
+  }
+
+  /// The dhikr a test reminder shows, or null when there is none to show.
+  DhikrEntry? testEntry() {
     final settings = ref.read(dhikrSettingsProvider);
     // With the chance option off nothing is excluded, whatever chance an
     // entry has stored.
-    final entries = settings.entries
+    return settings.entries
         .where((entry) => !settings.useChance || entry.chance > 0)
-        .toList();
-    if (entries.isEmpty) return;
-    show(entries.first);
+        .firstOrNull;
   }
 
   void increment() {
