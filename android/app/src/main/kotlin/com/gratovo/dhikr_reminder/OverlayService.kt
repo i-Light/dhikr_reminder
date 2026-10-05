@@ -152,6 +152,8 @@ class OverlayService : Service() {
         // Header: the app icon, the title, the cross.
         val logo = ImageView(this).apply {
             setImageResource(R.mipmap.ic_launcher_foreground)
+            // A flat white silhouette, like the desktop card's.
+            setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
             scaleType = ImageView.ScaleType.FIT_CENTER
         }
         titleView = TextView(this).apply {

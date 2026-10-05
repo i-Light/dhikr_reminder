@@ -756,7 +756,7 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
                         Row(
                           spacing: 16,
                           children: [
-                            AppLogo(size: _s(30)),
+                            AppLogo(size: _s(30), color: Colors.white),
                             Text(
                               l10n.dhikrReminderTitle,
                               style: theme.textTheme.labelLarge?.copyWith(

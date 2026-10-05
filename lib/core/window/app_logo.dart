@@ -7,10 +7,14 @@ import 'package:flutter_svg/flutter_svg.dart';
 ///
 /// The SVG is read once and kept, so a logo that appears again (every reminder
 /// card, say) is there on its first frame.
+///
+/// With a [color] the logo is drawn as a flat silhouette in that colour (white
+/// on the reminder cards).
 class AppLogo extends StatelessWidget {
-  const AppLogo({super.key, required this.size});
+  const AppLogo({super.key, required this.size, this.color});
 
   final double size;
+  final Color? color;
 
   static final Future<String> _svg =
       rootBundle.loadString(kAppIconSvgAsset).then(inlineUsedImages);
@@ -23,7 +27,12 @@ class AppLogo extends StatelessWidget {
       child: FutureBuilder<String>(
         future: _svg,
         builder: (context, snapshot) => snapshot.hasData
-            ? SvgPicture.string(snapshot.data!)
+            ? SvgPicture.string(
+                snapshot.data!,
+                colorFilter: color == null
+                    ? null
+                    : ColorFilter.mode(color!, BlendMode.srcIn),
+              )
             : const SizedBox.shrink(),
       ),
     );

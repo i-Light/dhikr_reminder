@@ -57,7 +57,7 @@ class MobileReminderScreen extends ConsumerWidget {
                   children: [
                     Row(
                       children: [
-                        const AppLogo(size: 28),
+                        const AppLogo(size: 28, color: Colors.white),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
