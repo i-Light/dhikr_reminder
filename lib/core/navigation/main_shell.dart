@@ -1,4 +1,5 @@
 import 'package:dhikr_reminder/features/library/presentation/dhikr_library_screen.dart';
+import 'package:dhikr_reminder/features/notifications/presentation/notifications_screen.dart';
 import 'package:dhikr_reminder/features/settings/presentation/home_screen.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -38,7 +39,11 @@ class _MainShellState extends State<MainShell> {
       body: IndexedStack(
         index: _index,
         sizing: StackFit.expand,
-        children: const [HomeScreen(), DhikrLibraryScreen()],
+        children: const [
+          HomeScreen(),
+          NotificationsScreen(),
+          DhikrLibraryScreen(),
+        ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
@@ -48,6 +53,11 @@ class _MainShellState extends State<MainShell> {
             icon: const Icon(Icons.tune_outlined),
             selectedIcon: const Icon(Icons.tune),
             label: l10n.navSettings,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.notifications_none),
+            selectedIcon: const Icon(Icons.notifications),
+            label: l10n.navNotifications,
           ),
           NavigationDestination(
             icon: const Icon(Icons.menu_book_outlined),

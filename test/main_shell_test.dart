@@ -1,5 +1,6 @@
 import 'package:dhikr_reminder/core/navigation/main_shell.dart';
 import 'package:dhikr_reminder/features/library/presentation/dhikr_library_screen.dart';
+import 'package:dhikr_reminder/features/notifications/presentation/notifications_screen.dart';
 import 'package:dhikr_reminder/features/settings/presentation/home_screen.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -28,12 +29,14 @@ Future<AppLocalizations> _pumpShell(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('opens on the settings page behind a two-item bottom bar',
+  testWidgets('opens on the home page behind a three-item bottom bar',
       (tester) async {
     final l10n = await _pumpShell(tester);
 
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.text(l10n.navSettings), findsOneWidget);
+    expect(find.text(l10n.navNotifications), findsOneWidget);
+    expect(find.text(l10n.navLibrary), findsOneWidget);
 
     final stack = tester.widget<IndexedStack>(find.byType(IndexedStack).first);
     expect(stack.index, 0);
@@ -49,7 +52,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       tester.widget<IndexedStack>(find.byType(IndexedStack).first).index,
-      1,
+      2,
     );
 
     await tester.tap(find.byIcon(Icons.tune_outlined));
@@ -74,6 +77,11 @@ void main() {
     );
     // ...but only the settings page is actually on show.
     expect(find.byType(DhikrLibraryScreen), findsNothing);
+    expect(
+      find.byType(NotificationsScreen, skipOffstage: false),
+      findsOneWidget,
+    );
+    expect(find.byType(NotificationsScreen), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }
