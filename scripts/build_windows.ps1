@@ -44,6 +44,10 @@
     Publish only: run the preflight checks and say what would be done, without
     changing anything.
 
+.PARAMETER SkipAndroid
+    Do not build the Android APKs. By default both modes also build them (one per
+    CPU, next to the installer in the output folder) with scripts\build_android.ps1.
+
 .PARAMETER OutDir
     Where the setup .exe lands. Defaults to .\dist.
 
@@ -62,6 +66,8 @@ param(
     [string] $Mode = 'Local',
 
     [switch] $InstallHere,
+
+    [switch] $SkipAndroid,
 
     [ValidateSet('patch', 'minor', 'major')]
     [string] $Bump = 'patch',
@@ -376,6 +382,20 @@ try {
     $mb = [math]::Round((Get-Item -LiteralPath $setupExe).Length / 1MB, 1)
     Write-Host ''
     Write-Host ('Installer: {0}  ({1} MB)' -f $setupExe, $mb) -ForegroundColor Green
+
+    # The Android APKs, rebuilt every time next to the installer. Done before
+    # anything is committed or published, and a machine without the Android SDK
+    # only gets a warning: the Windows installer above is already complete.
+    if (-not $SkipAndroid) {
+        Write-Host ''
+        Write-Host "Building the Android APKs v$version" -ForegroundColor Cyan
+        try {
+            & (Join-Path $PSScriptRoot 'build_android.ps1') -ApkOnly -SkipChecks -SkipIcons -OutDir $OutDir -Version $version
+        }
+        catch {
+            Write-Warning "The Android APKs were not built: $($_.Exception.Message)"
+        }
+    }
 
     if ($InstallHere) { Install-Here -Setup $setupExe }
 
