@@ -97,33 +97,36 @@ class DhikrPalette {
 
   /// Flat green — the one moment this card should read as "done", not
   /// "brand".
+  // The gradients are a little dark and the cards nearly opaque, so what is
+  // behind the card does not pull the eye away from the dhikr, while the text
+  // stays easy to read.
   static const _doneGradient = LinearGradient(
     colors: [
-      Color.fromARGB(255, 52, 211, 153),
-      Color.fromARGB(255, 22, 163, 74),
+      Color.fromARGB(255, 40, 170, 124),
+      Color.fromARGB(255, 18, 134, 61),
     ],
   );
-  static const _doneOpacity = 0.7;
+  static const _doneAccent = Color.fromARGB(255, 52, 211, 153);
+  static const _doneOpacity = 0.85;
   static const _normalGradient = LinearGradient(
     colors: [
-      Color.fromARGB(255, 144, 104, 47),
-      Color.fromARGB(255, 190, 140, 60),
-      Color.fromARGB(255, 150, 100, 40),
-      Color.fromARGB(255, 105, 70, 30),
-      Color.fromARGB(255, 55, 38, 18),
+      Color.fromARGB(255, 118, 85, 38),
+      Color.fromARGB(255, 156, 115, 49),
+      Color.fromARGB(255, 123, 82, 33),
+      Color.fromARGB(255, 86, 57, 25),
+      Color.fromARGB(255, 45, 31, 15),
     ],
     stops: [0.0, 0.45, 0.65, 0.85, 1.0],
   );
-  static const _normalOpacity = 0.78;
+  static const _normalOpacity = 0.9;
 
   // Not `of(context)`: nothing here reads the theme. The palette is a fixed
   // gold scheme that only changes shape between "in progress" and "done", so
   // passing a BuildContext through it would be a lie about what varies.
   factory DhikrPalette.forState({required bool isComplete}) {
     final brand = isComplete ? _doneGradient : _normalGradient;
-    final accent = isComplete
-        ? brand.colors.first.withValues(alpha: 1)
-        : const Color.fromARGB(255, 231, 170, 72);
+    final accent =
+        isComplete ? _doneAccent : const Color.fromARGB(255, 231, 170, 72);
 
     return DhikrPalette(
       progressTrack: accent.withValues(alpha: 0.3),
