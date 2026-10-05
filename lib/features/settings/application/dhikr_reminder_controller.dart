@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
+import 'package:dhikr_reminder/features/stats/dhikr_stats.dart';
+import 'package:dhikr_reminder/platform/app_platform.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -60,6 +62,7 @@ class ActiveDhikrReminderNotifier extends Notifier<ActiveDhikrReminder?> {
     final current = state;
     if (current == null || current.isComplete) return;
     state = current.copyWith(count: current.count + 1);
+    ref.read(dhikrStatsProvider.notifier).recordTap(current.entry.id);
   }
 
   void dismiss() => state = null;
@@ -68,6 +71,35 @@ class ActiveDhikrReminderNotifier extends Notifier<ActiveDhikrReminder?> {
 final activeDhikrReminderProvider =
     NotifierProvider<ActiveDhikrReminderNotifier, ActiveDhikrReminder?>(
   ActiveDhikrReminderNotifier.new,
+);
+
+/// Until when reminders are paused (from the tray menu), or null when they are
+/// not. In memory only: a restart is a fresh start, never a silently muted app.
+class ReminderPauseNotifier extends Notifier<DateTime?> {
+  Timer? _resume;
+
+  @override
+  DateTime? build() {
+    ref.onDispose(() => _resume?.cancel());
+    return null;
+  }
+
+  /// Pauses reminders for [duration]; they pick themselves up again after it.
+  void pauseFor(Duration duration) {
+    _resume?.cancel();
+    state = DateTime.now().add(duration);
+    _resume = Timer(duration, resume);
+  }
+
+  void resume() {
+    _resume?.cancel();
+    state = null;
+  }
+}
+
+final reminderPauseProvider =
+    NotifierProvider<ReminderPauseNotifier, DateTime?>(
+  ReminderPauseNotifier.new,
 );
 
 /// Fires a dhikr reminder every [DhikrSettings.intervalMinutes] minutes,
@@ -116,6 +148,12 @@ class DhikrReminderScheduler extends Notifier<DateTime?> {
     // Never interrupts a reminder already in progress — the person is still
     // working through the last one.
     if (ref.read(activeDhikrReminderProvider) != null) return;
+    // On a phone the OS delivers the reminders as notifications (see
+    // features/mobile_reminders); popping one up from this in-process timer
+    // as well would double every dhikr while the app is open.
+    if (!ref.read(appPlatformProvider).remindsInProcess) return;
+    // Paused from the tray: the tick passes, the timer keeps its rhythm.
+    if (ref.read(reminderPauseProvider) != null) return;
     final settings = ref.read(dhikrSettingsProvider);
     final entry = pickReminder(
       settings.entries,

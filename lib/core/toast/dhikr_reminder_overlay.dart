@@ -6,6 +6,7 @@ import 'package:dhikr_reminder/core/toast/dhikr_fit_text.dart';
 import 'package:dhikr_reminder/core/toast/dust_particles_overlay.dart';
 import 'package:dhikr_reminder/core/toast/outer_glow.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
+import 'package:dhikr_reminder/features/stats/dhikr_stats.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -200,6 +201,49 @@ class _DhikrReminderHostState extends ConsumerState<DhikrReminderHost> {
   }
 }
 
+/// A small "label / number" pair — the reminder card's session and day counts.
+class DhikrStatChip extends StatelessWidget {
+  const DhikrStatChip({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.color,
+    this.fontSize = 14,
+    this.goal,
+  });
+
+  final String label;
+  final int value;
+
+  /// When set, the number reads "value / goal".
+  final int? goal;
+  final Color color;
+  final double fontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          goal == null ? '$value' : '$value / $goal',
+          style: TextStyle(
+            color: color,
+            fontSize: fontSize * 1.25,
+            fontWeight: FontWeight.bold,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+              color: color.withValues(alpha: 0.8), fontSize: fontSize * 0.8),
+        ),
+      ],
+    );
+  }
+}
+
 /// [DhikrReminderSurface] bound to the real reminder: shows whatever
 /// `activeDhikrReminderProvider` holds and routes taps back into it.
 class DhikrReminderProviderSurface extends ConsumerWidget {
@@ -216,6 +260,7 @@ class DhikrReminderProviderSurface extends ConsumerWidget {
     final notifier = ref.read(activeDhikrReminderProvider.notifier);
     return DhikrReminderSurface(
       reminder: reminder,
+      stats: ref.watch(dhikrStatsProvider),
       onTap: () {
         HapticFeedback.lightImpact();
         notifier.increment();
@@ -241,11 +286,16 @@ class DhikrReminderSurface extends StatelessWidget {
     required this.reminder,
     required this.onTap,
     required this.onDismiss,
+    this.stats = const DhikrStats(),
   });
 
   final ActiveDhikrReminder? reminder;
   final VoidCallback onTap;
   final VoidCallback onDismiss;
+
+  /// The session total, and today's per-dhikr totals, shown beside the
+  /// counter. A dhikr's day total is only shown if it has a daily goal.
+  final DhikrStats stats;
 
   /// The card's glow sprites, shared by every card rather than owned by one.
   /// The reminder window is always the same size, so a sprite baked for one
@@ -290,6 +340,7 @@ class DhikrReminderSurface extends StatelessWidget {
                     maxHeight: constraints.maxHeight,
                     onTap: onTap,
                     onDismiss: onDismiss,
+                    stats: stats,
                   ),
           ),
         ),
@@ -414,6 +465,7 @@ class _DhikrReminderCard extends StatefulWidget {
     required this.maxHeight,
     required this.onTap,
     required this.onDismiss,
+    required this.stats,
   });
 
   final ActiveDhikrReminder reminder;
@@ -421,6 +473,7 @@ class _DhikrReminderCard extends StatefulWidget {
   final double maxHeight;
   final VoidCallback onTap;
   final VoidCallback onDismiss;
+  final DhikrStats stats;
 
   @override
   State<_DhikrReminderCard> createState() => _DhikrReminderCardState();
@@ -711,6 +764,22 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
                               ),
                             ),
                             const Expanded(child: SizedBox()),
+                            // Beside the counter: taps this session, and the
+                            // day's total across every session.
+                            DhikrStatChip(
+                              label: l10n.statSession,
+                              value: widget.stats.session,
+                              color: accent,
+                              fontSize: _s(14),
+                            ),
+                            if (entry.dailyGoal > 0)
+                              DhikrStatChip(
+                                label: l10n.statToday,
+                                value: widget.stats.todayFor(entry.id),
+                                goal: entry.dailyGoal,
+                                color: accent,
+                                fontSize: _s(14),
+                              ),
                             ScaleTransition(
                               scale: _bump,
                               child: TweenAnimationBuilder<double>(

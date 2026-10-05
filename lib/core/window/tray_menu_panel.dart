@@ -28,6 +28,7 @@ class TrayMenuPanel extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final palette = DhikrPalette.forState(isComplete: false);
     final shell = ref.read(appShellProvider.notifier);
+    final pausedUntil = ref.watch(reminderPauseProvider);
     final isMuted = ref.watch(dhikrSettingsProvider.select((s) => s.isMuted));
 
     // The window is transparent and a few pixels bigger than the card, so the
@@ -52,6 +53,23 @@ class TrayMenuPanel extends ConsumerWidget {
                 onTap: shell.openApp,
               ),
               _NextDhikrItem(accent: palette.accent),
+              _TrayMenuItem(
+                accent: palette.accent,
+                icon: pausedUntil == null
+                    ? Icons.pause_circle_outline_rounded
+                    : Icons.play_circle_outline_rounded,
+                label: pausedUntil == null ? l10n.trayPause : l10n.trayResume,
+                subtitle: pausedUntil == null
+                    ? null
+                    : l10n.trayPausedUntil(
+                        TimeOfDay.fromDateTime(pausedUntil).format(context),
+                      ),
+                onTap: pausedUntil == null
+                    ? () => ref
+                        .read(reminderPauseProvider.notifier)
+                        .pauseFor(const Duration(hours: 1))
+                    : ref.read(reminderPauseProvider.notifier).resume,
+              ),
               _TrayMenuItem(
                 accent: palette.accent,
                 // The icon is the state: speaker while sound is on, crossed
