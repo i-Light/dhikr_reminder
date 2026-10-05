@@ -7,6 +7,7 @@ import 'package:dhikr_reminder/core/update/update_release.dart';
 import 'package:dhikr_reminder/core/update/update_source.dart';
 import 'package:dhikr_reminder/core/window/app_shell.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
+import 'package:dhikr_reminder/platform/app_platform.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -126,7 +127,7 @@ final updateInstallerProvider = Provider<UpdateInstaller>(
 /// The folder this copy was installed into, or null if it cannot update
 /// itself.
 final updateInstallDirProvider = Provider<Directory?>((ref) {
-  if (kIsWeb || !Platform.isWindows) return null;
+  if (!ref.watch(appPlatformProvider).canSelfUpdate) return null;
   return UpdateInstaller.installDirOf(Platform.resolvedExecutable);
 });
 
@@ -190,7 +191,7 @@ class UpdateNotifier extends Notifier<UpdateState> {
 
   /// Starts the schedule. Called once from `main`.
   void start() {
-    if (kIsWeb || !Platform.isWindows || _timer != null) return;
+    if (!ref.read(appPlatformProvider).canSelfUpdate || _timer != null) return;
     _schedule(_firstCheckDelay);
   }
 

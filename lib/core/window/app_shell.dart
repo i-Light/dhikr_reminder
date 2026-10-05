@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 import 'dart:io';
-import 'dart:math' as math;
 
 import 'package:dhikr_reminder/core/window/svg_icon.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
+import 'package:dhikr_reminder/platform/app_platform.dart';
+import 'package:dhikr_reminder/platform/windows/native_window.dart';
+import 'package:dhikr_reminder/platform/windows/window_placement.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart' show WidgetsBinding;
@@ -60,7 +62,7 @@ class ShellState {
 }
 
 /// Size of the tray popup, in logical pixels — see `TrayMenuPanel`.
-const kTrayMenuSize = Size(208, 176);
+const kTrayMenuSize = Size(208, 212);
 
 /// Size of the splash window; the splash card fills it.
 const kSplashSize = Size(420, 270);
@@ -76,19 +78,11 @@ const kSettingsWindowSize = Size(960, 720);
 /// inside this.
 const kSplashDuration = Duration(milliseconds: 1800);
 
-const _trayTooltip = 'Dhikr Reminder';
-
-/// Gap between a popup and the tray icon it opened from, and between a popup
-/// and the screen's edge.
-const _screenGap = 10.0;
+const _trayTooltip = 'ذِكر';
 
 /// How long a leaving reminder is given to play its exit before the window
 /// goes away under it (`DhikrTimers.cardEntrance`, plus a little).
 const _reminderExitGrace = Duration(milliseconds: 300);
-
-/// Windows-only window tweaks `window_manager` cannot do — see
-/// `windows/runner/flutter_window.cpp`.
-const _windowChannel = MethodChannel('dhikr_reminder/window');
 
 /// Somewhere no monitor is, for changing the window's shape out of sight.
 const _offscreen = Offset(-20000, -20000);
@@ -182,6 +176,8 @@ class AppShellNotifier extends Notifier<ShellState>
 
   Future<void> _queue = Future<void>.value();
 
+  NativeWindow get _native => ref.read(nativeWindowProvider);
+
   @override
   ShellState build() {
     ref.listen(activeDhikrReminderProvider, (previous, next) {
@@ -205,7 +201,9 @@ class AppShellNotifier extends Notifier<ShellState>
   /// an ordinary window (closing it quits) rather than hidden with no way
   /// back.
   Future<void> init() async {
-    if (_initialised || kIsWeb || !Platform.isWindows) return;
+    if (_initialised || !ref.read(appPlatformProvider).hasWindowShell) {
+      return;
+    }
     try {
       await windowManager.ensureInitialized();
       // The native window outlives this Dart isolate: after a hot restart it
@@ -217,9 +215,7 @@ class AppShellNotifier extends Notifier<ShellState>
       await windowManager.setPosition(_offscreen);
       // A newer copy of the app was started and is waiting for this one to go
       // (see `ReplaceRunningInstance` in windows/runner/main.cpp).
-      _windowChannel.setMethodCallHandler((call) async {
-        if (call.method == 'quit') unawaited(quit());
-      });
+      _native.onQuitRequested(() => unawaited(quit()));
       final icons = await _buildTrayIcons();
       _quittingIconPath = icons.quitting;
       await trayManager.setIcon(icons.normal);
@@ -244,7 +240,7 @@ class AppShellNotifier extends Notifier<ShellState>
     if (!_initialised) {
       // No tray means no way to reach the app once it is hidden: show the
       // window as the plain settings window it would otherwise be.
-      if (!kIsWeb && Platform.isWindows) {
+      if (ref.read(appPlatformProvider).hasWindowShell) {
         try {
           await windowManager.show();
         } catch (_) {}
@@ -308,7 +304,7 @@ class AppShellNotifier extends Notifier<ShellState>
         mode == ShellMode.trayMenu) {
       _enqueue(() => _enter(mode, force: true));
     } else {
-      _enqueue(() => _callWindow('syncContent'));
+      _enqueue(_native.syncContent);
     }
   }
 
@@ -510,14 +506,14 @@ class AppShellNotifier extends Notifier<ShellState>
         await windowManager.hide();
         _isHidden = true;
       }
-      await _setHiddenFromTaskbar(spec.hiddenFromTaskbar);
+      await _native.setToolWindow(spec.hiddenFromTaskbar);
       await windowManager.setPosition(_offscreen);
       await windowManager.show(inactive: true);
       _isHidden = false;
 
       // A window the person maximized (settings can be) stays maximized
       // through hide and show, and would then ignore the size it is given.
-      await _callWindow('restoreWindow');
+      await _native.restore();
 
       // Re-shape.
       if (spec.frameless) {
@@ -553,68 +549,33 @@ class AppShellNotifier extends Notifier<ShellState>
       if (spec.takeFocus) await windowManager.focus();
       // Belt and braces: make sure the Flutter view fills the window as it
       // ended up, whatever order the style and size changes landed in.
-      await _callWindow('syncContent');
+      await _native.syncContent();
       state = ShellState(target, revealed: true);
     } finally {
       _busy = false;
     }
   }
 
-  /// Calls an argument-less method of the runner's window channel; a runner
-  /// without it (an older build) is simply skipped.
-  Future<void> _callWindow(String method) async {
-    try {
-      await _windowChannel.invokeMethod<void>(method);
-    } on MissingPluginException {
-      // Nothing to do without the runner's help.
-    }
-  }
-
-  Future<void> _setHiddenFromTaskbar(bool hidden) async {
-    try {
-      await _windowChannel.invokeMethod<void>('setToolWindow', hidden);
-    } on MissingPluginException {
-      // An older runner without the channel: the popup just shows in the
-      // taskbar while it is up.
-    }
-  }
-
   /// Centres the window on the middle of the whole monitor the cursor is on,
-  /// natively and in physical pixels (see `centerOnCursorMonitor` in
-  /// `flutter_window.cpp`), which stays exact at any resolution or DPI where
-  /// logical-pixel arithmetic across monitors does not. Returns false when the
-  /// runner has no such method, so the caller can place it the Dart way.
+  /// natively and in physical pixels, which stays exact at any resolution or
+  /// DPI where logical-pixel arithmetic across monitors does not. Returns
+  /// false when the runner cannot, so the caller can place it the Dart way.
   Future<bool> _centreOnScreen(Size size) async {
-    try {
-      final dpiChanged = await _windowChannel.invokeMethod<bool>(
-        'centerOnCursorMonitor',
-        {'width': size.width, 'height': size.height, 'gap': _screenGap},
-      );
-      // Landing on a monitor with another DPI re-scales the window; give the
-      // surface a moment to lay out again at the new density.
-      if (dpiChanged ?? false) await _settle();
-      return true;
-    } on MissingPluginException {
-      return false;
-    }
+    final dpiChanged = await _native.centreOnCursorMonitor(size);
+    if (dpiChanged == null) return false;
+    // Landing on a monitor with another DPI re-scales the window; give the
+    // surface a moment to lay out again at the new density.
+    if (dpiChanged) await _settle();
+    return true;
   }
 
-  /// Puts the popup beside the cursor natively (see `placeNearCursor` in
-  /// `flutter_window.cpp`), in physical pixels on the monitor the cursor is on,
-  /// for the same reason as [_centreOnScreen]: the Dart-side conversion from
-  /// logical pixels uses one scale for every monitor, which is wrong as soon as
-  /// two of them differ. Returns false when the runner has no such method.
+  /// Puts the popup beside the cursor natively, on the monitor the cursor is
+  /// on. Returns false when the runner cannot.
   Future<bool> _placeNearCursor(Size size) async {
-    try {
-      final dpiChanged = await _windowChannel.invokeMethod<bool>(
-        'placeNearCursor',
-        {'width': size.width, 'height': size.height, 'gap': _screenGap},
-      );
-      if (dpiChanged ?? false) await _settle();
-      return true;
-    } on MissingPluginException {
-      return false;
-    }
+    final dpiChanged = await _native.placeNearCursor(size);
+    if (dpiChanged == null) return false;
+    if (dpiChanged) await _settle();
+    return true;
   }
 
   /// A moment for Flutter to lay out and paint after a change of size.
@@ -631,7 +592,7 @@ class AppShellNotifier extends Notifier<ShellState>
     switch (mode) {
       case ShellMode.splash:
         return _WindowSpec(
-          rect: _centred(area, kSplashSize),
+          rect: centredRect(area, kSplashSize),
           frameless: true,
           transparent: true,
           alwaysOnTop: true,
@@ -642,7 +603,7 @@ class AppShellNotifier extends Notifier<ShellState>
       case ShellMode.reminder:
       case ShellMode.prewarm:
         return _WindowSpec(
-          rect: _centred(area, kReminderWindowSize),
+          rect: centredRect(area, kReminderWindowSize),
           frameless: true,
           transparent: true,
           alwaysOnTop: true,
@@ -652,7 +613,7 @@ class AppShellNotifier extends Notifier<ShellState>
         );
       case ShellMode.trayMenu:
         return _WindowSpec(
-          rect: _menuRect(cursor, area),
+          rect: popupRectNearCursor(cursor, area, kTrayMenuSize),
           frameless: true,
           transparent: true,
           alwaysOnTop: true,
@@ -664,7 +625,7 @@ class AppShellNotifier extends Notifier<ShellState>
         return _WindowSpec(
           // Reopens at the size it last had, but always in the middle of the
           // monitor the cursor is on rather than wherever it was left.
-          rect: _centred(area, _settingsBounds?.size ?? kSettingsWindowSize),
+          rect: centredRect(area, _settingsBounds?.size ?? kSettingsWindowSize),
           frameless: false,
           transparent: false,
           alwaysOnTop: false,
@@ -680,7 +641,7 @@ class AppShellNotifier extends Notifier<ShellState>
   Future<Display> _displayAt(Offset point) async {
     final displays = await screenRetriever.getAllDisplays();
     for (final display in displays) {
-      if (_usableArea(display).inflate(_screenGap * 2).contains(point)) {
+      if (_usableArea(display).inflate(kWindowGap * 2).contains(point)) {
         return display;
       }
     }
@@ -692,38 +653,6 @@ class AppShellNotifier extends Notifier<ShellState>
     final origin = display.visiblePosition ?? Offset.zero;
     final size = display.visibleSize ?? display.size;
     return Rect.fromLTWH(origin.dx, origin.dy, size.width, size.height);
-  }
-
-  /// A [size] window in the middle of [area], shrunk to fit it if need be.
-  Rect _centred(Rect area, Size size) {
-    final fitted = Size(
-      math.min(size.width, area.width - _screenGap * 2),
-      math.min(size.height, area.height - _screenGap * 2),
-    );
-    return Rect.fromCenter(
-      center: area.center,
-      width: fitted.width,
-      height: fitted.height,
-    );
-  }
-
-  /// Where the menu goes: centred on the cursor (which is on the tray icon),
-  /// above it when the icon is in the lower half of the screen and below it
-  /// otherwise, and always fully inside the usable area.
-  Rect _menuRect(Offset cursor, Rect area) {
-    const size = kTrayMenuSize;
-    final above = cursor.dy > area.center.dy;
-    final left = (cursor.dx - size.width / 2).clamp(
-      area.left + _screenGap,
-      area.right - size.width - _screenGap,
-    );
-    final top =
-        (above ? cursor.dy - size.height - _screenGap : cursor.dy + _screenGap)
-            .clamp(
-      area.top + _screenGap,
-      area.bottom - size.height - _screenGap,
-    );
-    return Rect.fromLTWH(left, top, size.width, size.height);
   }
 
   void _log(String message, Object error, StackTrace stackTrace) {
