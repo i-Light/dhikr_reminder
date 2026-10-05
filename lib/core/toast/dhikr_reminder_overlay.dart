@@ -5,6 +5,7 @@ import 'package:dhikr_reminder/core/toast/border_frame.dart';
 import 'package:dhikr_reminder/core/toast/dhikr_fit_text.dart';
 import 'package:dhikr_reminder/core/toast/dust_particles_overlay.dart';
 import 'package:dhikr_reminder/core/toast/outer_glow.dart';
+import 'package:dhikr_reminder/core/window/app_logo.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
 import 'package:dhikr_reminder/features/stats/dhikr_stats.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
@@ -752,10 +753,7 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
                         Row(
                           spacing: 16,
                           children: [
-                            Icon(
-                              Icons.dark_mode,
-                              color: accent,
-                            ),
+                            AppLogo(size: _s(30)),
                             Text(
                               l10n.dhikrReminderTitle,
                               style: theme.textTheme.labelLarge?.copyWith(

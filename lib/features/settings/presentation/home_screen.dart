@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:dhikr_reminder/core/date/hijri_date.dart';
 import 'package:dhikr_reminder/core/locale/locale_controller.dart';
-import 'package:dhikr_reminder/core/window/svg_icon.dart';
+import 'package:dhikr_reminder/core/window/app_logo.dart';
 import 'package:dhikr_reminder/core/window/tray_menu_panel.dart'
     show formatCountdown;
 import 'package:dhikr_reminder/features/mobile_reminders/overlay_service.dart';
@@ -14,9 +14,7 @@ import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
 import 'package:dhikr_reminder/platform/app_platform.dart';
 import 'package:dhikr_reminder/platform/autostart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 /// The home page: today's Hijri date, how much has been counted, when the next
 /// reminder comes, and the app-level switches (language, start with Windows,
@@ -55,7 +53,7 @@ class HomeScreen extends ConsumerWidget {
                 Row(
                   spacing: 12,
                   children: [
-                    const _AppLogo(size: 44),
+                    const AppLogo(size: 44),
                     Expanded(
                       child: Text(
                         l10n.appTitle,
@@ -127,30 +125,6 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// The app's logo, drawn from the same SVG as the tray and splash.
-class _AppLogo extends StatelessWidget {
-  const _AppLogo({required this.size});
-
-  final double size;
-
-  static final Future<String> _svg =
-      rootBundle.loadString(kAppIconSvgAsset).then(inlineUsedImages);
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: FutureBuilder<String>(
-        future: _svg,
-        builder: (context, snapshot) => snapshot.hasData
-            ? SvgPicture.string(snapshot.data!)
-            : const SizedBox.shrink(),
       ),
     );
   }

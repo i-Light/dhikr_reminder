@@ -1,4 +1,5 @@
 import 'package:dhikr_reminder/core/toast/dhikr_reminder_overlay.dart';
+import 'package:dhikr_reminder/core/window/app_logo.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
 import 'package:dhikr_reminder/features/stats/dhikr_stats.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
@@ -56,7 +57,7 @@ class MobileReminderScreen extends ConsumerWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.dark_mode, color: palette.accent),
+                        const AppLogo(size: 28),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
