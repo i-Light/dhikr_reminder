@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'Dhikr Reminder';
+  String get appTitle => 'Dhikr';
 
   @override
   String get splashDescription =>
@@ -102,13 +102,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get traySoundOff => 'Sound off';
 
   @override
+  String get trayPause => 'Pause for 1 hour';
+
+  @override
+  String get trayResume => 'Resume reminders';
+
+  @override
+  String trayPausedUntil(String time) {
+    return 'Paused until $time';
+  }
+
+  @override
+  String get settingsAutostartTitle => 'Start with Windows';
+
+  @override
+  String get settingsAutostartSubtitle =>
+      'Open quietly in the tray when you sign in.';
+
+  @override
   String get trayQuit => 'Close app';
 
   @override
   String get updateTitle => 'Updates';
 
   @override
-  String get updateSubtitle => 'Keep Dhikr Reminder up to date';
+  String get updateSubtitle => 'Keep Dhikr up to date';
 
   @override
   String updateVersion(String version) {
@@ -189,6 +207,123 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navSettings => 'Settings';
+
+  @override
+  String get statSession => 'Session';
+
+  @override
+  String get statToday => 'Today';
+
+  @override
+  String get homeNextReminder => 'Next reminder';
+
+  @override
+  String get homeCountedToday => 'Counted today';
+
+  @override
+  String get homeCountedSession => 'This session';
+
+  @override
+  String get navNotifications => 'Notifications';
+
+  @override
+  String get notifTitle => 'Notifications';
+
+  @override
+  String get notifSubtitle =>
+      'Choose how often a dhikr reaches you, and which ones.';
+
+  @override
+  String get notifScheduleSection => 'Schedule';
+
+  @override
+  String get notifIntervalTitle => 'Remind me every';
+
+  @override
+  String notifIntervalMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String get notifSoundTitle => 'Sound';
+
+  @override
+  String get notifSoundSubtitle => 'Play a sound when a reminder arrives';
+
+  @override
+  String get notifPriorityTitle => 'Favour some dhikr';
+
+  @override
+  String get notifPrioritySubtitle =>
+      'Give each dhikr its own weight so some come up more often';
+
+  @override
+  String get notifMySection => 'My dhikr';
+
+  @override
+  String get notifAddDhikr => 'Add dhikr';
+
+  @override
+  String get notifEmptyTitle => 'No dhikr yet';
+
+  @override
+  String get notifEmptyHint => 'Add the dhikr you want to be reminded of.';
+
+  @override
+  String get notifEditTitle => 'Edit dhikr';
+
+  @override
+  String get notifNewTitle => 'New dhikr';
+
+  @override
+  String get notifNameLabel => 'Dhikr text';
+
+  @override
+  String get notifAmountLabel => 'Repetitions';
+
+  @override
+  String notifRepeatCount(int count) {
+    return '$count times';
+  }
+
+  @override
+  String get notifFrequencyLabel => 'How often it comes up';
+
+  @override
+  String get notifFrequencyNever => 'Never';
+
+  @override
+  String notifFrequencyValue(int value) {
+    return '$value of 10';
+  }
+
+  @override
+  String get notifFrequencyHint =>
+      'A weight, not a percentage: 6 comes up twice as often as 3. 0 means never.';
+
+  @override
+  String get notifDeleted => 'Dhikr deleted';
+
+  @override
+  String get notifUndo => 'Undo';
+
+  @override
+  String get notifNameRequired => 'Write the dhikr first';
+
+  @override
+  String get commonCancel => 'Cancel';
+
+  @override
+  String get notifGoalTitle => 'Daily goal';
+
+  @override
+  String get notifGoalSubtitle =>
+      'Aim for a number of dhikr each day and see today\'s progress';
+
+  @override
+  String notifGoalCount(int count) {
+    return '$count a day';
+  }
 
   @override
   String get navLibrary => 'Dhikr Library';

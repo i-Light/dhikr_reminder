@@ -53,3 +53,8 @@ app.*.map.json
 
 # Generated from assets/images/app_icon.svg by tool/generate_app_icon.dart
 /windows/runner/resources/app_icon.ico
+
+# Android release signing — never commit
+android/key.properties
+*.jks
+*.keystore

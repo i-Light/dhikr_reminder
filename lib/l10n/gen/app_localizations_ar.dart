@@ -9,7 +9,7 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
-  String get appTitle => 'تذكير الأذكار';
+  String get appTitle => 'ذِكر';
 
   @override
   String get splashDescription =>
@@ -101,13 +101,30 @@ class AppLocalizationsAr extends AppLocalizations {
   String get traySoundOff => 'الصوت مقفول';
 
   @override
+  String get trayPause => 'إيقاف لمدة ساعة';
+
+  @override
+  String get trayResume => 'استئناف التذكيرات';
+
+  @override
+  String trayPausedUntil(String time) {
+    return 'متوقف لحد $time';
+  }
+
+  @override
+  String get settingsAutostartTitle => 'التشغيل مع ويندوز';
+
+  @override
+  String get settingsAutostartSubtitle => 'يفتح في الـ tray بهدوء أول ما تدخل.';
+
+  @override
   String get trayQuit => 'إغلاق التطبيق';
 
   @override
   String get updateTitle => 'التحديثات';
 
   @override
-  String get updateSubtitle => 'خلّي تذكير الأذكار محدّث دايماً';
+  String get updateSubtitle => 'خلّي ذِكر محدّث دايماً';
 
   @override
   String updateVersion(String version) {
@@ -187,6 +204,121 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get navSettings => 'الإعدادات';
+
+  @override
+  String get statSession => 'الجلسة';
+
+  @override
+  String get statToday => 'النهارده';
+
+  @override
+  String get homeNextReminder => 'التذكير الجاي';
+
+  @override
+  String get homeCountedToday => 'اتعدّ النهارده';
+
+  @override
+  String get homeCountedSession => 'الجلسة دي';
+
+  @override
+  String get navNotifications => 'الإشعارات';
+
+  @override
+  String get notifTitle => 'الإشعارات';
+
+  @override
+  String get notifSubtitle => 'اختار كل قد ايه يجيلك ذكر، وانهي أذكار.';
+
+  @override
+  String get notifScheduleSection => 'المواعيد';
+
+  @override
+  String get notifIntervalTitle => 'فكّرني كل';
+
+  @override
+  String notifIntervalMinutes(int minutes) {
+    return '$minutes دقيقة';
+  }
+
+  @override
+  String get notifSoundTitle => 'الصوت';
+
+  @override
+  String get notifSoundSubtitle => 'تشغيل صوت لما يوصل التذكير';
+
+  @override
+  String get notifPriorityTitle => 'تفضيل بعض الأذكار';
+
+  @override
+  String get notifPrioritySubtitle =>
+      'اديّ كل ذكر وزن خاص بيه عشان بعضها يظهر أكتر';
+
+  @override
+  String get notifMySection => 'أذكاري';
+
+  @override
+  String get notifAddDhikr => 'إضافة ذكر';
+
+  @override
+  String get notifEmptyTitle => 'لسه مفيش أذكار';
+
+  @override
+  String get notifEmptyHint => 'ضيف الأذكار الى عايز تتفكّر بيها.';
+
+  @override
+  String get notifEditTitle => 'تعديل الذكر';
+
+  @override
+  String get notifNewTitle => 'ذكر جديد';
+
+  @override
+  String get notifNameLabel => 'نص الذكر';
+
+  @override
+  String get notifAmountLabel => 'عدد التكرار';
+
+  @override
+  String notifRepeatCount(int count) {
+    return '$count مرة';
+  }
+
+  @override
+  String get notifFrequencyLabel => 'بيظهر قد ايه';
+
+  @override
+  String get notifFrequencyNever => 'أبداً';
+
+  @override
+  String notifFrequencyValue(int value) {
+    return '$value من 10';
+  }
+
+  @override
+  String get notifFrequencyHint =>
+      'ده وزن مش نسبة مئوية: 6 بيظهر ضعف 3. والصفر يعني أبداً.';
+
+  @override
+  String get notifDeleted => 'اتمسح الذكر';
+
+  @override
+  String get notifUndo => 'تراجع';
+
+  @override
+  String get notifNameRequired => 'اكتب الذكر الأول';
+
+  @override
+  String get commonCancel => 'إلغاء';
+
+  @override
+  String get notifGoalTitle => 'الهدف اليومي';
+
+  @override
+  String get notifGoalSubtitle => 'حدد عدد أذكار كل يوم وشوف تقدمك النهارده';
+
+  @override
+  String notifGoalCount(int count) {
+    return '$count في اليوم';
+  }
 
   @override
   String get navLibrary => 'موسوعة الأذكار';

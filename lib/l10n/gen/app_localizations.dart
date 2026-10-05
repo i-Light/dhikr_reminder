@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'Dhikr Reminder'**
+  /// **'Dhikr'**
   String get appTitle;
 
   /// No description provided for @splashDescription.
@@ -266,6 +266,36 @@ abstract class AppLocalizations {
   /// **'Sound off'**
   String get traySoundOff;
 
+  /// No description provided for @trayPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause for 1 hour'**
+  String get trayPause;
+
+  /// No description provided for @trayResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume reminders'**
+  String get trayResume;
+
+  /// No description provided for @trayPausedUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused until {time}'**
+  String trayPausedUntil(String time);
+
+  /// No description provided for @settingsAutostartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start with Windows'**
+  String get settingsAutostartTitle;
+
+  /// No description provided for @settingsAutostartSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open quietly in the tray when you sign in.'**
+  String get settingsAutostartSubtitle;
+
   /// No description provided for @trayQuit.
   ///
   /// In en, this message translates to:
@@ -281,7 +311,7 @@ abstract class AppLocalizations {
   /// No description provided for @updateSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Keep Dhikr Reminder up to date'**
+  /// **'Keep Dhikr up to date'**
   String get updateSubtitle;
 
   /// No description provided for @updateVersion.
@@ -409,6 +439,216 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settings'**
   String get navSettings;
+
+  /// No description provided for @statSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Session'**
+  String get statSession;
+
+  /// No description provided for @statToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get statToday;
+
+  /// No description provided for @homeNextReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Next reminder'**
+  String get homeNextReminder;
+
+  /// No description provided for @homeCountedToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Counted today'**
+  String get homeCountedToday;
+
+  /// No description provided for @homeCountedSession.
+  ///
+  /// In en, this message translates to:
+  /// **'This session'**
+  String get homeCountedSession;
+
+  /// No description provided for @navNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get navNotifications;
+
+  /// No description provided for @notifTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notifTitle;
+
+  /// No description provided for @notifSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how often a dhikr reaches you, and which ones.'**
+  String get notifSubtitle;
+
+  /// No description provided for @notifScheduleSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule'**
+  String get notifScheduleSection;
+
+  /// No description provided for @notifIntervalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remind me every'**
+  String get notifIntervalTitle;
+
+  /// No description provided for @notifIntervalMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String notifIntervalMinutes(int minutes);
+
+  /// No description provided for @notifSoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound'**
+  String get notifSoundTitle;
+
+  /// No description provided for @notifSoundSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Play a sound when a reminder arrives'**
+  String get notifSoundSubtitle;
+
+  /// No description provided for @notifPriorityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Favour some dhikr'**
+  String get notifPriorityTitle;
+
+  /// No description provided for @notifPrioritySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Give each dhikr its own weight so some come up more often'**
+  String get notifPrioritySubtitle;
+
+  /// No description provided for @notifMySection.
+  ///
+  /// In en, this message translates to:
+  /// **'My dhikr'**
+  String get notifMySection;
+
+  /// No description provided for @notifAddDhikr.
+  ///
+  /// In en, this message translates to:
+  /// **'Add dhikr'**
+  String get notifAddDhikr;
+
+  /// No description provided for @notifEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No dhikr yet'**
+  String get notifEmptyTitle;
+
+  /// No description provided for @notifEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add the dhikr you want to be reminded of.'**
+  String get notifEmptyHint;
+
+  /// No description provided for @notifEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit dhikr'**
+  String get notifEditTitle;
+
+  /// No description provided for @notifNewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New dhikr'**
+  String get notifNewTitle;
+
+  /// No description provided for @notifNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dhikr text'**
+  String get notifNameLabel;
+
+  /// No description provided for @notifAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Repetitions'**
+  String get notifAmountLabel;
+
+  /// No description provided for @notifRepeatCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} times'**
+  String notifRepeatCount(int count);
+
+  /// No description provided for @notifFrequencyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'How often it comes up'**
+  String get notifFrequencyLabel;
+
+  /// No description provided for @notifFrequencyNever.
+  ///
+  /// In en, this message translates to:
+  /// **'Never'**
+  String get notifFrequencyNever;
+
+  /// No description provided for @notifFrequencyValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{value} of 10'**
+  String notifFrequencyValue(int value);
+
+  /// No description provided for @notifFrequencyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A weight, not a percentage: 6 comes up twice as often as 3. 0 means never.'**
+  String get notifFrequencyHint;
+
+  /// No description provided for @notifDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Dhikr deleted'**
+  String get notifDeleted;
+
+  /// No description provided for @notifUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get notifUndo;
+
+  /// No description provided for @notifNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Write the dhikr first'**
+  String get notifNameRequired;
+
+  /// No description provided for @commonCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get commonCancel;
+
+  /// No description provided for @notifGoalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily goal'**
+  String get notifGoalTitle;
+
+  /// No description provided for @notifGoalSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Aim for a number of dhikr each day and see today\'s progress'**
+  String get notifGoalSubtitle;
+
+  /// No description provided for @notifGoalCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} a day'**
+  String notifGoalCount(int count);
 
   /// No description provided for @navLibrary.
   ///
