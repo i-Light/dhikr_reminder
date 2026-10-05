@@ -1,6 +1,0 @@
-﻿E:\IMA work\Code\dhikr_reminder\lib\core\theme\gradient_text.dart:6: /// A [ShaderMask] over a plain [Text]: size, weight, letter-spacing and
-E:\IMA work\Code\dhikr_reminder\lib\core\theme\gradient_text.dart:63: return ShaderMask(
-E:\IMA work\Code\dhikr_reminder\lib\core\theme\gradient_widgets.dart:87: return Opacity(
-E:\IMA work\Code\dhikr_reminder\lib\core\toast\border_frame.dart:157: return Opacity(
-E:\IMA work\Code\dhikr_reminder\lib\core\toast\dhikr_reminder_overlay.dart:214: AnimatedOpacity(
-E:\IMA work\Code\dhikr_reminder\lib\features\settings\presentation\widgets\dhikr_settings_card.dart:254: child: AnimatedOpacity(

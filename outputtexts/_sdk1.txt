@@ -1,2 +1,0 @@
-﻿872: class RenderOpacity extends RenderProxyBox {
-1107: class RenderAnimatedOpacity extends RenderProxyBox with RenderAnimatedOpacityMixin<RenderBox> {

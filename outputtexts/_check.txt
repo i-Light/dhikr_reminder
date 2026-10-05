@@ -1,3 +1,0 @@
-﻿E:\IMA work\Code\dhikr_reminder\test\dhikr_reminder_test.dart
-Analyzing dhikr_reminder...                                     
-No issues found! (ran in 3.8s)
