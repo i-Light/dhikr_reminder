@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:dhikr_reminder/features/mobile_reminders/reminder_planner.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 /// What the app needs from the phone's notification system. An interface so
@@ -36,7 +35,6 @@ class LocalReminderNotifications implements ReminderNotifications {
 
   @override
   Future<void> init({required void Function(int entryId) onOpen}) async {
-    tzdata.initializeTimeZones();
     void open(String? payload) {
       final id = int.tryParse(payload ?? '');
       if (id != null) onOpen(id);
@@ -82,7 +80,8 @@ class LocalReminderNotifications implements ReminderNotifications {
           id: reminder.id,
           title: title,
           body: reminder.entry.name,
-          // An absolute instant: UTC avoids needing the device's zone name.
+          // An absolute instant in UTC: no timezone database is needed (nor
+          // bundled — it would add several hundred KB to the app).
           scheduledDate: tz.TZDateTime.from(reminder.at, tz.UTC),
           notificationDetails: details,
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,

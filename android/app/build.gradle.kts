@@ -56,6 +56,16 @@ android {
         }
     }
 
+    packaging {
+        jniLibs {
+            // Keeps libflutter.so and libapp.so compressed inside the APK
+            // instead of stored raw for mmap: the file is about half the size.
+            // The phone unpacks them on install, so it uses more storage after
+            // installing; the download and the APK on disk are much smaller.
+            useLegacyPackaging = true
+        }
+    }
+
     buildTypes {
         release {
             signingConfig = if (keystoreProperties.containsKey("storeFile")) {
