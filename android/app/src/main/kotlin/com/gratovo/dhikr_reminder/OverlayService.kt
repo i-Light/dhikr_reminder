@@ -127,11 +127,10 @@ class OverlayService : Service() {
             this.text = reminder.text
             typeface = arabic
             setTextColor(cream)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 26f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 30f)
             gravity = Gravity.CENTER
             textDirection = View.TEXT_DIRECTION_RTL
             setLineSpacing(0f, 1.45f)
-            maxLines = 8
         }
         counterView = TextView(this).apply {
             setTextColor(accent)
@@ -153,9 +152,12 @@ class OverlayService : Service() {
             addView(header)
             addView(
                 text,
+                // Takes all the height the card has left, so the dhikr sits in
+                // the middle of a big, easy-to-hit target.
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    0,
+                    1f,
                 ).apply { topMargin = dp(12); bottomMargin = dp(14) },
             )
             addView(counterView)
@@ -168,10 +170,12 @@ class OverlayService : Service() {
         card = body
         render()
 
-        val width = minOf(resources.displayMetrics.widthPixels - dp(32), dp(420))
+        // 80% of the screen's width and 90% of its height: big enough to
+        // reach from anywhere with one thumb.
+        val metrics = resources.displayMetrics
         val params = WindowManager.LayoutParams(
-            width,
-            WindowManager.LayoutParams.WRAP_CONTENT,
+            (metrics.widthPixels * CARD_WIDTH_FRACTION).toInt(),
+            (metrics.heightPixels * CARD_HEIGHT_FRACTION).toInt(),
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
@@ -258,6 +262,8 @@ class OverlayService : Service() {
     companion object {
         private const val CHANNEL_ID = "dhikr_overlay"
         private const val NOTIFICATION_ID = 4711
+        private const val CARD_WIDTH_FRACTION = 0.8f
+        private const val CARD_HEIGHT_FRACTION = 0.9f
         private const val IDLE_TIMEOUT_MS = 3 * 60 * 1000L
         private const val DONE_DWELL_MS = 1600L
         private const val HapticFeedback_TAP = HapticFeedbackConstants.VIRTUAL_KEY
