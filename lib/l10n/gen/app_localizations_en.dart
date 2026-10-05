@@ -12,6 +12,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTitle => 'Dhikr Reminder';
 
   @override
+  String get splashDescription =>
+      'A gentle dhikr reminder that lives in your tray.';
+
+  @override
   String get homeSubtitle =>
       'A dhikr pops up every few minutes — tap it out, then get back to work.';
 

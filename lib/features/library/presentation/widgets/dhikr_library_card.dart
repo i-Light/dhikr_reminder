@@ -2,13 +2,13 @@ import 'package:dhikr_reminder/features/library/application/library_controller.d
 import 'package:dhikr_reminder/features/library/domain/dhikr_item.dart';
 import 'package:flutter/material.dart';
 
-/// The face the dhikr itself renders in — the one Arabic font this app ships
-/// (`assets/fonts/PanoramaNaskhMobile-Regular.otf`, family `Naksh`), and the
-/// same one the reminder card uses. A Naskh face is what makes a vocalised
+/// The face the dhikr itself renders in — the app's default Arabic font
+/// (`assets/fonts/ali-meshref.ttf`, family `AliMeshref`), and the same one the
+/// reminder card uses. A Naskh-style face is what makes a vocalised
 /// ayah read as scripture rather than as UI text, which is the whole point of
 /// the library. The entry's other type (subtitle, reference, description)
 /// stays on the theme's face, so the dhikr is the only thing set apart.
-const String _dhikrFontFamily = 'Naksh';
+const String _dhikrFontFamily = 'AliMeshref';
 
 /// Line height for the dhikr text. Generous on purpose: tashkeel sits above
 /// and below the letter shapes, and at Naskh's own leading the marks of one

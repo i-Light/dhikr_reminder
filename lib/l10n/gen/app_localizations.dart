@@ -104,6 +104,12 @@ abstract class AppLocalizations {
   /// **'Dhikr Reminder'**
   String get appTitle;
 
+  /// No description provided for @splashDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'A gentle dhikr reminder that lives in your tray.'**
+  String get splashDescription;
+
   /// No description provided for @homeSubtitle.
   ///
   /// In en, this message translates to:

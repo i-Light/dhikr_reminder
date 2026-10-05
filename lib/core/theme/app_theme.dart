@@ -248,7 +248,7 @@ class GratovoAccents extends ThemeExtension<GratovoAccents> {
 class AppTheme {
   AppTheme._();
 
-  static const String _fontFamily = 'Cairo';
+  static const String _fontFamily = 'IBMPlexSansArabic';
 
   static ThemeData get dark => _themeFrom(
         brightness: Brightness.dark,

@@ -25,6 +25,9 @@ class FlutterWindow : public Win32Window {
                          LPARAM const lparam) noexcept override;
 
  private:
+  // Resizes the Flutter view to exactly fill the window's client area.
+  void SyncContentSize();
+
   // The project to run.
   flutter::DartProject project_;
 

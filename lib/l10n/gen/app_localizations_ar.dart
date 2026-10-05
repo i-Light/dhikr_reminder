@@ -12,6 +12,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get appTitle => 'تذكير الأذكار';
 
   @override
+  String get splashDescription =>
+      'تذكير بالأذكار بيعيش في الـ tray وبيفكّرك بذكر الله.';
+
+  @override
   String get homeSubtitle =>
       'هيطلع ذكر كل شوية دقايق — عدّه بضغطة وارجع لشغلك.';
 

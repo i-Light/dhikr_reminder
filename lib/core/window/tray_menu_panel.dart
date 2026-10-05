@@ -8,6 +8,9 @@ import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// Flat dark fill of the menu: one solid color, no gradient.
+const _menuBackground = Color(0xFF1B140B);
+
 /// The tray icon's right-click menu, drawn in the reminder card's own gold —
 /// the same palette and border language — rather than the native Windows menu.
 ///
@@ -27,17 +30,19 @@ class TrayMenuPanel extends ConsumerWidget {
     final shell = ref.read(appShellProvider.notifier);
     final isMuted = ref.watch(dhikrSettingsProvider.select((s) => s.isMuted));
 
-    return Material(
-      // Opaque underneath: the card gradient is translucent, and nothing but
-      // the desktop is behind it in a popup this size.
-      color: const Color(0xFF1B140B),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: palette.cardFill,
-          border: Border.all(color: palette.accent, width: 2),
+    // The window is transparent and a few pixels bigger than the card, so the
+    // card's rounded corners show the desktop behind them.
+    return Padding(
+      padding: const EdgeInsets.all(4),
+      child: Material(
+        color: _menuBackground,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: palette.accent, width: 1.5),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 4),
           child: Column(
             children: [
               _TrayMenuItem(
@@ -59,8 +64,8 @@ class TrayMenuPanel extends ConsumerWidget {
               ),
               Divider(
                 height: 9,
-                indent: 16,
-                endIndent: 16,
+                indent: 12,
+                endIndent: 12,
                 color: palette.accent.withValues(alpha: 0.35),
               ),
               _TrayMenuItem(
@@ -102,16 +107,16 @@ class _TrayMenuItem extends StatelessWidget {
     final textColor = theme.colorScheme.onSurface;
 
     return SizedBox(
-      height: 56,
+      height: 36,
       child: InkWell(
         onTap: onTap,
         hoverColor: accent.withValues(alpha: 0.16),
         splashColor: accent.withValues(alpha: 0.24),
         highlightColor: accent.withValues(alpha: 0.10),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Row(
-            spacing: 16,
+            spacing: 10,
             children: [
               // Keyed on the icon so a change (mute <-> unmute) plays the
               // swap rather than snapping.
@@ -121,7 +126,7 @@ class _TrayMenuItem extends StatelessWidget {
                   scale: animation,
                   child: FadeTransition(opacity: animation, child: child),
                 ),
-                child: Icon(icon, key: ValueKey(icon), color: accent, size: 26),
+                child: Icon(icon, key: ValueKey(icon), color: accent, size: 18),
               ),
               Expanded(
                 child: Column(
@@ -132,8 +137,9 @@ class _TrayMenuItem extends StatelessWidget {
                       label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleSmall?.copyWith(
+                      style: theme.textTheme.bodySmall?.copyWith(
                         color: textColor,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -144,6 +150,7 @@ class _TrayMenuItem extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: accent,
+                          fontSize: 10,
                           fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),

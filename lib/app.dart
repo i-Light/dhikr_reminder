@@ -1,3 +1,4 @@
+import 'package:dhikr_reminder/core/locale/locale_controller.dart';
 import 'package:dhikr_reminder/core/navigation/main_shell.dart';
 import 'package:dhikr_reminder/core/theme/app_theme.dart';
 import 'package:dhikr_reminder/core/toast/dhikr_reminder_overlay.dart';
@@ -15,20 +16,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// This is gratovo_toolbox's `app.dart` reduced to what this app actually
 /// needs: the same theme, the same localization setup, and a `builder` that
 /// decides what the one native window is showing — see [_ShellHost].
-class DhikrReminderApp extends StatelessWidget {
+class DhikrReminderApp extends ConsumerWidget {
   const DhikrReminderApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
       title: 'Dhikr Reminder',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
-      // Always Arabic (Egyptian), whatever the OS locale is. `ar_EG` resolves
-      // to the `ar` strings, which are already written in Egyptian dialect.
-      locale: const Locale('ar', 'EG'),
+      // Arabic (Egyptian) unless the person switched to English in settings —
+      // never the OS locale. See `localeProvider`.
+      locale: ref.watch(localeProvider),
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       // `MainShell` is the app's own two pages (settings, the azkar library)
@@ -126,7 +127,8 @@ class _ShellHostState extends ConsumerState<_ShellHost> {
                     key: const ValueKey('reminder'),
                     // Empty until the window is on screen, so the card plays
                     // its entrance where it can be seen.
-                    child: DhikrReminderProviderSurface(visible: shell.revealed),
+                    child:
+                        DhikrReminderProviderSurface(visible: shell.revealed),
                   ),
                 ],
               ShellMode.trayMenu => const [

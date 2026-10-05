@@ -1,3 +1,4 @@
+import 'package:dhikr_reminder/core/locale/locale_controller.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
 import 'package:dhikr_reminder/features/settings/presentation/widgets/dhikr_settings_card.dart';
 import 'package:dhikr_reminder/features/settings/presentation/widgets/update_card.dart';
@@ -31,7 +32,27 @@ class HomeScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(l10n.appTitle, style: theme.textTheme.headlineMedium),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l10n.appTitle,
+                        style: theme.textTheme.headlineMedium,
+                      ),
+                    ),
+                    // Labelled with the language it switches *to*, in that
+                    // language, so it is findable whichever one is showing.
+                    OutlinedButton.icon(
+                      onPressed: ref.read(localeProvider.notifier).toggle,
+                      icon: const Icon(Icons.language),
+                      label: Text(
+                        ref.watch(localeProvider).languageCode == 'en'
+                            ? 'العربية'
+                            : 'English',
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 8),
                 Text(
                   l10n.homeSubtitle,

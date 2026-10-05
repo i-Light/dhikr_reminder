@@ -62,6 +62,30 @@ flutter:
       fonts:
         - asset: assets/fonts/PanoramaNaskhMobile-Regular.otf
 
+    # The app's default face: the theme (core/theme/app_theme.dart) uses it for
+    # all UI text.
+    - family: IBMPlexSansArabic
+      fonts:
+        - asset: assets/fonts/IBMPlexSansArabic-Thin.ttf
+          weight: 100
+        - asset: assets/fonts/IBMPlexSansArabic-ExtraLight.ttf
+          weight: 200
+        - asset: assets/fonts/IBMPlexSansArabic-Light.ttf
+          weight: 300
+        - asset: assets/fonts/IBMPlexSansArabic-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexSansArabic-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexSansArabic-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/IBMPlexSansArabic-Bold.ttf
+          weight: 700
+
+    # The dhikr texts' face: the reminder card and the library entries.
+    - family: AliMeshref
+      fonts:
+        - asset: assets/fonts/ali-meshref.ttf
+
   assets:
     # The reminder card's frame â€” see border_frame.dart.
     - assets/images/frame_corner.svg

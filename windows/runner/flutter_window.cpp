@@ -8,6 +8,42 @@
 
 #include "flutter/generated_plugin_registrant.h"
 
+namespace {
+
+// The effective DPI of [monitor], from shcore (Windows 8.1+), loaded on demand
+// so the runner needs no extra link dependency. Falls back to the system DPI.
+UINT DpiForMonitor(HMONITOR monitor) {
+  using GetDpiForMonitorFn = HRESULT(WINAPI*)(HMONITOR, int, UINT*, UINT*);
+  static const auto get_dpi_for_monitor = [] {
+    HMODULE shcore = ::LoadLibraryW(L"Shcore.dll");
+    return shcore ? reinterpret_cast<GetDpiForMonitorFn>(
+                        ::GetProcAddress(shcore, "GetDpiForMonitor"))
+                  : nullptr;
+  }();
+  UINT dpi_x = 0, dpi_y = 0;
+  constexpr int kMdtEffectiveDpi = 0;
+  if (get_dpi_for_monitor &&
+      SUCCEEDED(get_dpi_for_monitor(monitor, kMdtEffectiveDpi, &dpi_x, &dpi_y)) &&
+      dpi_x != 0) {
+    return dpi_x;
+  }
+  return ::GetDpiForSystem();
+}
+
+// Moves and sizes [hwnd] to [rect] (physical pixels), twice. Crossing onto a
+// monitor with another DPI makes Windows send WM_DPICHANGED, whose handler
+// (win32_window.cpp) resizes the window to the rect Windows suggests -- which
+// would undo the size just set. The second call, made once the window is
+// already on that monitor, is not interrupted and so is the one that sticks.
+void PlaceWindow(HWND hwnd, const RECT& rect) {
+  for (int i = 0; i < 2; ++i) {
+    ::SetWindowPos(hwnd, nullptr, rect.left, rect.top, rect.right - rect.left,
+                   rect.bottom - rect.top, SWP_NOZORDER | SWP_NOACTIVATE);
+  }
+}
+
+}  // namespace
+
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
     : project_(project) {}
 
@@ -96,17 +132,11 @@ bool FlutterWindow::OnCreate() {
           ::GetMonitorInfo(monitor, &info);
           const RECT screen = info.rcMonitor;
 
-          // Step onto the monitor first: if its DPI differs, Windows re-scales
-          // the window (see WM_DPICHANGED in win32_window.cpp) and the DPI to
-          // size the window by is only known after that.
+          // The scale of the monitor the window is going TO. Asking the window
+          // itself right after moving it is wrong: Windows has not switched
+          // its DPI yet, so it still answers with the monitor it came from.
+          const UINT dpi = DpiForMonitor(monitor);
           const UINT dpi_before = ::GetDpiForWindow(hwnd);
-          RECT current;
-          ::GetWindowRect(hwnd, &current);
-          ::SetWindowPos(hwnd, nullptr, screen.left, screen.top,
-                         current.right - current.left,
-                         current.bottom - current.top,
-                         SWP_NOZORDER | SWP_NOACTIVATE);
-          const UINT dpi = ::GetDpiForWindow(hwnd);
           const double scale = dpi / 96.0;
 
           const int width = static_cast<int>(std::lround(std::min(
@@ -117,8 +147,71 @@ bool FlutterWindow::OnCreate() {
               (screen.bottom - screen.top) - 2 * logical_gap * scale)));
           const int x = screen.left + ((screen.right - screen.left) - width) / 2;
           const int y = screen.top + ((screen.bottom - screen.top) - height) / 2;
-          ::SetWindowPos(hwnd, nullptr, x, y, width, height,
-                         SWP_NOZORDER | SWP_NOACTIVATE);
+          PlaceWindow(hwnd, {x, y, x + width, y + height});
+          result->Success(flutter::EncodableValue(dpi != dpi_before));
+        } else if (call.method_name() == "syncContent") {
+          SyncContentSize();
+          result->Success();
+        } else if (call.method_name() == "restoreWindow") {
+          // Leaves maximized state: a window hidden and re-shown while
+          // maximized comes back maximized, whatever size it is then given.
+          HWND hwnd = GetHandle();
+          if (::IsZoomed(hwnd) || ::IsIconic(hwnd)) {
+            ::ShowWindow(hwnd, SW_RESTORE);
+          }
+          result->Success();
+        } else if (call.method_name() == "placeNearCursor") {
+          // Puts a popup of the given logical size beside the cursor (which is
+          // on the tray icon): centred on it horizontally, above it when the
+          // icon is in the lower half of the monitor's work area and below it
+          // otherwise, always fully inside the work area. Physical pixels
+          // throughout, for the same reason as centerOnCursorMonitor.
+          const auto* args = std::get_if<flutter::EncodableMap>(call.arguments());
+          auto number = [args](const char* key) -> double {
+            if (args == nullptr) return 0;
+            auto it = args->find(flutter::EncodableValue(key));
+            if (it == args->end()) return 0;
+            if (const auto* d = std::get_if<double>(&it->second)) return *d;
+            if (const auto* i = std::get_if<int32_t>(&it->second)) return *i;
+            return 0;
+          };
+          const double logical_width = number("width");
+          const double logical_height = number("height");
+          const double logical_gap = number("gap");
+          if (logical_width <= 0 || logical_height <= 0) {
+            result->Error("bad-args",
+                          "placeNearCursor expects width and height");
+            return;
+          }
+
+          HWND hwnd = GetHandle();
+          POINT cursor;
+          ::GetCursorPos(&cursor);
+          HMONITOR monitor =
+              ::MonitorFromPoint(cursor, MONITOR_DEFAULTTONEAREST);
+          MONITORINFO info = {sizeof(info)};
+          ::GetMonitorInfo(monitor, &info);
+          const RECT work = info.rcWork;
+
+          const UINT dpi = DpiForMonitor(monitor);
+          const UINT dpi_before = ::GetDpiForWindow(hwnd);
+          const double scale = dpi / 96.0;
+          const int gap = static_cast<int>(std::lround(logical_gap * scale));
+          const int width = static_cast<int>(std::lround(logical_width * scale));
+          const int height =
+              static_cast<int>(std::lround(logical_height * scale));
+
+          const bool above = cursor.y > (work.top + work.bottom) / 2;
+          auto clamp_into = [](int value, int low, int high) {
+            if (high < low) high = low;
+            return value < low ? low : (value > high ? high : value);
+          };
+          const int x = clamp_into(cursor.x - width / 2, work.left + gap,
+                                   work.right - width - gap);
+          const int y = clamp_into(above ? cursor.y - height - gap
+                                         : cursor.y + gap,
+                                   work.top + gap, work.bottom - height - gap);
+          PlaceWindow(hwnd, {x, y, x + width, y + height});
           result->Success(flutter::EncodableValue(dpi != dpi_before));
         } else {
           result->NotImplemented();
@@ -130,6 +223,28 @@ bool FlutterWindow::OnCreate() {
   flutter_controller_->ForceRedraw();
 
   return true;
+}
+
+// The Flutter view is a child window that has to be kept the size of the
+// window's client area. Normally WM_SIZE does that (win32_window.cpp), but a
+// window that is maximized, restored, re-framed (frameless <-> titled) and
+// re-sized in quick succession can end up with its view left at an earlier
+// size. The surface then renders for the stale size and is cropped or
+// stretched by the window -- the card appears several times too big until
+// something makes the window resize again.
+void FlutterWindow::SyncContentSize() {
+  if (!flutter_controller_ || !flutter_controller_->view()) return;
+  HWND content = flutter_controller_->view()->GetNativeWindow();
+  if (content == nullptr) return;
+  const RECT area = GetClientArea();
+  RECT current;
+  ::GetWindowRect(content, &current);
+  if (current.right - current.left == area.right - area.left &&
+      current.bottom - current.top == area.bottom - area.top) {
+    return;
+  }
+  ::MoveWindow(content, area.left, area.top, area.right - area.left,
+               area.bottom - area.top, TRUE);
 }
 
 void FlutterWindow::OnDestroy() {
@@ -152,6 +267,28 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
     if (result) {
       return *result;
     }
+  }
+
+  // A newer copy of the app has been started and wants this one gone (see
+  // `ReplaceRunningInstance` in main.cpp). Dart does the quitting, so the tray
+  // icon is removed properly instead of lingering after the process is gone.
+  static const UINT kQuitMessage = ::RegisterWindowMessageW(L"DhikrReminder.Quit");
+  if (message == kQuitMessage) {
+    if (window_channel_) {
+      window_channel_->InvokeMethod("quit", nullptr);
+    } else {
+      ::ExitProcess(0);
+    }
+    return 0;
+  }
+
+  if (message == WM_WINDOWPOSCHANGED || message == WM_DPICHANGED ||
+      message == WM_SIZE) {
+    // After the base class has done its own sizing.
+    const LRESULT handled =
+        Win32Window::MessageHandler(hwnd, message, wparam, lparam);
+    SyncContentSize();
+    return handled;
   }
 
   switch (message) {

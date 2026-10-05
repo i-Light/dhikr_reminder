@@ -2,6 +2,7 @@
   "@@locale": "en",
 
   "appTitle": "Dhikr Reminder",
+  "splashDescription": "A gentle dhikr reminder that lives in your tray.",
   "homeSubtitle": "A dhikr pops up every few minutes — tap it out, then get back to work.",
   "commonTestReminder": "Show a reminder now",
 

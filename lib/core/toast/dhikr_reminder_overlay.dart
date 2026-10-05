@@ -5,7 +5,6 @@ import 'package:dhikr_reminder/core/toast/border_frame.dart';
 import 'package:dhikr_reminder/core/toast/dhikr_fit_text.dart';
 import 'package:dhikr_reminder/core/toast/dust_particles_overlay.dart';
 import 'package:dhikr_reminder/core/toast/outer_glow.dart';
-import 'package:dhikr_reminder/core/widgets/mouse_glow_overlay.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -73,6 +72,7 @@ class DhikrPalette {
   const DhikrPalette({
     required this.accent,
     required this.cardFill,
+    required this.cardOpacity,
     required this.progressTrack,
   });
 
@@ -81,10 +81,14 @@ class DhikrPalette {
   /// complete.
   final Color accent;
 
-  /// The card's own background: the brand gradient blended faintly into the
-  /// surface color, so it's a single opaque fill rather than a translucent
-  /// layer stacked over one.
+  /// The card's own background: the brand gradient, fully opaque (see
+  /// [cardOpacity]).
   final Gradient cardFill;
+
+  /// How see-through [cardFill] is. The gradient's colors are all opaque; wrap
+  /// it in an `Opacity` of this much so only the background fades and nothing
+  /// drawn on top of it does.
+  final double cardOpacity;
 
   /// The progress ring's unfilled track.
   final Color progressTrack;
@@ -93,30 +97,22 @@ class DhikrPalette {
   /// "brand".
   static const _doneGradient = LinearGradient(
     colors: [
-      Color.fromARGB(80, 52, 211, 153),
-      Color.fromARGB(190, 22, 163, 74)
+      Color.fromARGB(255, 52, 211, 153),
+      Color.fromARGB(255, 22, 163, 74),
     ],
   );
+  static const _doneOpacity = 0.7;
   static const _normalGradient = LinearGradient(
     colors: [
-      Color.fromARGB(181, 144, 104, 47),
-      Color.fromARGB(195, 190, 140, 60),
-      Color.fromARGB(190, 150, 100, 40),
-      Color.fromARGB(195, 105, 70, 30),
-      Color.fromARGB(215, 55, 38, 18),
+      Color.fromARGB(255, 144, 104, 47),
+      Color.fromARGB(255, 190, 140, 60),
+      Color.fromARGB(255, 150, 100, 40),
+      Color.fromARGB(255, 105, 70, 30),
+      Color.fromARGB(255, 55, 38, 18),
     ],
     stops: [0.0, 0.45, 0.65, 0.85, 1.0],
   );
-  //LIGHT MODE
-  // colors: [
-  //   Color.fromARGB(160, 255, 231, 170), // pale gold highlight
-  //   Color.fromARGB(180, 255, 200, 110), // warm gold
-  //   Color.fromARGB(200, 255, 185, 80), // bright sheen streak
-  //   Color.fromARGB(190, 235, 155, 50), // rich amber gold
-  //   Color.fromARGB(175, 180, 100, 30), // warm bronze
-  //   Color.fromARGB(200, 110, 65, 20), // deep gold-brown shadow
-  // ],
-  // stops: [0.0, 0.2, 0.45, 0.65, 0.85, 1.0],
+  static const _normalOpacity = 0.78;
 
   // Not `of(context)`: nothing here reads the theme. The palette is a fixed
   // gold scheme that only changes shape between "in progress" and "done", so
@@ -130,19 +126,12 @@ class DhikrPalette {
     return DhikrPalette(
       progressTrack: accent.withValues(alpha: 0.3),
       accent: accent,
+      cardOpacity: isComplete ? _doneOpacity : _normalOpacity,
       cardFill: LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: brand.colors,
         stops: brand.stops,
-        // [
-        //   Color.alphaBlend(
-        //       brand.colors[0].withValues(alpha: gradientAlpha * 2), surface),
-        //   for (final color in brand.colors.skip(1))
-        //     Color.alphaBlend(
-        //         color.a != 1.0 ? color : color.withValues(alpha: gradientAlpha),
-        //         surface),
-        // ],
       ),
     );
   }
@@ -560,7 +549,7 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
     // Everything about the dhikr text that affects its layout, minus the size:
     // [DhikrFitText] measures with this and solves for the size itself.
     final dhikrTextStyle = (theme.textTheme.displayLarge ?? const TextStyle())
-        .copyWith(fontFamily: 'Naksh', wordSpacing: 12, height: 1.6);
+        .copyWith(fontFamily: 'AliMeshref', wordSpacing: 12, height: 1.6);
 
     // Everything the window has, less the glow's room on each side.
     final widgetWidth =
@@ -674,193 +663,227 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
               width: widgetWidth,
               height: widgetHeight,
               decoration: BoxDecoration(
-                gradient: palette.cardFill,
                 borderRadius: BorderRadius.circular(35),
                 border: Border.all(color: accent, width: 2),
               ),
-              child: MouseGlow(
-                  child: Padding(
-                padding: EdgeInsets.fromLTRB(_s(30), _s(20), _s(30), _s(24)),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      spacing: 16,
+              // The gradient is opaque and sits in its own `Opacity`, so only
+              // the background is see-through — never the text or the rest of
+              // the card painted over it.
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Positioned.fill(
+                    // Both the gradient and its opacity ease to the "done"
+                    // look, on the same clock as the card's own transitions,
+                    // instead of snapping.
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween(end: palette.cardOpacity),
+                      duration: DhikrTimers.layoutTransition,
+                      curve: Curves.easeOutCubic,
+                      builder: (context, opacity, child) =>
+                          Opacity(opacity: opacity, child: child),
+                      child: AnimatedContainer(
+                        duration: DhikrTimers.layoutTransition,
+                        curve: Curves.easeOutCubic,
+                        decoration: BoxDecoration(gradient: palette.cardFill),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding:
+                        EdgeInsets.fromLTRB(_s(30), _s(20), _s(30), _s(24)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          Icons.dark_mode,
-                          color: accent,
-                        ),
-                        Text(
-                          l10n.dhikrReminderTitle,
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: accent,
-                            fontSize: _s(16),
-                          ),
-                        ),
-                        const Expanded(child: SizedBox()),
-                        ScaleTransition(
-                          scale: _bump,
-                          child: TweenAnimationBuilder<double>(
-                            duration: DhikrTimers.progressFill,
-                            curve: Curves.easeOutCubic,
-                            tween: Tween(
-                              begin: 0,
-                              end: progress == null
-                                  ? 1.0
-                                  : progress.clamp(0.0, 1.0),
-                            ),
-                            builder: (context, value, child) {
-                              return CustomPaint(
-                                painter: _RRectProgressPainter(
-                                  progress: value,
-                                  color: Color.lerp(accent,
-                                          theme.colorScheme.onSurface, 0.2) ??
-                                      accent,
-                                  trackColor: palette.progressTrack,
-                                  strokeWidth: 4,
-                                ),
-                                child: child,
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.fromLTRB(24, 4, 24, 8),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                                gradient: LinearGradient(
-                                  colors: [
-                                    accent.withAlpha(150),
-                                    Colors.transparent,
-                                  ],
-                                  stops: const [0, 1],
-                                  begin: Alignment.bottomCenter,
-                                  end: Alignment.topCenter,
-                                ),
-                              ),
-                              child: _AnimatedCount(
-                                count: reminder.count,
-                                amount:
-                                    reminder.hasTarget ? entry.amount : null,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: reminder.isComplete ? accent : null,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        InkWell(
-                          borderRadius: BorderRadius.circular(999),
-                          onTap: widget.onDismiss,
-                          child: Padding(
-                            padding: const EdgeInsets.all(4),
-                            child: Icon(
-                              Icons.close,
-                              size: _s(22),
+                        Row(
+                          spacing: 16,
+                          children: [
+                            Icon(
+                              Icons.dark_mode,
                               color: accent,
                             ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: _s(30)),
-                    Expanded(
-                      child: DynamicOrnateCard(
-                        goldColor: accent.withAlpha(70),
-                        nominalCornerSize: const Size.square(120),
-                        cornerPath: 'assets/images/frame_corner.svg',
-                        centerBumpAnimation: _bump,
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          alignment: Alignment.center,
-                          children: [
-                            // Align(
-                            //   alignment: Alignment.topCenter,
-                            //   child: Text(entry.name.length.toString()),
-                            // ),
-                            // The three `Shadow`s below are the text's static,
-                            // state-driven glow. `AnimatedBuilder` here layers
-                            // one extra `Shadow` on top of them, whose alpha
-                            // and blur ride `_textGlowOpacity` — invisible at
-                            // rest, flashing outward on every tap the same
-                            // way the card's own `_glowOpacity` flashes the
-                            // outer card glow, but with its own controller so
-                            // it's free to be tuned independently later.
-                            DhikrFitText(
-                              text: entry.name,
-                              style: dhikrTextStyle,
-                              // Keeps the text clear of the corner ornaments
-                              // and the "touch anywhere" hint pinned to the
-                              // frame's bottom edge.
-                              reserve: const EdgeInsets.symmetric(vertical: 24),
-                              builder: (context, fontSize) => AnimatedBuilder(
-                                animation: _textGlowController,
-                                builder: (context, _) {
-                                  final glowColor = !reminder.isComplete
-                                      ? const Color.fromARGB(255, 255, 215, 128)
-                                      : accent;
-                                  return Text(
-                                    entry.name,
-                                    textAlign: TextAlign.center,
-                                    textScaler: TextScaler.noScaling,
-                                    style: dhikrTextStyle.copyWith(
-                                      fontSize: fontSize,
-                                      shadows: [
-                                        Shadow(
-                                          color: (!reminder.isComplete
-                                                  ? const Color(0xFFE8B058)
-                                                  : accent)
-                                              .withValues(alpha: 0.85),
-                                          blurRadius: 10,
-                                        ),
-                                        Shadow(
-                                          color: (!reminder.isComplete
-                                                  ? const Color(0xFFD48B28)
-                                                  : accent)
-                                              .withValues(alpha: 0.60),
-                                          blurRadius: 24,
-                                        ),
-                                        Shadow(
-                                          color: (!reminder.isComplete
-                                                  ? const Color(0xFFB36715)
-                                                  : accent)
-                                              .withValues(alpha: 0.35),
-                                          blurRadius: 30,
-                                        ),
-                                        Shadow(
-                                          offset: const Offset(-3, -12),
-                                          color: glowColor.withValues(
-                                            alpha: 0.6 + _textGlowOpacity.value,
-                                          ),
-                                          blurRadius: 60,
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
+                            Text(
+                              l10n.dhikrReminderTitle,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: accent,
+                                fontSize: _s(16),
                               ),
                             ),
-                            IgnorePointer(
-                              child: AnimatedBuilder(
-                                animation: _confettiController,
-                                builder: (context, _) => CustomPaint(
-                                  size: Size(widgetWidth, widgetHeight),
-                                  painter: _ConfettiPainter(
-                                    progress: _confettiController.value,
-                                    particles: _particles,
-                                    scale: kDhikrReminderCardScale + 0.5,
+                            const Expanded(child: SizedBox()),
+                            ScaleTransition(
+                              scale: _bump,
+                              child: TweenAnimationBuilder<double>(
+                                duration: DhikrTimers.progressFill,
+                                curve: Curves.easeOutCubic,
+                                tween: Tween(
+                                  begin: 0,
+                                  end: progress == null
+                                      ? 1.0
+                                      : progress.clamp(0.0, 1.0),
+                                ),
+                                builder: (context, value, child) {
+                                  return CustomPaint(
+                                    painter: _RRectProgressPainter(
+                                      progress: value,
+                                      color: Color.lerp(
+                                              accent,
+                                              theme.colorScheme.onSurface,
+                                              0.2) ??
+                                          accent,
+                                      trackColor: palette.progressTrack,
+                                      strokeWidth: 4,
+                                    ),
+                                    child: child,
+                                  );
+                                },
+                                child: Container(
+                                  padding:
+                                      const EdgeInsets.fromLTRB(24, 4, 24, 8),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20),
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        accent.withAlpha(150),
+                                        Colors.transparent,
+                                      ],
+                                      stops: const [0, 1],
+                                      begin: Alignment.bottomCenter,
+                                      end: Alignment.topCenter,
+                                    ),
                                   ),
+                                  child: _AnimatedCount(
+                                    count: reminder.count,
+                                    amount: reminder.hasTarget
+                                        ? entry.amount
+                                        : null,
+                                    style:
+                                        theme.textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color:
+                                          reminder.isComplete ? accent : null,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            InkWell(
+                              borderRadius: BorderRadius.circular(999),
+                              onTap: widget.onDismiss,
+                              child: Padding(
+                                padding: const EdgeInsets.all(4),
+                                child: Icon(
+                                  Icons.close,
+                                  size: _s(22),
+                                  color: accent,
                                 ),
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    )
-                  ],
-                ),
-              )),
+                        SizedBox(height: _s(30)),
+                        Expanded(
+                          child: DynamicOrnateCard(
+                            goldColor: accent.withAlpha(70),
+                            nominalCornerSize: const Size.square(120),
+                            cornerPath: 'assets/images/frame_corner.svg',
+                            centerBumpAnimation: _bump,
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              alignment: Alignment.center,
+                              children: [
+                                // Align(
+                                //   alignment: Alignment.topCenter,
+                                //   child: Text(entry.name.length.toString()),
+                                // ),
+                                // The three `Shadow`s below are the text's static,
+                                // state-driven glow. `AnimatedBuilder` here layers
+                                // one extra `Shadow` on top of them, whose alpha
+                                // and blur ride `_textGlowOpacity` — invisible at
+                                // rest, flashing outward on every tap the same
+                                // way the card's own `_glowOpacity` flashes the
+                                // outer card glow, but with its own controller so
+                                // it's free to be tuned independently later.
+                                DhikrFitText(
+                                  text: entry.name,
+                                  style: dhikrTextStyle,
+                                  // Keeps the text clear of the corner ornaments
+                                  // and the "touch anywhere" hint pinned to the
+                                  // frame's bottom edge.
+                                  reserve:
+                                      const EdgeInsets.symmetric(vertical: 24),
+                                  builder: (context, fontSize) =>
+                                      AnimatedBuilder(
+                                    animation: _textGlowController,
+                                    builder: (context, _) {
+                                      final glowColor = !reminder.isComplete
+                                          ? const Color.fromARGB(
+                                              255, 255, 215, 128)
+                                          : accent;
+                                      return Text(
+                                        entry.name,
+                                        textAlign: TextAlign.center,
+                                        textScaler: TextScaler.noScaling,
+                                        style: dhikrTextStyle.copyWith(
+                                          fontSize: fontSize,
+                                          shadows: [
+                                            Shadow(
+                                              color: (!reminder.isComplete
+                                                      ? const Color(0xFFE8B058)
+                                                      : accent)
+                                                  .withValues(alpha: 0.85),
+                                              blurRadius: 10,
+                                            ),
+                                            Shadow(
+                                              color: (!reminder.isComplete
+                                                      ? const Color(0xFFD48B28)
+                                                      : accent)
+                                                  .withValues(alpha: 0.60),
+                                              blurRadius: 24,
+                                            ),
+                                            Shadow(
+                                              color: (!reminder.isComplete
+                                                      ? const Color(0xFFB36715)
+                                                      : accent)
+                                                  .withValues(alpha: 0.35),
+                                              blurRadius: 30,
+                                            ),
+                                            Shadow(
+                                              offset: const Offset(-3, -12),
+                                              color: glowColor.withValues(
+                                                alpha: 0.6 +
+                                                    _textGlowOpacity.value,
+                                              ),
+                                              blurRadius: 60,
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                IgnorePointer(
+                                  child: AnimatedBuilder(
+                                    animation: _confettiController,
+                                    builder: (context, _) => CustomPaint(
+                                      size: Size(widgetWidth, widgetHeight),
+                                      painter: _ConfettiPainter(
+                                        progress: _confettiController.value,
+                                        particles: _particles,
+                                        scale: kDhikrReminderCardScale + 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

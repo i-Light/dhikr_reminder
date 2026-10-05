@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dhikr_reminder/features/library/application/library_controller.dart';
 import 'package:dhikr_reminder/features/library/presentation/widgets/dhikr_library_card.dart';
+import 'package:dhikr_reminder/features/library/presentation/widgets/dhikr_tag_label.dart';
 import 'package:dhikr_reminder/features/library/presentation/widgets/library_popups.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -71,7 +72,8 @@ class _DhikrLibraryScreenState extends ConsumerState<DhikrLibraryScreen> {
                       : ListView.separated(
                           padding: const EdgeInsets.only(top: 4, bottom: 24),
                           itemCount: items.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 12),
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 12),
                           itemBuilder: (context, index) => DhikrLibraryCard(
                             // Keyed on the entry's own id, so a filter change
                             // that reorders the list reuses the right rows
@@ -178,6 +180,39 @@ class _LibrarySearchField extends ConsumerWidget {
   }
 }
 
+/// How many selected filters are named next to the result count before the
+/// rest are folded into a "+N" pill.
+const int _maxShownTags = 3;
+
+/// A small rounded label for one active filter (or the "+N" for the rest).
+class _FilterPill extends StatelessWidget {
+  const _FilterPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.primaryContainer,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+        child: Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: colors.onPrimaryContainer,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// How many entries the search and filter left, and a way to drop the filter
 /// without opening the popup again.
 class _ResultSummary extends ConsumerWidget {
@@ -194,11 +229,26 @@ class _ResultSummary extends ConsumerWidget {
     return Row(
       children: [
         Expanded(
-          child: Text(
-            l10n.libraryResultsCount(count),
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text(
+                l10n.libraryResultsCount(count),
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              // The filters in effect: the first few by name, the rest as one
+              // "+N" pill in the same style.
+              for (final tag in view.selectedTags.take(_maxShownTags))
+                _FilterPill(label: '${tag.emoji} ${dhikrTagLabel(l10n, tag)}'),
+              if (view.selectedTags.length > _maxShownTags)
+                _FilterPill(
+                  label: '+${view.selectedTags.length - _maxShownTags}',
+                ),
+            ],
           ),
         ),
         if (view.hasTagFilter)
