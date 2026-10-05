@@ -2,14 +2,18 @@ import 'package:dhikr_reminder/app.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/mobile_reminder_host.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/mobile_reminder_screen.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/notification_service.dart';
+import 'package:dhikr_reminder/features/mobile_reminders/overlay_service.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/reminder_planner.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
+import 'package:dhikr_reminder/features/stats/dhikr_stats.dart';
 import 'package:dhikr_reminder/platform/app_platform.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../helpers/fake_overlay.dart';
 
 class _FakeNotifications implements ReminderNotifications {
   bool initialised = false;
@@ -29,10 +33,15 @@ class _FakeNotifications implements ReminderNotifications {
   }) async {}
 }
 
-ProviderContainer _container(PlatformKind kind, _FakeNotifications fake) {
+ProviderContainer _container(
+  PlatformKind kind,
+  _FakeNotifications fake, [
+  FakeOverlay? overlay,
+]) {
   final container = ProviderContainer(overrides: [
     appPlatformProvider.overrideWithValue(AppPlatform(kind)),
     reminderNotificationsProvider.overrideWithValue(fake),
+    reminderOverlayProvider.overrideWithValue(overlay ?? FakeOverlay()),
   ]);
   addTearDown(container.dispose);
   return container;
@@ -92,6 +101,33 @@ void main() {
 
     expect(fake.initialised, isFalse);
 
+    await tester.pumpWidget(const SizedBox.shrink());
+    container.dispose();
+  });
+
+  testWidgets(
+      'taps made on the overlay while the app was closed are counted '
+      'when it starts', (tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final overlay = FakeOverlay(allowed: true, taps: {4: 12});
+    final container = _container(
+      PlatformKind.android,
+      _FakeNotifications(),
+      overlay,
+    );
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const DhikrReminderApp(),
+      ),
+    );
+    await tester.pump();
+
+    expect(container.read(dhikrStatsProvider).todayFor(4), 12);
+    expect(overlay.drains, greaterThanOrEqualTo(1));
+
+    await tester.pump(const Duration(seconds: 1));
     await tester.pumpWidget(const SizedBox.shrink());
     container.dispose();
   });

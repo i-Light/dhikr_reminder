@@ -111,6 +111,11 @@
   "notifGoalSubtitle": "حدد عدد أذكار كل يوم وشوف تقدمك النهارده",
   "notifGoalCount": "{count} في اليوم",
   "@notifGoalCount": { "placeholders": { "count": { "type": "int" } } },
+  "commonClose": "إغلاق",
+  "overlayTitle": "الظهور فوق التطبيقات",
+  "overlaySubtitle": "خلّي التذكير يظهر فوق أي تطبيق شغّال. من غير ده بيوصل كإشعار.",
+  "overlayAllow": "سماح",
+  "overlayAllowed": "مسموح",
   "navLibrary": "موسوعة الأذكار",
 
   "libraryTitle": "موسوعة الأذكار",

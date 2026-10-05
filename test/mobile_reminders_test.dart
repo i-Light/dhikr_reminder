@@ -12,6 +12,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'helpers/fake_overlay.dart';
+
 class _FakeNotifications implements ReminderNotifications {
   List<PlannedReminder>? lastPlan;
   String? lastTitle;
@@ -120,7 +122,7 @@ void main() {
     test('waits for the saved settings before scheduling anything', () async {
       final fake = _FakeNotifications();
 
-      await MobileReminderSyncer(fake).sync(
+      await MobileReminderSyncer(fake, FakeOverlay()).sync(
         settings: const DhikrSettings.loading(),
         locale: const Locale('en'),
       );
@@ -136,11 +138,64 @@ void main() {
         isLoaded: true,
       );
 
-      await MobileReminderSyncer(fake, random: Random(1))
+      await MobileReminderSyncer(fake, FakeOverlay(), random: Random(1))
           .sync(settings: settings, locale: const Locale('en'));
 
       expect(fake.lastPlan, hasLength(48));
       expect(fake.lastTitle, 'Dhikr reminder');
+    });
+  });
+
+  group('MobileReminderSyncer with the overlay', () {
+    const settings = DhikrSettings(
+      entries: _entries,
+      intervalMinutes: 30,
+      isLoaded: true,
+    );
+
+    test('schedules the overlay, not notifications, when it is allowed',
+        () async {
+      final notifications = _FakeNotifications();
+      final overlay = FakeOverlay(allowed: true);
+
+      await MobileReminderSyncer(notifications, overlay, random: Random(1))
+          .sync(settings: settings, locale: const Locale('en'));
+
+      expect(overlay.scheduled, hasLength(48));
+      expect(overlay.title, 'Dhikr reminder');
+      expect(overlay.closeLabel, 'Close');
+      expect(overlay.tip, 'Touch anywhere to count');
+      // Notifications are cleared, so a reminder never shows twice.
+      expect(notifications.lastPlan, isEmpty);
+    });
+
+    test('falls back to notifications, and cancels the overlay, without it',
+        () async {
+      final notifications = _FakeNotifications();
+      final overlay = FakeOverlay(allowed: false);
+
+      await MobileReminderSyncer(notifications, overlay, random: Random(1))
+          .sync(settings: settings, locale: const Locale('en'));
+
+      expect(notifications.lastPlan, hasLength(48));
+      expect(overlay.scheduled, isNull);
+      expect(overlay.cancels, 1);
+    });
+
+    test('hands the native side everything it needs to show a reminder', () {
+      final reminder = PlannedReminder(
+        id: 3,
+        at: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+        entry: const DhikrEntry(id: 7, name: 'dhikr text', amount: 33),
+      );
+
+      expect(reminder.toOverlayMap(), {
+        'id': 3,
+        'at': 1700000000000,
+        'dhikrId': 7,
+        'text': 'dhikr text',
+        'amount': 33,
+      });
     });
   });
 

@@ -36,6 +36,23 @@ void main() {
     expect(stats.today, 3);
   });
 
+  test('taps counted on the overlay while the app was closed arrive in a batch',
+      () {
+    SharedPreferences.setMockInitialValues({});
+    final container = _container(() => DateTime(2026, 10, 5, 9));
+    final notifier = container.read(dhikrStatsProvider.notifier)
+      ..recordTaps(1, 33)
+      ..recordTaps(2, 0)
+      ..recordTaps(2, -4);
+
+    final stats = container.read(dhikrStatsProvider);
+    expect(stats.session, 33);
+    expect(stats.todayFor(1), 33);
+    expect(stats.todayFor(2), 0);
+    notifier.recordTap(1);
+    expect(container.read(dhikrStatsProvider).todayFor(1), 34);
+  });
+
   test("today's counts are remembered across a restart, the session's is not",
       () async {
     SharedPreferences.setMockInitialValues({});

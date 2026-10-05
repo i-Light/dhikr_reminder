@@ -650,6 +650,36 @@ abstract class AppLocalizations {
   /// **'{count} a day'**
   String notifGoalCount(int count);
 
+  /// No description provided for @commonClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get commonClose;
+
+  /// No description provided for @overlayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show over other apps'**
+  String get overlayTitle;
+
+  /// No description provided for @overlaySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Let the reminder appear on top of whatever app you are using. Without this it arrives as a notification.'**
+  String get overlaySubtitle;
+
+  /// No description provided for @overlayAllow.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow'**
+  String get overlayAllow;
+
+  /// No description provided for @overlayAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed'**
+  String get overlayAllowed;
+
   /// No description provided for @navLibrary.
   ///
   /// In en, this message translates to:

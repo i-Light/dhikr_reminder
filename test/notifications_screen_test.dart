@@ -1,10 +1,14 @@
+import 'package:dhikr_reminder/features/mobile_reminders/overlay_service.dart';
 import 'package:dhikr_reminder/features/notifications/presentation/notifications_screen.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
+import 'package:dhikr_reminder/platform/app_platform.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'helpers/fake_overlay.dart';
 
 Future<ProviderContainer> _pump(WidgetTester tester,
     {String lang = 'en'}) async {
@@ -135,5 +139,60 @@ void main() {
         .entries
         .firstWhere((e) => e.name == 'plain dhikr');
     expect(saved.dailyGoal, 0);
+  });
+
+  group('the show-over-other-apps card', () {
+    Future<FakeOverlay> pumpAs(
+      WidgetTester tester,
+      PlatformKind kind, {
+      required bool allowed,
+    }) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      tester.view.physicalSize = const Size(900, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final overlay = FakeOverlay(allowed: allowed);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appPlatformProvider.overrideWithValue(AppPlatform(kind)),
+            reminderOverlayProvider.overrideWithValue(overlay),
+          ],
+          child: const MaterialApp(
+            locale: Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: NotificationsScreen()),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return overlay;
+    }
+
+    testWidgets('asks for the permission on Android until it is granted',
+        (tester) async {
+      final overlay =
+          await pumpAs(tester, PlatformKind.android, allowed: false);
+
+      expect(find.text('Show over other apps'), findsOneWidget);
+      await tester.tap(find.text('Allow'));
+      await tester.pump();
+
+      expect(overlay.permissionRequests, 1);
+    });
+
+    testWidgets('shows that it is allowed once it is', (tester) async {
+      await pumpAs(tester, PlatformKind.android, allowed: true);
+
+      expect(find.text('Allowed'), findsOneWidget);
+      expect(find.text('Allow'), findsNothing);
+    });
+
+    testWidgets('does not exist on Windows', (tester) async {
+      await pumpAs(tester, PlatformKind.windows, allowed: false);
+
+      expect(find.text('Show over other apps'), findsNothing);
+    });
   });
 }

@@ -1,6 +1,8 @@
+import 'package:dhikr_reminder/features/mobile_reminders/overlay_service.dart';
 import 'package:dhikr_reminder/features/notifications/presentation/dhikr_edit_dialog.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
+import 'package:dhikr_reminder/platform/app_platform.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -88,6 +90,11 @@ class NotificationsScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 24),
+              // On a phone, reminders can float over other apps once allowed.
+              if (ref.watch(appPlatformProvider).usesNotifications) ...[
+                const _OverlayPermissionCard(),
+                const SizedBox(height: 20),
+              ],
               _SectionLabel(l10n.notifScheduleSection),
               _ScheduleCard(settings: settings),
               const SizedBox(height: 28),
@@ -131,6 +138,56 @@ class NotificationsScreen extends ConsumerWidget {
                   ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "Show over other apps": explains the permission, shows whether it is
+/// granted, and opens the system screen where it is.
+class _OverlayPermissionCard extends ConsumerWidget {
+  const _OverlayPermissionCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final allowed = ref.watch(overlayAllowedProvider).value ?? false;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          spacing: 12,
+          children: [
+            Icon(
+              allowed ? Icons.check_circle_outline : Icons.layers_outlined,
+              color: theme.colorScheme.primary,
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l10n.overlayTitle, style: theme.textTheme.bodyLarge),
+                  Text(
+                    l10n.overlaySubtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (allowed)
+              Text(l10n.overlayAllowed, style: theme.textTheme.labelLarge)
+            else
+              FilledButton.tonal(
+                onPressed: ref.read(overlayAllowedProvider.notifier).request,
+                child: Text(l10n.overlayAllow),
+              ),
+          ],
         ),
       ),
     );

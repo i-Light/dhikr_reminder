@@ -3,9 +3,11 @@ import 'dart:math';
 
 import 'package:dhikr_reminder/core/locale/locale_controller.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/notification_service.dart';
+import 'package:dhikr_reminder/features/mobile_reminders/overlay_service.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/reminder_planner.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
+import 'package:dhikr_reminder/features/stats/dhikr_stats.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
 import 'package:dhikr_reminder/platform/app_platform.dart';
 import 'package:flutter/foundation.dart' show listEquals;
@@ -17,15 +19,23 @@ final reminderNotificationsProvider = Provider<ReminderNotifications>(
   (ref) => LocalReminderNotifications(),
 );
 
-/// Keeps the phone's scheduled notifications in step with the settings:
-/// whenever the interval, the entries, the chance option or the language
-/// change — and whenever the app comes back to the foreground, which tops the
-/// plan up — the old schedule is thrown away and a fresh one handed to the OS.
+/// Keeps what the phone has scheduled in step with the settings: whenever the
+/// interval, the entries, the chance option or the language change — and
+/// whenever the app comes back to the foreground, which tops the plan up — the
+/// old schedule is thrown away and a fresh one handed to the OS.
+///
+/// With "display over other apps" allowed the reminders go to the overlay (the
+/// floating card); without it they are ordinary notifications. Only one of the
+/// two is ever scheduled, so a reminder is never shown twice.
 class MobileReminderSyncer {
-  MobileReminderSyncer(this._notifications, {Random? random})
-      : _random = random ?? Random();
+  MobileReminderSyncer(
+    this._notifications,
+    this._overlay, {
+    Random? random,
+  }) : _random = random ?? Random();
 
   final ReminderNotifications _notifications;
+  final ReminderOverlay _overlay;
   final Random _random;
 
   Future<void> sync({
@@ -41,10 +51,19 @@ class MobileReminderSyncer {
       useChance: settings.useChance,
       random: _random,
     );
-    await _notifications.replaceAll(
-      plan,
-      title: lookupAppLocalizations(locale).dhikrReminderTitle,
-    );
+    final l10n = lookupAppLocalizations(locale);
+    if (await _overlay.canDraw()) {
+      await _notifications.replaceAll(const [], title: l10n.dhikrReminderTitle);
+      await _overlay.schedule(
+        plan,
+        title: l10n.dhikrReminderTitle,
+        closeLabel: l10n.commonClose,
+        tip: l10n.dhikrReminderTouchEverywhereTip,
+      );
+    } else {
+      await _overlay.cancel();
+      await _notifications.replaceAll(plan, title: l10n.dhikrReminderTitle);
+    }
   }
 }
 
@@ -81,8 +100,10 @@ class _MobileReminderHostState extends ConsumerState<MobileReminderHost>
   /// Read once, up front: the platform cannot change while the app runs, and
   /// `dispose` may not touch `ref`.
   late final bool _active = ref.read(appPlatformProvider).usesNotifications;
-  late final MobileReminderSyncer _syncer =
-      MobileReminderSyncer(ref.read(reminderNotificationsProvider));
+  late final MobileReminderSyncer _syncer = MobileReminderSyncer(
+    ref.read(reminderNotificationsProvider),
+    ref.read(reminderOverlayProvider),
+  );
 
   @override
   void initState() {
@@ -98,6 +119,7 @@ class _MobileReminderHostState extends ConsumerState<MobileReminderHost>
       onOpen: (id) => ref.read(pendingOpenDhikrProvider.notifier).set(id),
     );
     await notifications.requestPermission();
+    await _collectOverlayTaps();
     _scheduleSync();
   }
 
@@ -110,7 +132,20 @@ class _MobileReminderHostState extends ConsumerState<MobileReminderHost>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _scheduleSync();
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_collectOverlayTaps());
+      // The permission is granted on a system screen outside the app.
+      unawaited(ref.read(overlayAllowedProvider.notifier).refresh());
+      _scheduleSync();
+    }
+  }
+
+  /// Hands the taps made on the overlay while the app was closed to the stats.
+  Future<void> _collectOverlayTaps() async {
+    final taps = await ref.read(reminderOverlayProvider).drainTaps();
+    if (!mounted) return;
+    final stats = ref.read(dhikrStatsProvider.notifier);
+    taps.forEach(stats.recordTaps);
   }
 
   void _scheduleSync() {

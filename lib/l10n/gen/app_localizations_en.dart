@@ -326,6 +326,22 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get commonClose => 'Close';
+
+  @override
+  String get overlayTitle => 'Show over other apps';
+
+  @override
+  String get overlaySubtitle =>
+      'Let the reminder appear on top of whatever app you are using. Without this it arrives as a notification.';
+
+  @override
+  String get overlayAllow => 'Allow';
+
+  @override
+  String get overlayAllowed => 'Allowed';
+
+  @override
   String get navLibrary => 'Dhikr Library';
 
   @override

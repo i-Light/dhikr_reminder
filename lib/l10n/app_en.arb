@@ -111,6 +111,11 @@
   "notifGoalSubtitle": "Aim for a number of dhikr each day and see today's progress",
   "notifGoalCount": "{count} a day",
   "@notifGoalCount": { "placeholders": { "count": { "type": "int" } } },
+  "commonClose": "Close",
+  "overlayTitle": "Show over other apps",
+  "overlaySubtitle": "Let the reminder appear on top of whatever app you are using. Without this it arrives as a notification.",
+  "overlayAllow": "Allow",
+  "overlayAllowed": "Allowed",
   "navLibrary": "Dhikr Library",
 
   "libraryTitle": "Dhikr Library",

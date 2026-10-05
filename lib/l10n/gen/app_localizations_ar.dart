@@ -321,6 +321,22 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get commonClose => 'إغلاق';
+
+  @override
+  String get overlayTitle => 'الظهور فوق التطبيقات';
+
+  @override
+  String get overlaySubtitle =>
+      'خلّي التذكير يظهر فوق أي تطبيق شغّال. من غير ده بيوصل كإشعار.';
+
+  @override
+  String get overlayAllow => 'سماح';
+
+  @override
+  String get overlayAllowed => 'مسموح';
+
+  @override
   String get navLibrary => 'موسوعة الأذكار';
 
   @override

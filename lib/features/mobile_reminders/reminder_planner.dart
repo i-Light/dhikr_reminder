@@ -14,6 +14,15 @@ class PlannedReminder {
   final int id;
   final DateTime at;
   final DhikrEntry entry;
+
+  /// What the native overlay needs to show this reminder with the app closed.
+  Map<String, Object> toOverlayMap() => {
+        'id': id,
+        'at': at.millisecondsSinceEpoch,
+        'dhikrId': entry.id,
+        'text': entry.name,
+        'amount': entry.amount,
+      };
 }
 
 /// How many upcoming reminders to hand the OS: a day's worth at the chosen

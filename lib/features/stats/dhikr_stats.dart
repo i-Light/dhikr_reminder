@@ -90,13 +90,18 @@ class DhikrStatsNotifier extends Notifier<DhikrStats> {
   }
 
   /// Adds one counted tap on [dhikrId] to the session and to today.
-  void recordTap(int dhikrId) {
+  void recordTap(int dhikrId) => recordTaps(dhikrId, 1);
+
+  /// Adds [count] taps on [dhikrId] at once: the ones made on the Android
+  /// overlay while the app was closed.
+  void recordTaps(int dhikrId, int count) {
+    if (count <= 0) return;
     final today = dhikrDayKey(ref.read(dhikrStatsClockProvider)());
     final rolledOver = today != _day;
     _day = today;
     final byDhikr = rolledOver ? <int, int>{} : Map<int, int>.of(state.byDhikr);
-    byDhikr[dhikrId] = (byDhikr[dhikrId] ?? 0) + 1;
-    state = DhikrStats(session: state.session + 1, byDhikr: byDhikr);
+    byDhikr[dhikrId] = (byDhikr[dhikrId] ?? 0) + count;
+    state = DhikrStats(session: state.session + count, byDhikr: byDhikr);
     unawaited(_save());
   }
 
