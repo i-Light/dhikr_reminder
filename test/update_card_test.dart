@@ -45,9 +45,6 @@ Future<_FixedUpdate> _pump(
       ),
     ),
   );
-  // The card starts folded; the header is the toggle.
-  await tester
-      .tap(find.text(locale.languageCode == 'ar' ? 'التحديثات' : 'Updates'));
   await tester.pumpAndSettle();
   return notifier;
 }
@@ -65,10 +62,10 @@ void main() {
     );
 
     expect(find.text("You're up to date"), findsOneWidget);
-    expect(find.text('Version 0.1.0'), findsOneWidget);
+    expect(find.textContaining('Version 0.1.0'), findsOneWidget);
     expect(find.text('Update now'), findsNothing);
 
-    await tester.tap(find.text('Check for updates'));
+    await tester.tap(find.byTooltip('Check for updates'));
     expect(notifier.checks, 1);
   });
 
@@ -118,7 +115,10 @@ void main() {
     expect(find.text('Version 0.2.0 is ready to install'), findsOneWidget);
     // Busy: checking again would be pointless.
     expect(
-      tester.widget<OutlinedButton>(find.byType(OutlinedButton)).onPressed,
+      tester
+          .widget<IconButton>(
+              find.widgetWithIcon(IconButton, Icons.refresh_rounded))
+          .onPressed,
       isNull,
     );
 
@@ -134,7 +134,7 @@ void main() {
     );
 
     expect(find.text("Couldn't check for updates"), findsOneWidget);
-    expect(find.text('Check for updates'), findsOneWidget);
+    expect(find.byTooltip('Check for updates'), findsOneWidget);
   });
 
   testWidgets('renders in Arabic (right to left) without overflowing',

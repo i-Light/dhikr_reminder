@@ -1,16 +1,17 @@
 import 'package:dhikr_reminder/core/update/update_controller.dart';
 import 'package:dhikr_reminder/core/update/update_source.dart';
-import 'package:dhikr_reminder/core/widgets/collapsible_card.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-/// The settings screen's "Updates" card: what version is running, what the
-/// updater is doing about a newer one, and the two controls a person could
-/// want — check now, and turn the automatic part off.
+/// The home page's update card: one compact row saying what the updater is
+/// doing (and the running version), with the one button that acts on it and a
+/// check-now button — plus, where the app can update itself, a one-line switch
+/// for the automatic part.
 ///
-/// The updater needs none of this to work; the card only makes it visible.
+/// Always open; there is nothing to fold away. The updater needs none of this
+/// to work; the card only makes it visible.
 class UpdateCard extends ConsumerWidget {
   const UpdateCard({super.key});
 
@@ -41,115 +42,91 @@ class UpdateCard extends ConsumerWidget {
       _ => null,
     };
 
-    return CollapsibleCard(
-      title: l10n.updateTitle,
-      subtitle: l10n.updateSubtitle,
-      initiallyExpanded: false,
-      gradientBackground: true,
-      // Folded, the card still has to say whether there is something to do.
-      collapsedSummary: Row(
-        spacing: 12,
-        children: [
-          _StatusIcon(status: status, size: 20),
-          Expanded(
-            child: Text(
-              status.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodyMedium,
-            ),
-          ),
-        ],
-      ),
-      child: Column(
-        spacing: 24,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (update.currentVersion != null)
+    // "Version 0.1.0 · Last checked 9:41 PM": the running version always,
+    // and the status' own detail after it.
+    final detail = [
+      if (update.currentVersion != null)
+        l10n.updateVersion(update.currentVersion.toString()),
+      if (status.hint != null) status.hint!,
+    ].join(' · ');
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(14, 10, 6, 10),
+        child: Column(
+          children: [
             Row(
-              spacing: 16,
-              children: [
-                const SizedBox(width: 24),
-                Icon(Icons.info_outline, color: subtle),
-                Text(
-                  l10n.updateVersion(update.currentVersion.toString()),
-                  style: theme.textTheme.bodyMedium,
-                ),
-              ],
-            ),
-          Row(
-            spacing: 16,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(width: 24),
-              _StatusIcon(status: status, size: 24),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(status.title, style: theme.textTheme.bodyMedium),
-                    if (status.hint != null)
-                      Text(
-                        status.hint!,
-                        style:
-                            theme.textTheme.bodySmall?.copyWith(color: subtle),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsetsDirectional.only(start: 64),
-            child: Wrap(
               spacing: 12,
-              runSpacing: 12,
               children: [
-                if (primary != null)
-                  FilledButton(
-                    onPressed: primary.$2,
-                    child: Text(primary.$1),
-                  ),
-                OutlinedButton.icon(
-                  onPressed: update.busy ? null : notifier.checkNow,
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: Text(l10n.updateCheckButton),
-                ),
-              ],
-            ),
-          ),
-          // Nothing to switch off on a copy that cannot update itself.
-          if (update.canSelfUpdate) ...[
-            const Divider(),
-            Row(
-              spacing: 16,
-              children: [
-                const SizedBox(width: 24),
-                Icon(Icons.autorenew_rounded, color: subtle),
+                _StatusIcon(status: status, size: 22),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        l10n.updateAutoLabel,
+                        status.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodyMedium,
                       ),
-                      Text(
-                        l10n.updateAutoSubtitle,
-                        style:
-                            theme.textTheme.bodySmall?.copyWith(color: subtle),
-                      ),
+                      if (detail.isNotEmpty)
+                        Text(
+                          detail,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(color: subtle),
+                        ),
                     ],
                   ),
                 ),
-                Switch(
-                  value: update.autoUpdate,
-                  onChanged: notifier.setAutoUpdate,
+                if (primary != null)
+                  FilledButton(
+                    onPressed: primary.$2,
+                    style: FilledButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    child: Text(primary.$1),
+                  ),
+                IconButton(
+                  tooltip: l10n.updateCheckButton,
+                  onPressed: update.busy ? null : notifier.checkNow,
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.refresh_rounded),
                 ),
               ],
             ),
+            // Nothing to switch off on a copy that cannot update itself.
+            if (update.canSelfUpdate)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(end: 8),
+                child: Row(
+                  spacing: 12,
+                  children: [
+                    SizedBox.square(
+                      dimension: 22,
+                      child: Icon(Icons.autorenew_rounded,
+                          size: 20, color: subtle),
+                    ),
+                    Expanded(
+                      child: Text(
+                        l10n.updateAutoLabel,
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ),
+                    Transform.scale(
+                      scale: 0.8,
+                      child: Switch(
+                        value: update.autoUpdate,
+                        onChanged: notifier.setAutoUpdate,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
-        ],
+        ),
       ),
     );
   }
