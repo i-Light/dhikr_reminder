@@ -98,6 +98,9 @@ class HomeScreen extends ConsumerWidget {
                         icon: Icons.bolt,
                         label: l10n.homeCountedSession,
                         value: stats.session,
+                        onReset: stats.session > 0
+                            ? ref.read(dhikrStatsProvider.notifier).resetSession
+                            : null,
                       ),
                     ),
                   ],
@@ -219,6 +222,7 @@ class _StatTile extends StatelessWidget {
     required this.label,
     required this.value,
     this.goal,
+    this.onReset,
   });
 
   final IconData icon;
@@ -227,6 +231,9 @@ class _StatTile extends StatelessWidget {
 
   /// When set, shows "value / goal" with a progress bar underneath.
   final int? goal;
+
+  /// When set, the tile offers to start its count over.
+  final VoidCallback? onReset;
 
   @override
   Widget build(BuildContext context) {
@@ -250,6 +257,18 @@ class _StatTile extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (onReset != null)
+                  SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      iconSize: 18,
+                      tooltip: AppLocalizations.of(context).homeResetSession,
+                      onPressed: onReset,
+                      icon: const Icon(Icons.restart_alt),
+                    ),
+                  ),
               ],
             ),
             const SizedBox(height: 8),

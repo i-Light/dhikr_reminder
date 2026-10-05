@@ -674,11 +674,29 @@ abstract class AppLocalizations {
   /// **'Allow'**
   String get overlayAllow;
 
-  /// No description provided for @overlayAllowed.
+  /// No description provided for @overlayPromptTitle.
   ///
   /// In en, this message translates to:
-  /// **'Allowed'**
-  String get overlayAllowed;
+  /// **'Show reminders over other apps?'**
+  String get overlayPromptTitle;
+
+  /// No description provided for @overlayPromptBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow \"Display over other apps\" so each reminder appears right on top of whatever you are using. Without it, reminders arrive as ordinary notifications.'**
+  String get overlayPromptBody;
+
+  /// No description provided for @overlayPromptLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get overlayPromptLater;
+
+  /// No description provided for @homeResetSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset this session'**
+  String get homeResetSession;
 
   /// No description provided for @navLibrary.
   ///

@@ -53,7 +53,7 @@ void main() {
     expect(container.read(dhikrStatsProvider).todayFor(1), 34);
   });
 
-  test("today's counts are remembered across a restart, the session's is not",
+  test('the session and the daily counts are remembered across a restart',
       () async {
     SharedPreferences.setMockInitialValues({});
     final first = _container(() => DateTime(2026, 10, 5, 9));
@@ -68,9 +68,61 @@ void main() {
     await _settle();
 
     final stats = second.read(dhikrStatsProvider);
-    expect(stats.session, 0);
+    expect(stats.session, 3);
     expect(stats.todayFor(1), 2);
     expect(stats.todayFor(2), 1);
+  });
+
+  test('the session carries on across a new day, the daily counts do not',
+      () async {
+    SharedPreferences.setMockInitialValues({
+      'dhikr_reminder.stats.session': 40,
+      'dhikr_reminder.stats.day': '2026-10-04',
+      'dhikr_reminder.stats.todayByDhikr': '{"1":40}',
+    });
+    final container = _container(() => DateTime(2026, 10, 5, 9));
+    container.read(dhikrStatsProvider);
+    await _settle();
+
+    final stats = container.read(dhikrStatsProvider);
+    expect(stats.session, 40);
+    expect(stats.today, 0);
+  });
+
+  test('taps made while the saved counts load are added to them', () async {
+    SharedPreferences.setMockInitialValues({
+      'dhikr_reminder.stats.session': 10,
+      'dhikr_reminder.stats.day': '2026-10-05',
+      'dhikr_reminder.stats.todayByDhikr': '{"1":10}',
+    });
+    final container = _container(() => DateTime(2026, 10, 5, 9));
+    container.read(dhikrStatsProvider.notifier).recordTap(1);
+    await _settle();
+
+    final stats = container.read(dhikrStatsProvider);
+    expect(stats.session, 11);
+    expect(stats.todayFor(1), 11);
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getInt('dhikr_reminder.stats.session'), 11);
+  });
+
+  test('resetting the session leaves the day alone, and is remembered',
+      () async {
+    SharedPreferences.setMockInitialValues({});
+    final first = _container(() => DateTime(2026, 10, 5, 9));
+    first.read(dhikrStatsProvider.notifier)
+      ..recordTaps(1, 5)
+      ..resetSession();
+    await _settle();
+    expect(first.read(dhikrStatsProvider).session, 0);
+    expect(first.read(dhikrStatsProvider).todayFor(1), 5);
+
+    final second = _container(() => DateTime(2026, 10, 5, 10));
+    second.read(dhikrStatsProvider);
+    await _settle();
+    expect(second.read(dhikrStatsProvider).session, 0);
+    expect(second.read(dhikrStatsProvider).todayFor(1), 5);
   });
 
   test('a new day starts the daily counts over', () async {

@@ -8,10 +8,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const _dayPrefsKey = 'dhikr_reminder.stats.day';
 const _todayPrefsKey = 'dhikr_reminder.stats.todayByDhikr';
+const _sessionPrefsKey = 'dhikr_reminder.stats.session';
 
-/// What has been counted: [session] taps since the app was started, and
-/// today's taps per dhikr since midnight (all sessions of the day added
-/// together).
+/// What has been counted: [session] taps since the session was last reset, and
+/// today's taps per dhikr since midnight.
 @immutable
 class DhikrStats {
   const DhikrStats({this.session = 0, this.byDhikr = const <int, int>{}});
@@ -49,38 +49,47 @@ final dhikrStatsClockProvider = Provider<DateTime Function()>(
 
 /// Counts every tap on a reminder, per session and per dhikr per day.
 ///
-/// The session total lives in memory (a new launch is a new session); the
-/// daily totals are remembered with the day they belong to, so they survive a
-/// restart but start again at zero on a new day.
+/// Both are remembered, so a restart or an app update loses nothing. The
+/// session total runs until [resetSession]; the daily totals are filed under
+/// the day they belong to and start again at zero on a new day.
 class DhikrStatsNotifier extends Notifier<DhikrStats> {
   String _day = '';
+
+  /// Saving waits for this, so a tap made while the saved counts are still
+  /// being read cannot overwrite them with a smaller number.
+  Future<void> _loaded = Future<void>.value();
 
   @override
   DhikrStats build() {
     _day = dhikrDayKey(ref.read(dhikrStatsClockProvider)());
-    unawaited(_load());
+    _loaded = _load();
     return const DhikrStats();
   }
 
   Future<void> _load() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      if (prefs.getString(_dayPrefsKey) != _day) return;
-      final decoded = jsonDecode(prefs.getString(_todayPrefsKey) ?? '{}');
-      final stored = <int, int>{
-        for (final entry in (decoded as Map<String, dynamic>).entries)
-          if (int.tryParse(entry.key) != null && entry.value is int)
-            int.parse(entry.key): entry.value as int,
-      };
+      final stored = <int, int>{};
+      if (prefs.getString(_dayPrefsKey) == _day) {
+        final decoded = jsonDecode(prefs.getString(_todayPrefsKey) ?? '{}');
+        for (final entry in (decoded as Map<String, dynamic>).entries) {
+          if (int.tryParse(entry.key) != null && entry.value is int) {
+            stored[int.parse(entry.key)] = entry.value as int;
+          }
+        }
+      }
       // Taps made while this was loading are already in [state]; keep them.
       final merged = Map<int, int>.of(stored);
       state.byDhikr.forEach((id, count) {
         merged[id] = (merged[id] ?? 0) + count;
       });
-      state = DhikrStats(session: state.session, byDhikr: merged);
+      state = DhikrStats(
+        session: (prefs.getInt(_sessionPrefsKey) ?? 0) + state.session,
+        byDhikr: merged,
+      );
     } catch (error, stackTrace) {
       developer.log(
-        'Failed to load the daily counts.',
+        'Failed to load the saved counts.',
         name: 'dhikr_reminder.stats',
         level: 900,
         error: error,
@@ -105,9 +114,17 @@ class DhikrStatsNotifier extends Notifier<DhikrStats> {
     unawaited(_save());
   }
 
+  /// Starts the session count over from zero.
+  void resetSession() {
+    state = DhikrStats(byDhikr: state.byDhikr);
+    unawaited(_save());
+  }
+
   Future<void> _save() async {
     try {
+      await _loaded;
       final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_sessionPrefsKey, state.session);
       await prefs.setString(_dayPrefsKey, _day);
       await prefs.setString(
         _todayPrefsKey,

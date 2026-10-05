@@ -115,7 +115,10 @@
   "overlayTitle": "الظهور فوق التطبيقات",
   "overlaySubtitle": "خلّي التذكير يظهر فوق أي تطبيق شغّال. من غير ده بيوصل كإشعار.",
   "overlayAllow": "سماح",
-  "overlayAllowed": "مسموح",
+  "overlayPromptTitle": "عرض التذكيرات فوق التطبيقات؟",
+  "overlayPromptBody": "فعّل «العرض فوق التطبيقات الأخرى» عشان كل تذكير يظهر قدامك على طول فوق أي تطبيق شغّال. من غيره التذكيرات بتوصل كإشعارات عادية.",
+  "overlayPromptLater": "مش دلوقتي",
+  "homeResetSession": "تصفير الجلسة",
   "navLibrary": "موسوعة الأذكار",
 
   "libraryTitle": "موسوعة الأذكار",

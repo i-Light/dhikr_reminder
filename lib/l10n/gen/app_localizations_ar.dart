@@ -334,7 +334,17 @@ class AppLocalizationsAr extends AppLocalizations {
   String get overlayAllow => 'سماح';
 
   @override
-  String get overlayAllowed => 'مسموح';
+  String get overlayPromptTitle => 'عرض التذكيرات فوق التطبيقات؟';
+
+  @override
+  String get overlayPromptBody =>
+      'فعّل «العرض فوق التطبيقات الأخرى» عشان كل تذكير يظهر قدامك على طول فوق أي تطبيق شغّال. من غيره التذكيرات بتوصل كإشعارات عادية.';
+
+  @override
+  String get overlayPromptLater => 'مش دلوقتي';
+
+  @override
+  String get homeResetSession => 'تصفير الجلسة';
 
   @override
   String get navLibrary => 'موسوعة الأذكار';

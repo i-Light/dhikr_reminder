@@ -339,7 +339,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overlayAllow => 'Allow';
 
   @override
-  String get overlayAllowed => 'Allowed';
+  String get overlayPromptTitle => 'Show reminders over other apps?';
+
+  @override
+  String get overlayPromptBody =>
+      'Allow \"Display over other apps\" so each reminder appears right on top of whatever you are using. Without it, reminders arrive as ordinary notifications.';
+
+  @override
+  String get overlayPromptLater => 'Not now';
+
+  @override
+  String get homeResetSession => 'Reset this session';
 
   @override
   String get navLibrary => 'Dhikr Library';
