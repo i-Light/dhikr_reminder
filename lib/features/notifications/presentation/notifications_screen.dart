@@ -95,10 +95,8 @@ class NotificationsScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 24),
               // On a phone, reminders can float over other apps once allowed.
-              if (ref.watch(appPlatformProvider).usesNotifications) ...[
+              if (ref.watch(appPlatformProvider).usesNotifications)
                 const _OverlayPermissionCard(),
-                const SizedBox(height: 20),
-              ],
               _SectionLabel(l10n.notifScheduleSection),
               _ScheduleCard(settings: settings),
               const SizedBox(height: 28),
@@ -148,8 +146,8 @@ class NotificationsScreen extends ConsumerWidget {
   }
 }
 
-/// "Show over other apps": explains the permission, shows whether it is
-/// granted, and opens the system screen where it is.
+/// "Show over other apps": explains the permission and opens the system screen
+/// where it is granted. Gone once it is granted (and while that is unknown).
 class _OverlayPermissionCard extends ConsumerWidget {
   const _OverlayPermissionCard();
 
@@ -157,44 +155,41 @@ class _OverlayPermissionCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final allowed = ref.watch(overlayAllowedProvider).value ?? false;
+    final allowed = ref.watch(overlayAllowedProvider).value;
+    if (allowed ?? true) return const SizedBox.shrink();
 
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          spacing: 12,
-          children: [
-            Icon(
-              allowed ? Icons.check_circle_outline : Icons.layers_outlined,
-              color: theme.colorScheme.primary,
-            ),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(l10n.overlayTitle, style: theme.textTheme.bodyLarge),
-                  Text(
-                    l10n.overlaySubtitle,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+    return Padding(
+        padding: const EdgeInsets.only(bottom: 20),
+        child: Card(
+          margin: EdgeInsets.zero,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              spacing: 12,
+              children: [
+                Icon(Icons.layers_outlined, color: theme.colorScheme.primary),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.overlayTitle, style: theme.textTheme.bodyLarge),
+                      Text(
+                        l10n.overlaySubtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                FilledButton.tonal(
+                  onPressed: ref.read(overlayAllowedProvider.notifier).request,
+                  child: Text(l10n.overlayAllow),
+                ),
+              ],
             ),
-            if (allowed)
-              Text(l10n.overlayAllowed, style: theme.textTheme.labelLarge)
-            else
-              FilledButton.tonal(
-                onPressed: ref.read(overlayAllowedProvider.notifier).request,
-                child: Text(l10n.overlayAllow),
-              ),
-          ],
-        ),
-      ),
-    );
+          ),
+        ));
   }
 }
 

@@ -201,11 +201,12 @@ void main() {
       expect(overlay.permissionRequests, 1);
     });
 
-    testWidgets('shows that it is allowed once it is', (tester) async {
+    testWidgets('is gone once the permission is granted', (tester) async {
       await pumpAs(tester, PlatformKind.android, allowed: true);
 
-      expect(find.text('Allowed'), findsOneWidget);
+      expect(find.text('Show over other apps'), findsNothing);
       expect(find.text('Allow'), findsNothing);
+      expect(find.text('Allowed'), findsNothing);
     });
 
     testWidgets('does not exist on Windows', (tester) async {

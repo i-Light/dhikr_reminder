@@ -1,4 +1,5 @@
 import 'package:dhikr_reminder/features/library/presentation/dhikr_library_screen.dart';
+import 'package:dhikr_reminder/features/mobile_reminders/overlay_prompt.dart';
 import 'package:dhikr_reminder/features/notifications/presentation/notifications_screen.dart';
 import 'package:dhikr_reminder/features/settings/presentation/home_screen.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
@@ -35,7 +36,7 @@ class _MainShellState extends State<MainShell> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return Scaffold(
+    final page = Scaffold(
       body: IndexedStack(
         index: _index,
         sizing: StackFit.expand,
@@ -67,5 +68,7 @@ class _MainShellState extends State<MainShell> {
         ],
       ),
     );
+
+    return OverlayPermissionPrompt(child: page);
   }
 }
