@@ -25,7 +25,11 @@ class NotificationsScreen extends ConsumerWidget {
     final notifier = ref.read(dhikrSettingsProvider.notifier);
 
     Future<void> add() async {
-      final fresh = DhikrEntry(id: notifier.allocateId(), name: '');
+      final fresh = DhikrEntry(
+        id: notifier.allocateId(),
+        name: '',
+        amount: dhikrAmountDefault,
+      );
       final result = await showDhikrEditDialog(
         context,
         entry: fresh,

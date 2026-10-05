@@ -61,6 +61,25 @@ void main() {
     expect(entries.last.name, 'سبحان الله');
   });
 
+  testWidgets('a new dhikr starts at 3 repetitions', (tester) async {
+    final container = await _pump(tester);
+
+    await tester.tap(find.byIcon(Icons.add).first);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('dhikr-name-field')),
+      'three',
+    );
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    final saved = container
+        .read(dhikrSettingsProvider)
+        .entries
+        .firstWhere((e) => e.name == 'three');
+    expect(saved.amount, 3);
+  });
+
   testWidgets('an empty dhikr cannot be saved', (tester) async {
     final container = await _pump(tester);
     final before = container.read(dhikrSettingsProvider).entries.length;

@@ -36,6 +36,9 @@ const dhikrChanceDefault = 10;
 const dhikrAmountMin = 1;
 const dhikrAmountMax = 1000;
 
+/// The repetition count a dhikr added from the editor starts with.
+const dhikrAmountDefault = 3;
+
 /// Bumped when the persisted shape changes in a way old data has to be
 /// converted through. 1 was the original 0-100 chance scale with amounts
 /// allowed to be 0; 2 is the 0-10 scale with a floor of 1 on amount.
