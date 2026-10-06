@@ -1,7 +1,7 @@
 name: dhikr_reminder
-description: "Dhikr Reminder â€” a standalone desktop app that pops a dhikr on screen every few minutes and lets you tap it out."
+description: "Dhikr Reminder Ã¢â‚¬â€ a standalone desktop app that pops a dhikr on screen every few minutes and lets you tap it out."
 publish_to: 'none'
-version: 0.1.1+2
+version: 0.1.2+3
 
 environment:
   # Same floor as gratovo_toolbox: the reminder overlay leans on `withValues(alpha:)`,
@@ -18,7 +18,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  # State management â€” hand-written Riverpod providers, no codegen, matching
+  # State management Ã¢â‚¬â€ hand-written Riverpod providers, no codegen, matching
   # gratovo_toolbox (which this app's reminder code was lifted from).
   flutter_riverpod: ^3.4.2
 
@@ -56,7 +56,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # Drives `flutter gen-l10n` (see l10n.yaml) â€” generates
+  # Drives `flutter gen-l10n` (see l10n.yaml) Ã¢â‚¬â€ generates
   # lib/l10n/gen/app_localizations.dart from lib/l10n/app_en.arb + app_ar.arb
   # on every `flutter pub get` / `flutter run`.
   generate: true
@@ -72,7 +72,7 @@ flutter:
 
     # The app's default face: the theme (core/theme/app_theme.dart) uses it for
     # all UI text. Only the weights Material 3 asks for (regular, medium, bold)
-    # plus semibold are bundled — each one is ~100 KB in the app.
+    # plus semibold are bundled â€” each one is ~100 KB in the app.
     - family: IBMPlexSansArabic
       fonts:
         - asset: assets/fonts/IBMPlexSansArabic-Regular.ttf
@@ -90,7 +90,7 @@ flutter:
         - asset: assets/fonts/ali-meshref.ttf
 
   assets:
-    # The reminder card's frame â€” see border_frame.dart.
+    # The reminder card's frame Ã¢â‚¬â€ see border_frame.dart.
     - assets/images/frame_corner.svg
     - assets/images/mandala_background.svg
     # The app icon: the tray icon and the .exe icon are both drawn from it, see
