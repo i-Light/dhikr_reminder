@@ -416,7 +416,7 @@ class OverlayService : Service() {
     companion object {
         private const val CHANNEL_ID = "dhikr_overlay"
         private const val NOTIFICATION_ID = 4711
-        private const val CARD_WIDTH_FRACTION = 0.8f
+        private const val CARD_WIDTH_FRACTION = 0.9f
         private const val CARD_HEIGHT_FRACTION = 0.9f
         private const val IDLE_TIMEOUT_MS = 3 * 60 * 1000L
 
