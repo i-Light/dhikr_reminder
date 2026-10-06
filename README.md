@@ -11,12 +11,6 @@ library** (موسوعة الأذكار). The library is content, not user data �
 in `lib/features/library/data/` and nothing there can be edited or saved from the
 app.
 
-It is a slice of [gratovo_toolbox](https://github.com/i-Light/gratovo_code)
-lifted out into its own project: the reminder overlay, the toast system it rides
-on, the azkar settings card and the providers behind them. The reminder code is
-the same code, comment for comment, so a fix made here should be pushed back
-there (and vice versa) rather than allowed to drift.
-
 ## Running it
 
 ```
