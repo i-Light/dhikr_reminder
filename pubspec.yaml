@@ -1,7 +1,7 @@
 name: dhikr_reminder
 description: "Dhikr Reminder: pops up a dhikr every few minutes, on Windows and Android, and lets you tap it out."
 publish_to: 'none'
-version: 0.1.2+3
+version: 0.1.3+4
 
 environment:
   # Same floor as gratovo_toolbox: the reminder overlay leans on `withValues(alpha:)`,
