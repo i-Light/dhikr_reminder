@@ -9,15 +9,17 @@
     from assets/images/logo.svg by tool/generate_app_icon.dart -- the same
     step, and the same SVG, as the Windows build's .exe icon.
 
-    Signing: put android/key.properties next to the project (it is git-ignored):
+    Signing: android/key.properties (git-ignored) says which key signs the build.
+    Run scripts\create_upload_key.ps1 once to make the key and that file; it looks
+    like this:
 
-        storeFile=../upload-keystore.jks
+        storeFile=upload-keystore.jks
         storePassword=...
         keyAlias=upload
         keyPassword=...
 
-    Without it the build is signed with the debug key and cannot be uploaded to
-    a store.
+    Without it the APKs are signed with the debug key, which is fine for
+    testing, and the App Bundle is refused, because a store would reject it.
 
 .PARAMETER Apk
     Also build installable APKs, one per CPU (build\app\outputs\flutter-apk\app-arm64-v8a-release.apk
@@ -74,7 +76,13 @@ if (-not $SkipChecks) {
 }
 
 if (-not (Test-Path (Join-Path $RepoRoot 'android\key.properties'))) {
-    Write-Warning 'android\key.properties not found: signing with the debug key (not uploadable to a store).'
+    # The App Bundle exists to be uploaded to Google Play, which rejects one
+    # signed with the debug key; refuse rather than make a file that cannot be
+    # used. The APKs are for testing and sideloading, so they may be debug-signed.
+    if (-not $ApkOnly) {
+        throw 'android\key.properties not found, so the bundle would be signed with the debug key and Google Play would refuse it. Run .\scripts\create_upload_key.ps1 once to make the upload key (see docs\google-play.md).'
+    }
+    Write-Warning 'android\key.properties not found: signing with the debug key (fine for testing, not uploadable to a store).'
 }
 
 # Size flags: --obfuscate shortens the Dart symbol names baked into the
@@ -82,6 +90,16 @@ if (-not (Test-Path (Join-Path $RepoRoot 'android\key.properties'))) {
 # build\symbols to de-obfuscate crash traces). Tree-shaken icons and R8 resource
 # shrinking are already on in release builds.
 $tiny = @('--obfuscate', '--split-debug-info=build/symbols')
+
+# The dhikr request service (server/README.md) is found at the address committed
+# in lib/features/requests/data/requests_config.dart. Setting DHIKR_REQUESTS_URL
+# overrides it for this build.
+if ($env:DHIKR_REQUESTS_URL) {
+    $tiny += "--dart-define=DHIKR_REQUESTS_URL=$($env:DHIKR_REQUESTS_URL)"
+    Write-Host "Request service (override): $($env:DHIKR_REQUESTS_URL)" -ForegroundColor Cyan
+} else {
+    Write-Host 'Request service: the address in requests_config.dart' -ForegroundColor Cyan
+}
 
 if (-not $ApkOnly) {
     Write-Host 'Building the App Bundle (Release)' -ForegroundColor Cyan

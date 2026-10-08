@@ -1,4 +1,6 @@
 import 'package:dhikr_reminder/core/navigation/main_shell.dart';
+import 'package:dhikr_reminder/core/navigation/shell_tab.dart';
+import 'package:dhikr_reminder/features/library/application/library_controller.dart';
 import 'package:dhikr_reminder/features/library/presentation/dhikr_library_screen.dart';
 import 'package:dhikr_reminder/features/notifications/presentation/notifications_screen.dart';
 import 'package:dhikr_reminder/features/settings/presentation/home_screen.dart';
@@ -27,6 +29,13 @@ Future<AppLocalizations> _pumpShell(WidgetTester tester) async {
   await tester.pumpAndSettle();
   return AppLocalizations.of(tester.element(find.byType(MainShell)));
 }
+
+/// An icon in the bottom bar, not the same icon elsewhere on a page (the
+/// library's bell is also a bell).
+Finder _navIcon(IconData icon) => find.descendant(
+      of: find.byType(NavigationBar),
+      matching: find.byIcon(icon),
+    );
 
 void main() {
   testWidgets('opens on the home page behind a three-item bottom bar',
@@ -83,5 +92,54 @@ void main() {
     );
     expect(find.byType(NotificationsScreen), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  group('adding a dhikr from the notifications page', () {
+    testWidgets('shows the add buttons for the visit, and takes them away',
+        (tester) async {
+      final l10n = await _pumpShell(tester);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(MainShell)),
+      );
+
+      // On the library by hand, the cards are compact.
+      await tester.tap(find.byIcon(Icons.menu_book_outlined));
+      await tester.pumpAndSettle();
+      expect(container.read(dhikrLibraryProvider).showAddUi, isFalse);
+      expect(find.text(l10n.libraryAddButton), findsNothing);
+
+      // Back to notifications, and "Add dhikr" sends the person to the library.
+      await tester.tap(_navIcon(Icons.notifications_none));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.notifAddDhikr).first);
+      await tester.pumpAndSettle();
+      expect(container.read(shellTabProvider), ShellTab.library);
+      expect(container.read(dhikrLibraryProvider).showAddUi, isTrue);
+      expect(find.text(l10n.libraryAddButton), findsWidgets);
+
+      // The bottom bar leaves the library: the visit is over.
+      await tester.tap(find.byIcon(Icons.tune_outlined));
+      await tester.pumpAndSettle();
+      expect(container.read(dhikrLibraryProvider).showAddUi, isFalse);
+      expect(container.read(dhikrLibraryProvider).showAddHint, isFalse);
+    });
+
+    testWidgets("the banner's way back ends the visit too", (tester) async {
+      final l10n = await _pumpShell(tester);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(MainShell)),
+      );
+      await tester.tap(_navIcon(Icons.notifications_none));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.notifAddDhikr).first);
+      await tester.pumpAndSettle();
+      expect(container.read(dhikrLibraryProvider).showAddUi, isTrue);
+
+      await tester.tap(find.text(l10n.libraryAddHintBack));
+      await tester.pumpAndSettle();
+
+      expect(container.read(shellTabProvider), ShellTab.notifications);
+      expect(container.read(dhikrLibraryProvider).showAddUi, isFalse);
+    });
   });
 }

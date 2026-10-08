@@ -205,7 +205,7 @@ class _DhikrReminderHostState extends ConsumerState<DhikrReminderHost> {
   }
 }
 
-/// A small "label / number" pair — the reminder card's session and day counts.
+/// A small "label / number" pair: the reminder card's count for the day.
 class DhikrStatChip extends StatelessWidget {
   const DhikrStatChip({
     super.key,
@@ -297,8 +297,8 @@ class DhikrReminderSurface extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onDismiss;
 
-  /// The session total, and today's per-dhikr totals, shown beside the
-  /// counter. A dhikr's day total is only shown if it has a daily goal.
+  /// Today's per-dhikr totals, shown beside the counter. A dhikr's day total
+  /// is only shown if it has a daily goal.
   final DhikrStats stats;
 
   /// The card's glow sprites, shared by every card rather than owned by one.
@@ -606,7 +606,7 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
     // Everything about the dhikr text that affects its layout, minus the size:
     // [DhikrFitText] measures with this and solves for the size itself.
     final dhikrTextStyle = (theme.textTheme.displayLarge ?? const TextStyle())
-        .copyWith(fontFamily: 'AliMeshref', wordSpacing: 12, height: 1.6);
+        .copyWith(fontFamily: 'NotoSansArabic', wordSpacing: 12, height: 1.6);
 
     // Everything the window has, less the glow's room on each side.
     final widgetWidth =
@@ -765,20 +765,20 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
                               ),
                             ),
                             const Expanded(child: SizedBox()),
-                            // Beside the counter: taps this session, and the
-                            // day's total across every session.
-                            DhikrStatChip(
-                              label: l10n.statSession,
-                              value: widget.stats.session,
-                              color: accent,
-                              fontSize: _s(14),
-                            ),
+                            // Beside the counter: how far this dhikr, and only
+                            // this one, has got today toward its daily goal.
+                            // In the dhikr's own colour: the accent is gold and
+                            // is lost against the card's gold fill.
                             if (entry.dailyGoal > 0)
                               DhikrStatChip(
                                 label: l10n.statToday,
-                                value: widget.stats.todayFor(entry.id),
+                                value: widget.stats.forToday(
+                                  dhikrDayKey(DateTime.now()),
+                                  entry.id,
+                                ),
                                 goal: entry.dailyGoal,
-                                color: accent,
+                                color: dhikrTextStyle.color ??
+                                    theme.colorScheme.onSurface,
                                 fontSize: _s(14),
                               ),
                             ScaleTransition(

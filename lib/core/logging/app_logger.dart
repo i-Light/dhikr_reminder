@@ -36,8 +36,12 @@ class AppLogger {
     runZonedGuarded(body, (error, stack) => write('Zone', error, stack));
   }
 
+  /// Writes a line that is not an error but is worth having in a bug report,
+  /// such as what the updater did.
+  static void note(String message) => write('Info', message, null);
+
   static void write(String kind, Object error, StackTrace? stack) {
-    if (kDebugMode) debugPrint('[$kind] $error\n$stack');
+    if (kDebugMode) debugPrint('[$kind] $error${stack == null ? '' : '\n$stack'}');
     final file = _file;
     if (file == null) return;
     try {
@@ -47,7 +51,8 @@ class AppLogger {
         file.renameSync(old.path);
       }
       file.writeAsStringSync(
-        '${DateTime.now().toIso8601String()} [$kind] $error\n$stack\n\n',
+        '${DateTime.now().toIso8601String()} [$kind] $error\n'
+        '${stack == null ? '' : '$stack\n'}\n',
         mode: FileMode.append,
         flush: true,
       );
@@ -59,9 +64,13 @@ class AppLogger {
   static File? _locate() {
     if (kIsWeb) return null;
     try {
-      final base = Platform.environment['LOCALAPPDATA'] ??
-          Platform.environment['HOME'] ??
-          Directory.systemTemp.path;
+      // On a phone the app cache folder (the temp directory) is the one place
+      // the app may write without a plugin.
+      final base = Platform.isAndroid
+          ? Directory.systemTemp.path
+          : Platform.environment['LOCALAPPDATA'] ??
+              Platform.environment['HOME'] ??
+              Directory.systemTemp.path;
       final dir = Directory('$base${Platform.pathSeparator}DhikrReminder')
         ..createSync(recursive: true);
       return File('${dir.path}${Platform.pathSeparator}dhikr_reminder.log');

@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
 
+import 'package:dhikr_reminder/features/library/data/dhikr_library.dart';
+import 'package:dhikr_reminder/features/library/domain/dhikr_item.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -41,8 +43,9 @@ const dhikrAmountDefault = 3;
 
 /// Bumped when the persisted shape changes in a way old data has to be
 /// converted through. 1 was the original 0-100 chance scale with amounts
-/// allowed to be 0; 2 is the 0-10 scale with a floor of 1 on amount.
-const _dhikrSchemaVersion = 2;
+/// allowed to be 0; 2 is the 0-10 scale with a floor of 1 on amount; 3 adds
+/// the link from a saved dhikr to its library entry (see [DhikrEntry.libraryId]).
+const _dhikrSchemaVersion = 3;
 const _dhikrSchemaPrefsKey = 'dhikr_reminder.dhikr.schema';
 
 /// Bounds for [DhikrEntry.dailyGoal]; 0 means the dhikr has no daily goal.
@@ -60,6 +63,7 @@ class DhikrEntry {
     this.amount = dhikrAmountMin,
     this.chance = dhikrChanceDefault,
     this.dailyGoal = 0,
+    this.libraryId,
   });
 
   /// Stable across renames/reordering — rows are keyed on this, not their
@@ -78,11 +82,17 @@ class DhikrEntry {
   /// default). Only a dhikr with a goal shows a day counter.
   final int dailyGoal;
 
+  /// The [DhikrItem.id] of the library entry this reminder was added from, or
+  /// null for a dhikr typed in by hand before the library took over adding
+  /// them. A linked entry keeps its [name] in step with the text in the library.
+  final String? libraryId;
+
   DhikrEntry copyWith({
     String? name,
     int? amount,
     int? chance,
     int? dailyGoal,
+    String? libraryId,
   }) {
     return DhikrEntry(
       id: id,
@@ -90,6 +100,7 @@ class DhikrEntry {
       amount: amount ?? this.amount,
       chance: chance ?? this.chance,
       dailyGoal: dailyGoal ?? this.dailyGoal,
+      libraryId: libraryId ?? this.libraryId,
     );
   }
 
@@ -99,6 +110,7 @@ class DhikrEntry {
         'amount': amount,
         'chance': chance,
         'dailyGoal': dailyGoal,
+        if (libraryId != null) 'libraryId': libraryId,
       };
 
   /// [rescaleChance] converts a weight saved on the old 0-100 scale. Applied
@@ -122,8 +134,23 @@ class DhikrEntry {
       chance: (rescaleChance ? _rescaleChance(storedChance) : storedChance)
           .clamp(dhikrChanceMin, dhikrChanceMax),
       dailyGoal: (json['dailyGoal'] as int? ?? 0).clamp(0, dailyGoalMax),
+      libraryId: json['libraryId'] as String?,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      other is DhikrEntry &&
+      other.id == id &&
+      other.name == name &&
+      other.amount == amount &&
+      other.chance == chance &&
+      other.dailyGoal == dailyGoal &&
+      other.libraryId == libraryId;
+
+  @override
+  int get hashCode =>
+      Object.hash(id, name, amount, chance, dailyGoal, libraryId);
 
   /// 0-100 -> 0-10, preserving what the number meant rather than what it was.
   ///
@@ -139,12 +166,35 @@ class DhikrEntry {
   }
 }
 
+/// [entries] with each one tied to the library entry it says, when there is
+/// one.
+///
+/// A saved dhikr that already has a [DhikrEntry.libraryId] takes its words from
+/// that library entry (so a corrected text reaches everyone who added it); one
+/// without is matched by what it says, ignoring vowels, kashida and
+/// punctuation, which is how the lists people typed before the library took
+/// over adding dhikr get their link. What matches nothing is left as it is and
+/// keeps working as a reminder.
+List<DhikrEntry> linkEntriesToLibrary(List<DhikrEntry> entries) {
+  return [
+    for (final entry in entries)
+      () {
+        final item = entry.libraryId != null
+            ? libraryItemById(entry.libraryId!)
+            : libraryItemForText(entry.name);
+        if (item == null) return entry;
+        if (entry.libraryId == item.id && entry.name == item.text) return entry;
+        return entry.copyWith(name: item.text, libraryId: item.id);
+      }(),
+  ];
+}
+
 /// Seeded on first run. Azkar text is content, not UI chrome — it stays in
 /// Arabic regardless of the app's display language, same way a quoted verse
 /// wouldn't be translated just because the surrounding UI is in English.
 const _defaultDhikrEntries = [
   DhikrEntry(id: 0, name: 'سبحان الله'),
-  DhikrEntry(id: 1, name: 'الحمد لله'),
+  DhikrEntry(id: 1, name: 'الحمد لله رب العالمين'),
   DhikrEntry(id: 2, name: 'الله أكبر'),
   DhikrEntry(id: 3, name: 'لا إله إلا الله'),
   DhikrEntry(id: 4, name: 'أستغفر الله'),
@@ -266,10 +316,13 @@ class DhikrSettingsNotifier extends Notifier<DhikrSettings> {
                 ))
             .toList();
       }
-      if (needsRescale) {
-        // Written straight back on the new scale so the conversion happens
-        // exactly once. Without this every load would re-divide, and a weight
-        // of 10 would walk down to 1 over ten launches.
+      final linked = linkEntriesToLibrary(entries);
+      final relinked = !listEquals(linked, entries);
+      entries = linked;
+      if (needsRescale || storedSchema < _dhikrSchemaVersion || relinked) {
+        // Written straight back so the conversion happens exactly once.
+        // Without this every load would re-divide the old chance scale, and a
+        // weight of 10 would walk down to 1 over ten launches.
         unawaited(_writeEntries(prefs, entries));
       }
 
@@ -298,6 +351,41 @@ class DhikrSettingsNotifier extends Notifier<DhikrSettings> {
       isMuted: isMuted,
       isLoaded: true,
     );
+  }
+
+  /// Adds [item] to the reminders, saying it [amount] times (the count the
+  /// library gives when none is passed). Returns the entry; an item that is
+  /// already added is left alone and its entry returned.
+  Future<DhikrEntry> addFromLibrary(DhikrItem item, {int? amount}) async {
+    final existing = entryForLibraryItem(item.id);
+    if (existing != null) return existing;
+    final entry = DhikrEntry(
+      id: allocateId(),
+      name: item.text,
+      amount: (amount ?? item.count).clamp(dhikrAmountMin, dhikrAmountMax),
+      libraryId: item.id,
+    );
+    await updateEntries([...state.entries, entry]);
+    return entry;
+  }
+
+  /// The reminder added from the library entry [libraryId], or null.
+  DhikrEntry? entryForLibraryItem(String libraryId) =>
+      state.entries.where((e) => e.libraryId == libraryId).firstOrNull;
+
+  /// Takes the reminder added from the library entry [libraryId] off the list.
+  Future<void> removeLibraryItem(String libraryId) => updateEntries([
+        for (final entry in state.entries)
+          if (entry.libraryId != libraryId) entry,
+      ]);
+
+  /// Changes how many times the reminder added from [libraryId] is said.
+  Future<void> setLibraryItemAmount(String libraryId, int amount) {
+    final clamped = amount.clamp(dhikrAmountMin, dhikrAmountMax);
+    return updateEntries([
+      for (final entry in state.entries)
+        entry.libraryId == libraryId ? entry.copyWith(amount: clamped) : entry,
+    ]);
   }
 
   Future<void> updateEntries(List<DhikrEntry> entries) async {
@@ -358,3 +446,12 @@ final dhikrSettingsProvider =
     NotifierProvider<DhikrSettingsNotifier, DhikrSettings>(
   DhikrSettingsNotifier.new,
 );
+
+/// The library entries that already have a reminder, by [DhikrItem.id].
+final addedLibraryIdsProvider = Provider<Set<String>>((ref) {
+  final entries = ref.watch(dhikrSettingsProvider.select((s) => s.entries));
+  return {
+    for (final entry in entries)
+      if (entry.libraryId != null) entry.libraryId!,
+  };
+});

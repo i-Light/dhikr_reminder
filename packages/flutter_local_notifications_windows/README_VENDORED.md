@@ -11,3 +11,7 @@ never called. The Dart side is unchanged and is never invoked on Windows.
 
 Delete this folder and the override when upstream stops requiring ATL, or if
 the app ever wants system toasts on Windows.
+
+One Dart change: `_library` in `lib/src/plugin/ffi.dart` is `late final`, so
+the missing DLL is only looked up if the Windows notifications are really used.
+Before, `registerWith()` opened it at startup and logged a load error (126).

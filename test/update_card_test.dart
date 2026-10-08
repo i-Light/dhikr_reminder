@@ -2,6 +2,7 @@ import 'package:dhikr_reminder/core/update/update_controller.dart';
 import 'package:dhikr_reminder/core/update/update_release.dart';
 import 'package:dhikr_reminder/features/settings/presentation/widgets/update_card.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
+import 'package:dhikr_reminder/platform/app_platform.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -148,5 +149,51 @@ void main() {
 
     expect(find.text('حدّث دلوقتي'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  group('on Android, where Google Play does the updating', () {
+    Future<void> pumpAndroid(WidgetTester tester, {Locale? locale}) async {
+      tester.view.physicalSize = const Size(900, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appPlatformProvider
+                .overrideWithValue(const AppPlatform(PlatformKind.android)),
+            updateProvider.overrideWith(
+              () => _FixedUpdate(const UpdateState(currentVersion: _v1)),
+            ),
+          ],
+          child: MaterialApp(
+            locale: locale ?? const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const Scaffold(body: UpdateCard()),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('says so, and offers the store page instead of a check',
+        (tester) async {
+      await pumpAndroid(tester);
+
+      expect(find.text('Updates come from Google Play'), findsOneWidget);
+      expect(find.textContaining('Version 0.1.0'), findsOneWidget);
+      expect(find.text('Open Google Play'), findsOneWidget);
+      // None of the Windows updater's controls.
+      expect(find.byTooltip('Check for updates'), findsNothing);
+      expect(find.byType(Switch), findsNothing);
+      expect(find.text('Update now'), findsNothing);
+    });
+
+    testWidgets('renders in Arabic without overflowing', (tester) async {
+      await pumpAndroid(tester, locale: const Locale('ar'));
+
+      expect(find.text('التحديثات بتيجي من Google Play'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 }

@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:dhikr_reminder/core/toast/dhikr_reminder_overlay.dart';
 import 'package:dhikr_reminder/core/window/app_shell.dart';
-import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
+// import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart'; // for the sound toggle, see below
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -29,7 +29,7 @@ class TrayMenuPanel extends ConsumerWidget {
     final palette = DhikrPalette.forState(isComplete: false);
     final shell = ref.read(appShellProvider.notifier);
     final pausedUntil = ref.watch(reminderPauseProvider);
-    final isMuted = ref.watch(dhikrSettingsProvider.select((s) => s.isMuted));
+    // final isMuted = ref.watch(dhikrSettingsProvider.select((s) => s.isMuted));
 
     // The window is transparent and a few pixels bigger than the card, so the
     // card's rounded corners show the desktop behind them.
@@ -70,16 +70,21 @@ class TrayMenuPanel extends ConsumerWidget {
                         .pauseFor(const Duration(hours: 1))
                     : ref.read(reminderPauseProvider.notifier).resume,
               ),
-              _TrayMenuItem(
-                accent: palette.accent,
-                // The icon is the state: speaker while sound is on, crossed
-                // out while it is muted.
-                icon: isMuted
-                    ? Icons.volume_off_rounded
-                    : Icons.volume_up_rounded,
-                label: isMuted ? l10n.traySoundOff : l10n.traySoundOn,
-                onTap: shell.toggleMuted,
-              ),
+              // The sound toggle is hidden until reminders have a sound worth
+              // switching (planned for a later version). The setting
+              // (DhikrSettings.isMuted, AppShellNotifier.toggleMuted) and the
+              // strings (traySoundOn, traySoundOff) are still in place.
+              //
+              // _TrayMenuItem(
+              //   accent: palette.accent,
+              //   // The icon is the state: speaker while sound is on, crossed
+              //   // out while it is muted.
+              //   icon: isMuted
+              //       ? Icons.volume_off_rounded
+              //       : Icons.volume_up_rounded,
+              //   label: isMuted ? l10n.traySoundOff : l10n.traySoundOn,
+              //   onTap: shell.toggleMuted,
+              // ),
               Divider(
                 height: 9,
                 indent: 12,

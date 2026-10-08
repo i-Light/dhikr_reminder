@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug builds only: lets the app talk plain HTTP to this computer over
+     `adb reverse tcp:8787 tcp:8787`, to try "Request a dhikr" against
+     `node server/dev.mjs`. Release builds have no such file and only speak
+     HTTPS. -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+</network-security-config>

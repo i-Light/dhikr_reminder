@@ -6,8 +6,9 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// Release signing comes from android/key.properties (git-ignored):
-//   storeFile=../upload-keystore.jks
+// Release signing comes from android/key.properties (git-ignored), written by
+// scripts/create_upload_key.ps1:
+//   storeFile=upload-keystore.jks
 //   storePassword=...
 //   keyAlias=upload
 //   keyPassword=...
@@ -31,11 +32,13 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        // The Play Store identity of the app. It can never change once the app
+        // is published.
         applicationId = "com.gratovo.dhikr_reminder"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // Android 8.0 at least: the reminder card is a foreground service
+        // drawing a TYPE_APPLICATION_OVERLAY window, and notification channels
+        // are used throughout; neither exists below it.
+        minSdk = maxOf(flutter.minSdkVersion, 26)
         targetSdk = flutter.targetSdkVersion
         // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
         // is added automatically by Flutter. (https://developer.android.com/studio/build/configure-apk-splits#configure-APK-versions)
@@ -91,6 +94,10 @@ kotlin {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+
+    // The reminder plan's arithmetic is tested on a plain JVM:
+    //   cd android; .\gradlew :app:testDebugUnitTest
+    testImplementation("junit:junit:4.13.2")
 }
 
 flutter {

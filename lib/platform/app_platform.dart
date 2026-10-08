@@ -49,6 +49,11 @@ class AppPlatform {
   /// The app can download and run its own installer.
   bool get canSelfUpdate => kind == PlatformKind.windows;
 
+  /// New versions arrive through an app store (Google Play), which does the
+  /// downloading and installing. The app must not update itself there, and
+  /// does not even ask the network: all it can do is point at the store page.
+  bool get updatesThroughStore => kind == PlatformKind.android;
+
   /// The app can register itself to start when the person signs in.
   bool get canAutostart => hasWindowShell && isRelease;
 

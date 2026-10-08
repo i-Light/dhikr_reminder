@@ -1,0 +1,14 @@
+{
+  "name": "dhikr-requests-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The service that takes dhikr requests from the Dhikr Reminder app and tells each person how theirs is going.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "dev": "node dev.mjs"
+  },
+  "engines": {
+    "node": ">=22.13"
+  }
+}

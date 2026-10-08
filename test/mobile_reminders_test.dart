@@ -162,9 +162,13 @@ void main() {
           .sync(settings: settings, locale: const Locale('en'));
 
       expect(overlay.scheduled, hasLength(48));
+      // The native side keeps the schedule going on its own at this pace once
+      // the plan runs out.
+      expect(overlay.interval, const Duration(minutes: 30));
       expect(overlay.title, 'Dhikr reminder');
       expect(overlay.closeLabel, 'Close');
       expect(overlay.tip, 'Touch anywhere to count');
+      expect(overlay.dayLabel, "Today's dhikr");
       // Notifications are cleared, so a reminder never shows twice.
       expect(notifications.lastPlan, isEmpty);
     });
@@ -195,7 +199,23 @@ void main() {
         'dhikrId': 7,
         'text': 'dhikr text',
         'amount': 33,
+        'goal': 0,
       });
+    });
+
+    test('and the daily goal, so the card can show how far today has got', () {
+      final reminder = PlannedReminder(
+        id: 3,
+        at: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+        entry: const DhikrEntry(
+          id: 7,
+          name: 'dhikr text',
+          amount: 33,
+          dailyGoal: 100,
+        ),
+      );
+
+      expect(reminder.toOverlayMap()['goal'], 100);
     });
   });
 
@@ -219,9 +239,9 @@ void main() {
       ),
     );
     expect(find.text('0 / 3'), findsOneWidget);
-    // No daily goal set: only the session counter is shown, no day counter.
-    expect(find.text('Session'), findsOneWidget);
-    expect(find.text('Today'), findsNothing);
+    // No daily goal set, so no day counter; and no session counter at all.
+    expect(find.text("Today's dhikr"), findsNothing);
+    expect(find.text('Session'), findsNothing);
 
     final tap = find.byKey(const ValueKey('mobile-reminder-tap-area'));
     await tester.tap(tap);
@@ -258,7 +278,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('mobile-reminder-tap-area')));
     await tester.pump();
 
-    expect(find.text('Today'), findsOneWidget);
+    expect(find.text("Today's dhikr"), findsOneWidget);
     expect(find.text('1 / 100'), findsOneWidget);
+    expect(find.text('Session'), findsNothing);
   });
 }

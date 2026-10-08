@@ -1,6 +1,6 @@
 import 'package:dhikr_reminder/features/mobile_reminders/overlay_service.dart';
+import 'package:dhikr_reminder/features/notifications/presentation/notifications_screen.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
-import 'package:dhikr_reminder/features/settings/presentation/home_screen.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
 import 'package:dhikr_reminder/platform/app_platform.dart';
 import 'package:flutter/material.dart';
@@ -30,11 +30,14 @@ Future<ProviderContainer> _pump(
         locale: Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(body: HomeScreen()),
+        home: Scaffold(body: NotificationsScreen()),
       ),
     ),
   );
-  await tester.pump();
+  await tester.pumpAndSettle();
+  // The button is among the reminder settings, folded away until wanted.
+  await tester.tap(find.byKey(const ValueKey('collapsible-header')));
+  await tester.pumpAndSettle();
   return container;
 }
 
@@ -49,8 +52,8 @@ void main() {
     final overlay = FakeOverlay(allowed: true);
     final container = await _pump(tester, PlatformKind.android, overlay);
 
-    await tester.tap(find.text('Show a reminder now'));
-    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('test-reminder-button')));
+    await tester.pumpAndSettle();
 
     expect(overlay.shownNow, isNotNull);
     expect(container.read(activeDhikrReminderProvider), isNull);
@@ -62,8 +65,8 @@ void main() {
     final overlay = FakeOverlay(allowed: false);
     final container = await _pump(tester, PlatformKind.android, overlay);
 
-    await tester.tap(find.text('Show a reminder now'));
-    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('test-reminder-button')));
+    await tester.pumpAndSettle();
 
     expect(overlay.shownNow, isNull);
     expect(container.read(activeDhikrReminderProvider), isNotNull);
@@ -74,8 +77,8 @@ void main() {
     final overlay = FakeOverlay(allowed: true);
     final container = await _pump(tester, PlatformKind.windows, overlay);
 
-    await tester.tap(find.text('Show a reminder now'));
-    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('test-reminder-button')));
+    await tester.pumpAndSettle();
 
     expect(overlay.shownNow, isNull);
     expect(container.read(activeDhikrReminderProvider), isNotNull);

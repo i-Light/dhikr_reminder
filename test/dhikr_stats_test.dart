@@ -20,7 +20,7 @@ void main() {
     expect(dhikrDayKey(DateTime(2026, 3, 7)), '2026-03-07');
   });
 
-  test('every tap adds to the session and to that dhikr for today', () {
+  test('every tap adds to that dhikr for today, and to no other', () {
     SharedPreferences.setMockInitialValues({});
     final container = _container(() => DateTime(2026, 10, 5, 9));
     container.read(dhikrStatsProvider.notifier)
@@ -29,7 +29,6 @@ void main() {
       ..recordTap(2);
 
     final stats = container.read(dhikrStatsProvider);
-    expect(stats.session, 3);
     expect(stats.todayFor(1), 2);
     expect(stats.todayFor(2), 1);
     expect(stats.todayFor(99), 0);
@@ -46,14 +45,13 @@ void main() {
       ..recordTaps(2, -4);
 
     final stats = container.read(dhikrStatsProvider);
-    expect(stats.session, 33);
     expect(stats.todayFor(1), 33);
     expect(stats.todayFor(2), 0);
     notifier.recordTap(1);
     expect(container.read(dhikrStatsProvider).todayFor(1), 34);
   });
 
-  test('the session and the daily counts are remembered across a restart',
+  test('the daily counts are remembered across a restart',
       () async {
     SharedPreferences.setMockInitialValues({});
     final first = _container(() => DateTime(2026, 10, 5, 9));
@@ -68,12 +66,11 @@ void main() {
     await _settle();
 
     final stats = second.read(dhikrStatsProvider);
-    expect(stats.session, 3);
     expect(stats.todayFor(1), 2);
     expect(stats.todayFor(2), 1);
   });
 
-  test('the session carries on across a new day, the daily counts do not',
+  test('a session count saved by an older version is removed, not shown',
       () async {
     SharedPreferences.setMockInitialValues({
       'dhikr_reminder.stats.session': 40,
@@ -84,14 +81,13 @@ void main() {
     container.read(dhikrStatsProvider);
     await _settle();
 
-    final stats = container.read(dhikrStatsProvider);
-    expect(stats.session, 40);
-    expect(stats.today, 0);
+    expect(container.read(dhikrStatsProvider).today, 0);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.containsKey('dhikr_reminder.stats.session'), isFalse);
   });
 
   test('taps made while the saved counts load are added to them', () async {
     SharedPreferences.setMockInitialValues({
-      'dhikr_reminder.stats.session': 10,
       'dhikr_reminder.stats.day': '2026-10-05',
       'dhikr_reminder.stats.todayByDhikr': '{"1":10}',
     });
@@ -100,29 +96,10 @@ void main() {
     await _settle();
 
     final stats = container.read(dhikrStatsProvider);
-    expect(stats.session, 11);
     expect(stats.todayFor(1), 11);
 
     final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getInt('dhikr_reminder.stats.session'), 11);
-  });
-
-  test('resetting the session leaves the day alone, and is remembered',
-      () async {
-    SharedPreferences.setMockInitialValues({});
-    final first = _container(() => DateTime(2026, 10, 5, 9));
-    first.read(dhikrStatsProvider.notifier)
-      ..recordTaps(1, 5)
-      ..resetSession();
-    await _settle();
-    expect(first.read(dhikrStatsProvider).session, 0);
-    expect(first.read(dhikrStatsProvider).todayFor(1), 5);
-
-    final second = _container(() => DateTime(2026, 10, 5, 10));
-    second.read(dhikrStatsProvider);
-    await _settle();
-    expect(second.read(dhikrStatsProvider).session, 0);
-    expect(second.read(dhikrStatsProvider).todayFor(1), 5);
+    expect(prefs.getString('dhikr_reminder.stats.todayByDhikr'), '{"1":11}');
   });
 
   test('a new day starts the daily counts over', () async {
@@ -147,8 +124,19 @@ void main() {
     notifier.recordTap(1);
 
     final stats = container.read(dhikrStatsProvider);
-    expect(stats.session, 2);
     expect(stats.todayFor(1), 1);
+  });
+
+  test('two dhikr are counted separately, whatever the other has reached', () {
+    SharedPreferences.setMockInitialValues({});
+    final container = _container(() => DateTime(2026, 10, 5, 9));
+    container.read(dhikrStatsProvider.notifier)
+      ..recordTaps(1, 40)
+      ..recordTaps(2, 3);
+
+    final stats = container.read(dhikrStatsProvider);
+    expect(stats.todayFor(1), 40);
+    expect(stats.todayFor(2), 3);
   });
 
   group('DhikrEntry.dailyGoal', () {

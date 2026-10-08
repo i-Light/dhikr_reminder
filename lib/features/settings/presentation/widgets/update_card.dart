@@ -1,6 +1,7 @@
 import 'package:dhikr_reminder/core/update/update_controller.dart';
 import 'package:dhikr_reminder/core/update/update_source.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
+import 'package:dhikr_reminder/platform/app_platform.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -17,6 +18,9 @@ class UpdateCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (ref.watch(appPlatformProvider).updatesThroughStore) {
+      return const _StoreUpdateCard();
+    }
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final update = ref.watch(updateProvider);
@@ -42,13 +46,13 @@ class UpdateCard extends ConsumerWidget {
       _ => null,
     };
 
-    // "Version 0.1.0 · Last checked 9:41 PM": the running version always,
+    // "Version 0.1.0" over "Last checked 9:41 PM": the running version always,
     // and the status' own detail after it.
     final detail = [
       if (update.currentVersion != null)
         l10n.updateVersion(update.currentVersion.toString()),
       if (status.hint != null) status.hint!,
-    ].join(' · ');
+    ].join('\n');
 
     return Card(
       margin: EdgeInsets.zero,
@@ -73,7 +77,7 @@ class UpdateCard extends ConsumerWidget {
                       if (detail.isNotEmpty)
                         Text(
                           detail,
-                          maxLines: 2,
+                          maxLines: 3,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall
                               ?.copyWith(color: subtle),
@@ -129,6 +133,80 @@ class UpdateCard extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+/// The card on a phone, where Google Play delivers updates: the running
+/// version, a note that Play does the updating, and a shortcut to the app's
+/// page there.
+class _StoreUpdateCard extends ConsumerWidget {
+  const _StoreUpdateCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final version = ref.watch(updateProvider.select((s) => s.currentVersion));
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 8, 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 12,
+              children: [
+                Icon(
+                  Icons.system_update_alt_rounded,
+                  size: 22,
+                  color: theme.colorScheme.primary,
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: 2,
+                    children: [
+                      Text(
+                        l10n.updatePlayTitle,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                      Text(
+                        [
+                          if (version != null) l10n.updateVersion('$version'),
+                          l10n.updatePlayHint,
+                        ].join('\n'),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            // Under the text rather than beside it: the sentence needs the
+            // width, and "Google Play" in the middle of Arabic wraps badly in
+            // a narrow column.
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: TextButton(
+                onPressed: _openPlayPage,
+                child: Text(l10n.updateOpenPlayButton),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// The Play Store app if there is one, the web page if not.
+  Future<void> _openPlayPage() async {
+    if (await openInBrowser(playStoreAppUri)) return;
+    await openInBrowser(playStorePageUri);
   }
 }
 

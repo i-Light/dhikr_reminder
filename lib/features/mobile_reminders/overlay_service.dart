@@ -15,13 +15,18 @@ abstract class ReminderOverlay {
   /// Opens the system screen where that permission is granted.
   Future<void> requestPermission();
 
-  /// Replaces every scheduled reminder with [plan]. [title], [closeLabel] and
-  /// [tip] are the card's (localized) texts.
+  /// Replaces every scheduled reminder with [plan]. [interval] is the gap
+  /// between two reminders: the native side uses it to keep the schedule going
+  /// on its own once [plan] runs out. [title], [closeLabel], [tip] and
+  /// [dayLabel] (the words under the day counter) are the card's (localized)
+  /// texts.
   Future<void> schedule(
     List<PlannedReminder> plan, {
+    required Duration interval,
     required String title,
     required String closeLabel,
     required String tip,
+    required String dayLabel,
   });
 
   /// Shows one reminder card right now, outside the plan. Returns false when
@@ -30,9 +35,11 @@ abstract class ReminderOverlay {
     required int dhikrId,
     required String text,
     required int amount,
+    required int goal,
     required String title,
     required String closeLabel,
     required String tip,
+    required String dayLabel,
   });
 
   /// Cancels every scheduled reminder.
@@ -40,6 +47,12 @@ abstract class ReminderOverlay {
 
   /// Taps counted on the card since the last call, by dhikr id.
   Future<Map<int, int>> drainTaps();
+
+  /// Tells the card how far each dhikr has got today, so a dhikr with a daily
+  /// goal can show it. [day] is the day key the counts belong to
+  /// (`dhikrDayKey`); [counts] is by dhikr id. The card adds the taps it counts
+  /// itself while the app is closed.
+  Future<void> setToday(String day, Map<int, int> counts);
 }
 
 /// [ReminderOverlay] over the Android side's method channel. Anywhere the
@@ -66,21 +79,27 @@ class ChannelReminderOverlay implements ReminderOverlay {
       await _channel.invokeMethod<void>('requestOverlayPermission');
     } on MissingPluginException {
       // Nothing to open.
+    } on PlatformException {
+      // The phone has no screen for it. Asking must never be what breaks.
     }
   }
 
   @override
   Future<void> schedule(
     List<PlannedReminder> plan, {
+    required Duration interval,
     required String title,
     required String closeLabel,
     required String tip,
+    required String dayLabel,
   }) async {
     try {
       await _channel.invokeMethod<void>('schedule', {
+        'intervalMillis': interval.inMilliseconds,
         'title': title,
         'closeLabel': closeLabel,
         'tip': tip,
+        'dayLabel': dayLabel,
         'plan': [for (final reminder in plan) reminder.toOverlayMap()],
       });
     } on MissingPluginException {
@@ -93,18 +112,22 @@ class ChannelReminderOverlay implements ReminderOverlay {
     required int dhikrId,
     required String text,
     required int amount,
+    required int goal,
     required String title,
     required String closeLabel,
     required String tip,
+    required String dayLabel,
   }) async {
     try {
       return await _channel.invokeMethod<bool>('showNow', {
             'dhikrId': dhikrId,
             'text': text,
             'amount': amount,
+            'goal': goal,
             'title': title,
             'closeLabel': closeLabel,
             'tip': tip,
+            'dayLabel': dayLabel,
           }) ??
           false;
     } on MissingPluginException {
@@ -116,6 +139,20 @@ class ChannelReminderOverlay implements ReminderOverlay {
   Future<void> cancel() async {
     try {
       await _channel.invokeMethod<void>('cancel');
+    } on MissingPluginException {
+      // No overlay on this platform.
+    }
+  }
+
+  @override
+  Future<void> setToday(String day, Map<int, int> counts) async {
+    try {
+      await _channel.invokeMethod<void>('setToday', {
+        'day': day,
+        'counts': {
+          for (final entry in counts.entries) '${entry.key}': entry.value,
+        },
+      });
     } on MissingPluginException {
       // No overlay on this platform.
     }

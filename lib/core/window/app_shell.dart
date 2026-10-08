@@ -61,8 +61,10 @@ class ShellState {
   int get hashCode => Object.hash(mode, revealed);
 }
 
-/// Size of the tray popup, in logical pixels — see `TrayMenuPanel`.
-const kTrayMenuSize = Size(208, 212);
+/// Size of the tray popup, in logical pixels, see `TrayMenuPanel`. Four rows of
+/// 36, the divider, and the padding around them. It was 212 while the menu also
+/// had the sound toggle (hidden for now).
+const kTrayMenuSize = Size(208, 176);
 
 /// Size of the splash window; the splash card fills it.
 const kSplashSize = Size(420, 270);
@@ -73,6 +75,10 @@ const kReminderWindowSize = Size(1120, 700);
 
 /// Size the settings window opens at the first time.
 const kSettingsWindowSize = Size(960, 720);
+
+/// Anything smaller than this is not a real settings window size (it is what a
+/// minimized or mid-change window reports), so it is never remembered.
+const _minSettingsSize = Size(400, 300);
 
 /// How long the splash stays up. `SplashSurface` runs its fade in and out
 /// inside this.
@@ -376,7 +382,7 @@ class AppShellNotifier extends Notifier<ShellState>
       // Until the process is really gone the icon is what the person sees.
       final dimmed = _quittingIconPath;
       if (dimmed != null) await trayManager.setIcon(dimmed);
-      await trayManager.setToolTip('$_trayTooltip — closing…');
+      await trayManager.setToolTip('$_trayTooltip (بيتقفل...)');
     } catch (_) {}
     try {
       await trayManager.destroy();
@@ -484,8 +490,15 @@ class AppShellNotifier extends Notifier<ShellState>
     try {
       if (from == ShellMode.settings &&
           !_isHidden &&
-          !await windowManager.isMaximized()) {
-        _settingsBounds = await windowManager.getBounds();
+          !await windowManager.isMaximized() &&
+          // A minimized window reports a tiny title-bar-only rectangle;
+          // remembering that would reopen settings as a sliver.
+          !await windowManager.isMinimized()) {
+        final bounds = await windowManager.getBounds();
+        if (bounds.width >= _minSettingsSize.width &&
+            bounds.height >= _minSettingsSize.height) {
+          _settingsBounds = bounds;
+        }
       }
       if (target == ShellMode.settings || target == ShellMode.hidden) {
         _resting = target;

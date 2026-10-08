@@ -81,7 +81,7 @@ class MobileReminderScreen extends ConsumerWidget {
                             reminder.entry.name,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
-                              fontFamily: 'AliMeshref',
+                              fontFamily: 'NotoSansArabic',
                               fontSize: 34,
                               height: 1.7,
                               color: textColor,
@@ -121,26 +121,20 @@ class MobileReminderScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        DhikrStatChip(
-                          label: l10n.statSession,
-                          value: stats.session,
-                          color: palette.accent,
-                          fontSize: 18,
+                    // This dhikr's own count for the day, in the dhikr's colour.
+                    if (reminder.entry.dailyGoal > 0) ...[
+                      DhikrStatChip(
+                        label: l10n.statToday,
+                        value: stats.forToday(
+                          dhikrDayKey(ref.watch(dhikrStatsClockProvider)()),
+                          reminder.entry.id,
                         ),
-                        if (reminder.entry.dailyGoal > 0)
-                          DhikrStatChip(
-                            label: l10n.statToday,
-                            value: stats.todayFor(reminder.entry.id),
-                            goal: reminder.entry.dailyGoal,
-                            color: palette.accent,
-                            fontSize: 18,
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
+                        goal: reminder.entry.dailyGoal,
+                        color: textColor,
+                        fontSize: 18,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     Text(
                       l10n.dhikrReminderTouchEverywhereTip,
                       style: theme.textTheme.bodyMedium?.copyWith(

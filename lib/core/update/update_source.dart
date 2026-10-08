@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dhikr_reminder/core/update/update_release.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Where releases are published (`scripts/build_windows.ps1 -Mode Publish`
 /// creates a GitHub Release with the installer attached).
@@ -60,10 +61,29 @@ Future<UpdateRelease?> fetchLatestRelease() async {
   }
 }
 
-/// Opens [uri] in the default browser.
-Future<void> openInBrowser(Uri uri) async {
-  // rundll32 rather than `cmd /c start`: no shell, so nothing in the URL is
-  // ever parsed as a command.
-  await Process.run(
-      'rundll32', ['url.dll,FileProtocolHandler', uri.toString()]);
+/// Opens [uri] in the default browser (or, on a phone, the browser or app that
+/// handles it). False when nothing could be opened.
+///
+/// Goes through url_launcher on every platform: on Windows that is
+/// ShellExecute, with no shell parsing the URL; on Android an ordinary view
+/// intent.
+Future<bool> openInBrowser(Uri uri) async {
+  try {
+    return await launchUrl(uri, mode: LaunchMode.externalApplication);
+  } catch (_) {
+    return false;
+  }
 }
+
+/// The Android application id, which is also the app's address on Google Play.
+const androidApplicationId = 'com.gratovo.dhikr_reminder';
+
+/// The app's page in the Play Store app.
+final playStoreAppUri = Uri.parse('market://details?id=$androidApplicationId');
+
+/// The same page on the web, for a phone without the Play Store app.
+final playStorePageUri = Uri.https(
+  'play.google.com',
+  '/store/apps/details',
+  {'id': androidApplicationId},
+);

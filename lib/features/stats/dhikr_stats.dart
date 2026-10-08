@@ -8,15 +8,23 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const _dayPrefsKey = 'dhikr_reminder.stats.day';
 const _todayPrefsKey = 'dhikr_reminder.stats.todayByDhikr';
-const _sessionPrefsKey = 'dhikr_reminder.stats.session';
 
-/// What has been counted: [session] taps since the session was last reset, and
-/// today's taps per dhikr since midnight.
+/// Kept only so the count an older version saved can be removed: the app no
+/// longer counts a session, only each dhikr's day.
+const _oldSessionPrefsKey = 'dhikr_reminder.stats.session';
+
+/// What has been counted today: the taps on each dhikr since midnight.
+///
+/// Every dhikr is counted on its own, by its id, so the day counter on a
+/// reminder and the progress on the Notifications page are that dhikr's alone.
 @immutable
 class DhikrStats {
-  const DhikrStats({this.session = 0, this.byDhikr = const <int, int>{}});
+  const DhikrStats({this.day = '', this.byDhikr = const <int, int>{}});
 
-  final int session;
+  /// The day key ([dhikrDayKey]) the counts belong to; empty until the first
+  /// count or load. It can be yesterday's in an app that has stayed open past
+  /// midnight with no tap since.
+  final String day;
 
   /// Today's taps, by dhikr id.
   final Map<int, int> byDhikr;
@@ -24,17 +32,22 @@ class DhikrStats {
   /// Today's taps on [dhikrId]; the numerator of that dhikr's daily goal.
   int todayFor(int dhikrId) => byDhikr[dhikrId] ?? 0;
 
+  /// Today's taps on [dhikrId], given today's day key: zero when the counts are
+  /// from an earlier day, as in an app left open past midnight with no tap since.
+  int forToday(String todayKey, int dhikrId) =>
+      day == todayKey ? todayFor(dhikrId) : 0;
+
   /// Today's taps on every dhikr together.
   int get today => byDhikr.values.fold(0, (sum, count) => sum + count);
 
   @override
   bool operator ==(Object other) =>
       other is DhikrStats &&
-      other.session == session &&
+      other.day == day &&
       mapEquals(other.byDhikr, byDhikr);
 
   @override
-  int get hashCode => Object.hash(session, Object.hashAll(byDhikr.entries));
+  int get hashCode => Object.hash(day, Object.hashAll(byDhikr.entries));
 }
 
 /// "2026-10-05": the day key [DhikrStatsNotifier] files the daily totals under.
@@ -47,11 +60,10 @@ final dhikrStatsClockProvider = Provider<DateTime Function()>(
   (ref) => DateTime.now,
 );
 
-/// Counts every tap on a reminder, per session and per dhikr per day.
+/// Counts every tap on a reminder, per dhikr per day.
 ///
-/// Both are remembered, so a restart or an app update loses nothing. The
-/// session total runs until [resetSession]; the daily totals are filed under
-/// the day they belong to and start again at zero on a new day.
+/// The counts are remembered, so a restart or an app update loses nothing. They
+/// are filed under the day they belong to and start again at zero on a new day.
 class DhikrStatsNotifier extends Notifier<DhikrStats> {
   String _day = '';
 
@@ -83,10 +95,9 @@ class DhikrStatsNotifier extends Notifier<DhikrStats> {
       state.byDhikr.forEach((id, count) {
         merged[id] = (merged[id] ?? 0) + count;
       });
-      state = DhikrStats(
-        session: (prefs.getInt(_sessionPrefsKey) ?? 0) + state.session,
-        byDhikr: merged,
-      );
+      state = DhikrStats(day: _day, byDhikr: merged);
+      // The session count of earlier versions is of no use any more.
+      unawaited(prefs.remove(_oldSessionPrefsKey));
     } catch (error, stackTrace) {
       developer.log(
         'Failed to load the saved counts.',
@@ -98,7 +109,7 @@ class DhikrStatsNotifier extends Notifier<DhikrStats> {
     }
   }
 
-  /// Adds one counted tap on [dhikrId] to the session and to today.
+  /// Adds one counted tap on [dhikrId] to today.
   void recordTap(int dhikrId) => recordTaps(dhikrId, 1);
 
   /// Adds [count] taps on [dhikrId] at once: the ones made on the Android
@@ -110,13 +121,7 @@ class DhikrStatsNotifier extends Notifier<DhikrStats> {
     _day = today;
     final byDhikr = rolledOver ? <int, int>{} : Map<int, int>.of(state.byDhikr);
     byDhikr[dhikrId] = (byDhikr[dhikrId] ?? 0) + count;
-    state = DhikrStats(session: state.session + count, byDhikr: byDhikr);
-    unawaited(_save());
-  }
-
-  /// Starts the session count over from zero.
-  void resetSession() {
-    state = DhikrStats(byDhikr: state.byDhikr);
+    state = DhikrStats(day: today, byDhikr: byDhikr);
     unawaited(_save());
   }
 
@@ -124,7 +129,6 @@ class DhikrStatsNotifier extends Notifier<DhikrStats> {
     try {
       await _loaded;
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(_sessionPrefsKey, state.session);
       await prefs.setString(_dayPrefsKey, _day);
       await prefs.setString(
         _todayPrefsKey,

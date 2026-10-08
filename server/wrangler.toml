@@ -1,0 +1,40 @@
+# Cloudflare Worker config. See README.md for the one-time setup.
+name = "dhikr-requests"
+main = "src/worker.mjs"
+compatibility_date = "2026-09-01"
+workers_dev = true
+
+# Created with: npx wrangler d1 create dhikr-requests
+# The binding must stay "DB": src/worker.mjs reads env.DB. (wrangler suggests
+# its own binding name when it creates the database; ignore that one.)
+# The database_id is an identifier, not a secret.
+[[d1_databases]]
+binding = "DB"
+database_name = "dhikr-requests"
+database_id = "afa18287-6073-42fb-8b54-a3735caea396"
+
+# Cloudflare's own rate limiter, asked by src/firewall.mjs before anything else.
+# It counts in memory at the edge, so it costs no database writes. Both are
+# optional: if the account refuses them, delete these two blocks and the
+# firewall still limits by itself (see server/README.md, "The firewall").
+# The limit is per place and approximate, the firewall's own count is the
+# precise one. namespace_id is any number, one per limiter, unique in the account.
+[[ratelimits]]
+name = "RL_V1"
+namespace_id = "7101"
+  [ratelimits.simple]
+  limit = 60
+  period = 60
+
+[[ratelimits]]
+name = "RL_ADMIN"
+namespace_id = "7102"
+  [ratelimits.simple]
+  limit = 30
+  period = 60
+
+# Secrets are NOT set here. Set them with `npx wrangler secret put <NAME>`:
+#   ADMIN_TOKEN       a long random string, opens /admin
+#   CHALLENGE_SECRET  a long random string, signs the proof-of-work puzzles
+#   IP_SALT           a long random string, salts the stored address hashes
+# Optional variable: POW_BITS (default 16), raise it to make spam dearer.

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:dhikr_reminder/core/locale/locale_controller.dart';
+import 'package:dhikr_reminder/features/mobile_reminders/background_access.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/notification_service.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/overlay_service.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/reminder_planner.dart';
@@ -56,9 +57,11 @@ class MobileReminderSyncer {
       await _notifications.replaceAll(const [], title: l10n.dhikrReminderTitle);
       await _overlay.schedule(
         plan,
+        interval: Duration(minutes: settings.intervalMinutes),
         title: l10n.dhikrReminderTitle,
         closeLabel: l10n.commonClose,
         tip: l10n.dhikrReminderTouchEverywhereTip,
+        dayLabel: l10n.statToday,
       );
     } else {
       await _overlay.cancel();
@@ -134,8 +137,9 @@ class _MobileReminderHostState extends ConsumerState<MobileReminderHost>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       unawaited(_collectOverlayTaps());
-      // The permission is granted on a system screen outside the app.
+      // Both permissions are granted on a system screen outside the app.
       unawaited(ref.read(overlayAllowedProvider.notifier).refresh());
+      unawaited(ref.read(backgroundAllowedProvider.notifier).refresh());
       _scheduleSync();
     }
   }
@@ -146,6 +150,19 @@ class _MobileReminderHostState extends ConsumerState<MobileReminderHost>
     if (!mounted) return;
     final stats = ref.read(dhikrStatsProvider.notifier);
     taps.forEach(stats.recordTaps);
+    _pushToday();
+  }
+
+  /// Tells the floating card how far each dhikr has got today, so one with a
+  /// daily goal can show it even with the app closed. Counts left over from
+  /// yesterday are not today's, so they are sent as nothing.
+  void _pushToday() {
+    final stats = ref.read(dhikrStatsProvider);
+    final today = dhikrDayKey(ref.read(dhikrStatsClockProvider)());
+    unawaited(ref.read(reminderOverlayProvider).setToday(
+          today,
+          stats.day == today ? stats.byDhikr : const <int, int>{},
+        ));
   }
 
   void _scheduleSync() {
@@ -183,6 +200,7 @@ class _MobileReminderHostState extends ConsumerState<MobileReminderHost>
       if (changed) _scheduleSync();
       _openPending();
     });
+    ref.listen(dhikrStatsProvider, (_, __) => _pushToday());
     ref.listen(localeProvider, (_, __) => _scheduleSync());
     ref.listen(pendingOpenDhikrProvider, (_, __) => _openPending());
     return widget.child;

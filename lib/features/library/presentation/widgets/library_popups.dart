@@ -2,13 +2,15 @@ import 'dart:async';
 
 import 'package:dhikr_reminder/core/theme/gradient_text.dart';
 import 'package:dhikr_reminder/features/library/application/library_controller.dart';
+import 'package:dhikr_reminder/features/library/data/dhikr_library.dart';
 import 'package:dhikr_reminder/features/library/domain/dhikr_item.dart';
 import 'package:dhikr_reminder/features/library/presentation/widgets/dhikr_tag_label.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Opens the quick-settings popup — the tashkeel toggle and the text size.
+/// Opens the settings and filters popup: the tashkeel toggle, the text size,
+/// hiding what is already added, and the gallery of group buttons.
 Future<void> showDhikrQuickSettings(BuildContext context) {
   return showDialog<void>(
     context: context,
@@ -16,16 +18,8 @@ Future<void> showDhikrQuickSettings(BuildContext context) {
   );
 }
 
-/// Opens the tag-filter popup — the gallery of group buttons.
-Future<void> showDhikrTagFilter(BuildContext context) {
-  return showDialog<void>(
-    context: context,
-    builder: (_) => const DhikrTagFilterPopup(),
-  );
-}
-
-/// The shell both popups are built from: a titled, closeable [Dialog] whose
-/// body scrolls once it outgrows the screen.
+/// The shell the popup is built from: a titled, closeable [Dialog] whose body
+/// scrolls once it outgrows the screen.
 ///
 /// Built on [Dialog] rather than a menu anchored to the button that opened it
 /// so the same code is right on a phone (where a popup must be reachable by
@@ -107,13 +101,20 @@ class LibraryPopupCard extends StatelessWidget {
   }
 }
 
-/// The tashkeel toggle and the text-size stepper.
+/// The library's settings and its filters in one popup: the tashkeel toggle,
+/// the text-size stepper, the switch that leaves out what is already added, and
+/// the gallery of group buttons.
 ///
 /// Reads and writes [dhikrLibraryProvider] directly, so a change made here is
 /// already on screen in the list behind the popup — there is nothing to
 /// confirm and no button to press twice.
 class DhikrQuickSettingsPopup extends ConsumerWidget {
-  const DhikrQuickSettingsPopup({super.key});
+  const DhikrQuickSettingsPopup({super.key, bool? showTashkeelOption})
+      : _showTashkeelOption = showTashkeelOption;
+
+  /// Whether to offer the tashkeel switch. Left out by default when the
+  /// library has no vowelled text, since the switch would change nothing.
+  final bool? _showTashkeelOption;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -127,21 +128,24 @@ class DhikrQuickSettingsPopup extends ConsumerWidget {
 
     return LibraryPopupCard(
       title: l10n.libraryQuickSettings,
+      maxWidth: 560,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            value: view.showTashkeel,
-            onChanged: (_) => unawaited(notifier.toggleTashkeel()),
-            secondary: const Icon(Icons.text_fields),
-            title: Text(l10n.libraryTashkeelLabel),
-            subtitle: Text(l10n.libraryTashkeelSubtitle),
-          ),
-          const SizedBox(height: 8),
-          Divider(height: 1, color: theme.colorScheme.outlineVariant),
-          const SizedBox(height: 16),
+          if (_showTashkeelOption ?? libraryHasTashkeel) ...[
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: view.showTashkeel,
+              onChanged: (_) => unawaited(notifier.toggleTashkeel()),
+              secondary: const Icon(Icons.text_fields),
+              title: Text(l10n.libraryTashkeelLabel),
+              subtitle: Text(l10n.libraryTashkeelSubtitle),
+            ),
+            const SizedBox(height: 8),
+            Divider(height: 1, color: theme.colorScheme.outlineVariant),
+            const SizedBox(height: 16),
+          ],
           Text(
             l10n.libraryFontSizeLabel,
             style: theme.textTheme.labelLarge?.copyWith(
@@ -181,6 +185,19 @@ class DhikrQuickSettingsPopup extends ConsumerWidget {
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          Divider(height: 1, color: theme.colorScheme.outlineVariant),
+          SwitchListTile(
+            key: const ValueKey('hide-added-switch'),
+            contentPadding: EdgeInsets.zero,
+            value: view.hideAdded,
+            onChanged: (_) => unawaited(notifier.toggleHideAdded()),
+            title: Text(l10n.libraryHideAddedLabel),
+            subtitle: Text(l10n.libraryHideAddedSubtitle),
+          ),
+          Divider(height: 1, color: theme.colorScheme.outlineVariant),
+          const SizedBox(height: 16),
+          const _TagFilterSection(),
         ],
       ),
     );
@@ -194,8 +211,8 @@ class DhikrQuickSettingsPopup extends ConsumerWidget {
 /// additive — picking a second group widens the list rather than replacing
 /// the first — which is what a wall of toggle buttons invites you to expect.
 /// The popup stays open after a tap so several groups can be picked in one go.
-class DhikrTagFilterPopup extends ConsumerWidget {
-  const DhikrTagFilterPopup({super.key});
+class _TagFilterSection extends ConsumerWidget {
+  const _TagFilterSection();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -205,61 +222,70 @@ class DhikrTagFilterPopup extends ConsumerWidget {
     final notifier = ref.read(dhikrLibraryProvider.notifier);
     final selected = view.selectedTags;
 
-    return LibraryPopupCard(
-      title: l10n.libraryFilterTitle,
-      subtitle: l10n.libraryFilterSubtitle,
-      maxWidth: 560,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          l10n.libraryFilterTitle,
+          style: theme.textTheme.titleSmall?.copyWith(
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          l10n.libraryFilterSubtitle,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            FilterChip(
+              avatar: const Icon(Icons.select_all, size: 18),
+              label: Text(l10n.libraryFilterAll),
+              selected: selected.isEmpty,
+              // The emoji/icon stays put when a chip is picked; the tinted
+              // fill is what says "selected". Swapping in a checkmark would
+              // hide the very thing that tells the buttons apart.
+              showCheckmark: false,
+              onSelected: (_) => notifier.clearTags(),
+            ),
+            for (final tag in DhikrTag.values)
               FilterChip(
-                avatar: const Icon(Icons.select_all, size: 18),
-                label: Text(l10n.libraryFilterAll),
-                selected: selected.isEmpty,
-                // The emoji/icon stays put when a chip is picked; the tinted
-                // fill is what says "selected". Swapping in a checkmark would
-                // hide the very thing that tells the buttons apart.
+                avatar: Text(tag.emoji),
+                label: Text(dhikrTagLabel(l10n, tag)),
+                selected: selected.contains(tag),
                 showCheckmark: false,
-                onSelected: (_) => notifier.clearTags(),
+                onSelected: (_) => notifier.toggleTag(tag),
               ),
-              for (final tag in DhikrTag.values)
-                FilterChip(
-                  avatar: Text(tag.emoji),
-                  label: Text(dhikrTagLabel(l10n, tag)),
-                  selected: selected.contains(tag),
-                  showCheckmark: false,
-                  onSelected: (_) => notifier.toggleTag(tag),
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  selected.isEmpty
-                      ? l10n.libraryFilterAll
-                      : l10n.libraryFilterCount(selected.length),
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                selected.isEmpty
+                    ? l10n.libraryFilterAll
+                    : l10n.libraryFilterCount(selected.length),
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-              if (selected.isNotEmpty)
-                TextButton.icon(
-                  onPressed: notifier.clearTags,
-                  icon: const Icon(Icons.filter_alt_off, size: 18),
-                  label: Text(l10n.libraryFilterClear),
-                ),
-            ],
-          ),
-        ],
-      ),
+            ),
+            if (selected.isNotEmpty)
+              TextButton.icon(
+                onPressed: notifier.clearTags,
+                icon: const Icon(Icons.filter_alt_off, size: 18),
+                label: Text(l10n.libraryFilterClear),
+              ),
+          ],
+        ),
+      ],
     );
   }
 }

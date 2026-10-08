@@ -22,6 +22,7 @@ class PlannedReminder {
         'dhikrId': entry.id,
         'text': entry.name,
         'amount': entry.amount,
+        'goal': entry.dailyGoal,
       };
 }
 

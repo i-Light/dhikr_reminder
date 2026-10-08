@@ -4,4 +4,14 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <application android:networkSecurityConfig="@xml/network_security_config">
+        <!-- Plain HTTP to 127.0.0.1 only, for trying the request service
+             locally, see res/xml/network_security_config.xml.
+
+             DebugTriggerReceiver delivers a reminder on demand, to try the
+             lock-screen behaviour from adb. Debug builds only. -->
+        <receiver
+            android:name=".DebugTriggerReceiver"
+            android:exported="true"/>
+    </application>
 </manifest>

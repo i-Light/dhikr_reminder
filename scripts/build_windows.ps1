@@ -346,9 +346,15 @@ try {
     $staleAssets = Join-Path $RepoRoot 'build\flutter_assets'
     if (Test-Path -LiteralPath $staleAssets) { Remove-Item -LiteralPath $staleAssets -Recurse -Force }
 
+    # The dhikr request service (server/README.md) is found at the address
+    # committed in lib/features/requests/data/requests_config.dart. Setting
+    # DHIKR_REQUESTS_URL overrides it.
+    $defines = @()
+    if ($env:DHIKR_REQUESTS_URL) { $defines += "--dart-define=DHIKR_REQUESTS_URL=$($env:DHIKR_REQUESTS_URL)" }
+
     # --split-debug-info moves the symbol tables out of app.so (it is not
     # obfuscated, only smaller); the symbols are kept in build\symbols.
-    Invoke-Native 'flutter build windows' { flutter build windows --release --split-debug-info=build/symbols }
+    Invoke-Native 'flutter build windows' { flutter build windows --release --split-debug-info=build/symbols @defines }
 
     # Flutter has moved this folder around across releases, so search for the
     # .exe under the Release folder instead of hardcoding one layout.

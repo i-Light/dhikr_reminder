@@ -9,11 +9,17 @@ class FakeOverlay implements ReminderOverlay {
   Map<int, int> taps;
 
   List<PlannedReminder>? scheduled;
+  Duration? interval;
   String? title;
   String? closeLabel;
   String? tip;
+  String? dayLabel;
   int cancels = 0;
   String? shownNow;
+  int? shownNowGoal;
+  String? todayDay;
+  Map<int, int>? todayCounts;
+  int todayPushes = 0;
   int permissionRequests = 0;
   int drains = 0;
 
@@ -26,14 +32,18 @@ class FakeOverlay implements ReminderOverlay {
   @override
   Future<void> schedule(
     List<PlannedReminder> plan, {
+    required Duration interval,
     required String title,
     required String closeLabel,
     required String tip,
+    required String dayLabel,
   }) async {
     scheduled = plan;
+    this.interval = interval;
     this.title = title;
     this.closeLabel = closeLabel;
     this.tip = tip;
+    this.dayLabel = dayLabel;
   }
 
   @override
@@ -41,13 +51,23 @@ class FakeOverlay implements ReminderOverlay {
     required int dhikrId,
     required String text,
     required int amount,
+    required int goal,
     required String title,
     required String closeLabel,
     required String tip,
+    required String dayLabel,
   }) async {
     if (!allowed) return false;
     shownNow = text;
+    shownNowGoal = goal;
     return true;
+  }
+
+  @override
+  Future<void> setToday(String day, Map<int, int> counts) async {
+    todayPushes++;
+    todayDay = day;
+    todayCounts = counts;
   }
 
   @override

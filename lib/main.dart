@@ -4,6 +4,8 @@ import 'package:dhikr_reminder/app.dart';
 import 'package:dhikr_reminder/core/logging/app_logger.dart';
 import 'package:dhikr_reminder/core/update/update_controller.dart';
 import 'package:dhikr_reminder/core/window/app_shell.dart';
+import 'package:dhikr_reminder/features/requests/application/request_controller.dart';
+import 'package:dhikr_reminder/features/requests/data/requests_config.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,7 +17,9 @@ Future<void> _start() async {
   // The container is built up front, rather than left to a `ProviderScope`,
   // because the tray has to be up (and the close button taken over) before the
   // first frame — otherwise a window closed in that gap would just quit.
-  final container = ProviderContainer();
+  final container = ProviderContainer(
+    overrides: [requestsUrlProvider.overrideWithValue(requestsApiUrl)],
+  );
   await container.read(appShellProvider.notifier).init();
   runApp(
     UncontrolledProviderScope(

@@ -11,6 +11,10 @@ import android.content.Intent
  * Inexact on purpose (setAndAllowWhileIdle): a dhikr does not need to land on
  * the second, and exact alarms need a permission Google Play restricts. While
  * the phone dozes a reminder can arrive a few minutes late.
+ *
+ * The plan Dart hands over covers about a day. So that reminders do not stop
+ * when the app is not opened for longer than that, the plan keeps itself
+ * topped up from here, natively (see [topUp] and [ReminderPlan]).
  */
 object ReminderAlarms {
     const val EXTRA_ID = "reminder_id"
@@ -49,5 +53,21 @@ object ReminderAlarms {
             alarms.cancel(pending(context, id))
         }
         ReminderStore.saveArmed(context, emptyList())
+    }
+
+    /**
+     * Makes sure the next day of reminders is armed, without Dart: after a
+     * reboot, after the app is updated, and every time a reminder fires.
+     * Extends the stored plan first if it ran low, then arms whatever it holds.
+     */
+    fun topUp(context: Context) {
+        val plan = ReminderStore.plan(context)
+        val extended = ReminderPlan.extend(
+            plan,
+            ReminderStore.intervalMillis(context),
+            System.currentTimeMillis(),
+        )
+        if (extended !== plan) ReminderStore.replacePlan(context, extended)
+        reschedule(context)
     }
 }

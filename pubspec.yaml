@@ -1,5 +1,5 @@
 name: dhikr_reminder
-description: "Dhikr Reminder Ã¢â‚¬â€ a standalone desktop app that pops a dhikr on screen every few minutes and lets you tap it out."
+description: "Dhikr Reminder: pops up a dhikr every few minutes, on Windows and Android, and lets you tap it out."
 publish_to: 'none'
 version: 0.1.2+3
 
@@ -18,7 +18,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  # State management Ã¢â‚¬â€ hand-written Riverpod providers, no codegen, matching
+  # State management: hand-written Riverpod providers, no codegen, matching
   # gratovo_toolbox (which this app's reminder code was lifted from).
   flutter_riverpod: ^3.4.2
 
@@ -43,6 +43,13 @@ dependencies:
   timezone: ^0.11.1
   hijri: ^3.0.1
 
+  # Opens the bug report and the Play Store page in the browser (or the Play
+  # Store app); on Windows it is ShellExecute.
+  url_launcher: ^6.3.3
+
+  # The phone or PC model that goes into a bug report.
+  device_info_plus: ^13.3.0
+
 # See packages/flutter_local_notifications_windows/README_VENDORED.md.
 dependency_overrides:
   flutter_local_notifications_windows:
@@ -56,7 +63,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # Drives `flutter gen-l10n` (see l10n.yaml) Ã¢â‚¬â€ generates
+  # Drives `flutter gen-l10n` (see l10n.yaml), which generates
   # lib/l10n/gen/app_localizations.dart from lib/l10n/app_en.arb + app_ar.arb
   # on every `flutter pub get` / `flutter run`.
   generate: true
@@ -72,7 +79,7 @@ flutter:
 
     # The app's default face: the theme (core/theme/app_theme.dart) uses it for
     # all UI text. Only the weights Material 3 asks for (regular, medium, bold)
-    # plus semibold are bundled â€” each one is ~100 KB in the app.
+    # plus semibold are bundled, each one is ~100 KB in the app.
     - family: IBMPlexSansArabic
       fonts:
         - asset: assets/fonts/IBMPlexSansArabic-Regular.ttf
@@ -85,12 +92,12 @@ flutter:
           weight: 700
 
     # The dhikr texts' face: the reminder card and the library entries.
-    - family: AliMeshref
+    - family: NotoSansArabic
       fonts:
-        - asset: assets/fonts/ali-meshref.ttf
+        - asset: assets/fonts/NotoSansArabic-Variable.ttf
 
   assets:
-    # The reminder card's frame Ã¢â‚¬â€ see border_frame.dart.
+    # The reminder card's frame, see border_frame.dart.
     - assets/images/frame_corner.svg
     - assets/images/mandala_background.svg
     # The app icon: the tray icon and the .exe icon are both drawn from it, see

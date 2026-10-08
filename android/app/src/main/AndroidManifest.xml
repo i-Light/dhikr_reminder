@@ -1,11 +1,28 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- Reminders are notifications: the permission to post them (Android 13+)
          and to bring the schedule back after the phone restarts. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <!-- Lets the person exempt the app from battery optimisation with one tap
+         (see MainActivity.openBatterySettings). A reminder app whose reminders
+         stop when the phone puts it to sleep has lost its only job, which is
+         the case Google Play allows this permission for. -->
+    <uses-permission
+        android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
+        tools:ignore="BatteryLife"/>
+    <!-- Only for "Request a dhikr": sending a request to the dev team's service
+         and asking how it is going. Nothing else in the app uses the network.
+         The service address is committed in requests_config.dart (a build can
+         override it with DHIKR_REQUESTS_URL, or empty it to never connect
+         anywhere). See PRIVACY.md and server/. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <!-- The reminder card is drawn over other apps ("Display over other apps"),
          by a foreground service that lives only while the card is up. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <!-- Keeps the CPU awake for a few seconds while the reminder card is being
+         brought up on a locked phone (see OverlayService.holdAwake). -->
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <application
@@ -44,8 +61,24 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
             </intent-filter>
         </receiver>
+        <!-- The reminder card on the lock screen: lights the screen for 30
+             seconds when a reminder is due on a locked phone, then lets go.
+             Started by OverlayService; a window over other apps cannot be drawn
+             above the lock screen, an activity that asks for it can. -->
+        <activity
+            android:name=".LockScreenReminderActivity"
+            android:exported="false"
+            android:theme="@style/LockScreenTheme"
+            android:launchMode="singleInstance"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|uiMode|density|fontScale"/>
         <service
             android:name=".OverlayService"
             android:exported="false"
@@ -64,6 +97,15 @@
 
          In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
+        <!-- url_launcher: opening the bug report and the Play Store page. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="market"/>
+        </intent>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>

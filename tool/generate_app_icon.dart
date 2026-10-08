@@ -3,7 +3,8 @@
 //   * the .exe's icon, windows/runner/resources/app_icon.ico (git-ignored);
 //   * Android's launcher icon (legacy PNGs for Android 7, an adaptive icon for
 //     8+) and the white status-bar silhouette notifications use, under
-//     android/app/src/main/res/.
+//     android/app/src/main/res/;
+//   * the 512 px Google Play store icon, docs/google-play/icon-512.png.
 //
 // Run by scripts/build_windows.ps1 and scripts/build_android.ps1 before every
 // build, and by the "Generate app icon" VS Code task:
@@ -22,6 +23,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 const _windowsOutput = 'windows/runner/resources/app_icon.ico';
 const _androidRes = 'android/app/src/main/res';
+const _playStoreIcon = 'docs/google-play/icon-512.png';
 
 /// The launcher background, a dark brown that matches the app's gold-on-dark
 /// look; the logo sits on it.
@@ -111,6 +113,13 @@ void main() {
         '    <background android:drawable="@color/ic_launcher_background"/>\n'
         '    <foreground android:drawable="@mipmap/ic_launcher_foreground"/>\n'
         '</adaptive-icon>\n',
+      );
+
+      // Google Play: the 512 px icon the store listing asks for (the store
+      // rounds the corners itself, so it is a plain square).
+      await _write(
+        _playStoreIcon,
+        await renderSvgAsPng(svg, 512, inset: 0.1, background: _iconBackground),
       );
 
       // Android: the small white icon notifications show in the status bar.

@@ -36,7 +36,6 @@ String dhikrTagLabel(AppLocalizations l10n, DhikrTag tag) {
     DhikrTag.virtueOfDhikr => l10n.tagVirtueOfDhikr,
     DhikrTag.virtueOfSuras => l10n.tagVirtueOfSuras,
     DhikrTag.virtueOfQuran => l10n.tagVirtueOfQuran,
-    DhikrTag.asmaAllah => l10n.tagAsmaAllah,
     DhikrTag.duasForDeceased => l10n.tagDuasForDeceased,
     DhikrTag.ruqyah => l10n.tagRuqyah,
   };

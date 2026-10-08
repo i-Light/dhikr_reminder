@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer' as developer;
 import 'dart:io';
 
+import 'package:dhikr_reminder/core/logging/app_logger.dart';
 import 'package:dhikr_reminder/core/update/update_installer.dart';
 import 'package:dhikr_reminder/core/update/update_release.dart';
 import 'package:dhikr_reminder/core/update/update_source.dart';
@@ -18,11 +19,13 @@ const _autoUpdatePrefsKey = 'dhikr_reminder.update.auto';
 /// How long after launch the first check waits. Start-up is already busy with
 /// the splash and the pre-warm, and a network round trip is not needed for
 /// either.
-const _firstCheckDelay = Duration(minutes: 2);
+const _firstCheckDelay = Duration(seconds: 45);
 
-/// Between two checks that got an answer. GitHub allows an unauthenticated IP
-/// 60 API calls an hour; this is nowhere near that.
-const _checkInterval = Duration(hours: 6);
+/// Between two checks that got an answer. The app lives in the tray for days,
+/// so this is how long a release waits before every running copy has seen it.
+/// GitHub allows an unauthenticated IP 60 API calls an hour; one is nowhere near
+/// that.
+const _checkInterval = Duration(hours: 1);
 
 /// Between two checks when the last one failed — most often because the
 /// machine had no network yet at log-in — so an update is not put off by a
@@ -233,6 +236,7 @@ class UpdateNotifier extends Notifier<UpdateState> {
       state = state.copyWith(phase: UpdatePhase.checking, failed: false);
       final release = await ref.read(updateSourceProvider)();
       gotAnswer = true;
+      _log('Latest published release: ${release?.version ?? 'none'}.');
       state = state.copyWith(
         lastChecked: DateTime.now(),
         latestVersion: release?.version,
@@ -276,9 +280,11 @@ class UpdateNotifier extends Notifier<UpdateState> {
       setup = await installer.download(release);
       _release = release;
       _downloaded = setup;
+      _log('Downloaded and verified ${release.assetName}.');
     }
 
     state = state.copyWith(phase: UpdatePhase.waitingForIdle);
+    _log('Waiting for an idle moment to install ${release.version}.');
     if (!await _untilIdle()) return;
 
     state = state.copyWith(phase: UpdatePhase.installing);
@@ -309,6 +315,16 @@ class UpdateNotifier extends Notifier<UpdateState> {
       error: error,
       stackTrace: stackTrace,
     );
+    // developer.log goes nowhere in a release build, which is where an update
+    // that never happened has to be explained from. The app's log file is what
+    // a bug report carries. (Only once the logger has a file, i.e. in the
+    // running app; tests stay quiet.)
+    if (AppLogger.file == null) return;
+    if (error == null) {
+      AppLogger.note('update: $message');
+    } else {
+      AppLogger.write('Update', '$message $error', stackTrace);
+    }
   }
 }
 
