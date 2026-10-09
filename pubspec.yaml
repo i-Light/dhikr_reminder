@@ -28,7 +28,7 @@ dependencies:
   flutter_svg: ^2.2.1
 
   # Persists the dhikr list, the reminder interval and the next row id.
-  shared_preferences: ^2.5.5
+  shared_preferences: ^2.5.6
 
   # Pinned to the version flutter_localizations already resolves on this SDK,
   # so this doesn't introduce a second, conflicting constraint.
