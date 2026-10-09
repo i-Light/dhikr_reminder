@@ -86,6 +86,57 @@
             android:showWhenLocked="true"
             android:turnScreenOn="true"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|uiMode|density|fontScale"/>
+        <!-- The extra ways to count without opening the app (Surfaces.kt): a
+             home-screen widget, two quick-settings tiles, the launcher
+             shortcuts' target and the buttons on a reminder notification.
+             Features.SURFACES switches them all off. -->
+        <receiver
+            android:name=".CountWidget"
+            android:exported="true"
+            android:label="@string/widget_today">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/count_widget_info"/>
+        </receiver>
+        <receiver
+            android:name=".SurfaceReceiver"
+            android:exported="false"/>
+        <service
+            android:name=".CountTile"
+            android:exported="true"
+            android:icon="@drawable/ic_touch_app"
+            android:label="@string/tile_count"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.ACTIVE_TILE"
+                android:value="true"/>
+        </service>
+        <service
+            android:name=".PauseTile"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_pause"
+            android:label="@string/tile_pause"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.ACTIVE_TILE"
+                android:value="true"/>
+        </service>
+        <activity
+            android:name=".ShortcutActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.NoDisplay"/>
         <!-- Re-arms the alarms every twelve hours, in case a phone cleared them. -->
         <service
             android:name=".HealthJob"

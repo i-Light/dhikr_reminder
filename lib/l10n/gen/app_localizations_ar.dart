@@ -932,4 +932,30 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get libraryCountNow => 'عدّ دلوقتي';
+
+  @override
+  String get libraryCopy => 'انسخ النص';
+
+  @override
+  String get libraryShare => 'شارك النص';
+
+  @override
+  String get libraryCopied => 'اتنسخ';
+
+  @override
+  String get libraryReport => 'بلّغ عن غلطة';
+
+  @override
+  String get surfaceCountOne => 'عدّ مرة';
+
+  @override
+  String get surfaceDone => 'خلّصت';
+
+  @override
+  String get surfaceLater => 'بعدين';
+
+  @override
+  String trayTodayTotal(int count) {
+    return 'النهارده: $count';
+  }
 }

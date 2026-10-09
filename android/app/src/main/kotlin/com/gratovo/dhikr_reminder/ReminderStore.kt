@@ -36,6 +36,11 @@ object ReminderStore {
     private const val KEY_EVENTS = "events"
     private const val KEY_LAST_FIRED = "last_fired"
     private const val KEY_ACTIVE_SINCE = "active_since"
+    private const val KEY_FOCUS = "focus"
+    private const val KEY_LABELS = "surface_labels"
+    private const val KEY_PAUSE_CHANGED = "pause_changed"
+    private const val KEY_OPEN_TAB = "open_tab"
+    private const val KEY_SURFACES_STATE = "surfaces_state"
 
     data class Planned(
         val id: Int,
@@ -73,16 +78,28 @@ object ReminderStore {
     ) {
         val p = prefs(context)
         val now = System.currentTimeMillis()
+        // A pause or resume made from a tile or shortcut that the app has not
+        // heard about yet outranks what the app sends, or the next sync would undo it.
+        val pausedUntil = if (p.getBoolean(KEY_PAUSE_CHANGED, false)) {
+            p.getLong(KEY_PAUSED_UNTIL, 0L)
+        } else {
+            pausedUntilMillis
+        }
         // "Reminders have been meant to arrive since": the first plan ever, and
         // again whenever a pause is lifted, so neither reads as "stopped".
         val wasPaused = p.getLong(KEY_PAUSED_UNTIL, 0L) > 0L
-        if (!p.contains(KEY_ACTIVE_SINCE) || (wasPaused && pausedUntilMillis == 0L)) {
+        if (!p.contains(KEY_ACTIVE_SINCE) || (wasPaused && pausedUntil == 0L)) {
             p.edit().putLong(KEY_ACTIVE_SINCE, now).apply()
+        }
+        if (Features.SURFACES) {
+            val before = focus(context)
+            val after = SurfaceRules.pickFocus(before, plan, now)
+            if (after != null && after != before) setFocus(context, after)
         }
         prefs(context).edit()
             .putString(KEY_PLAN, encode(plan))
             .putLong(KEY_INTERVAL, intervalMillis)
-            .putLong(KEY_PAUSED_UNTIL, pausedUntilMillis)
+            .putLong(KEY_PAUSED_UNTIL, pausedUntil)
             .putInt(KEY_QUIET_START, quietStart)
             .putInt(KEY_QUIET_END, quietEnd)
             .putString(KEY_TITLE, title)
@@ -194,10 +211,15 @@ object ReminderStore {
      * and added to today's tally so the card can show how far the dhikr has got.
      */
     @Synchronized
-    fun addTap(context: Context, dhikrId: Int) {
+    fun addTap(context: Context, dhikrId: Int) = addTaps(context, dhikrId, 1)
+
+    /** [count] counted taps on [dhikrId] at once (a "Done" on a notification). */
+    @Synchronized
+    fun addTaps(context: Context, dhikrId: Int, count: Int) {
+        if (count <= 0) return
         val taps = JSONObject(prefs(context).getString(KEY_TAPS, "{}") ?: "{}")
-        taps.put(dhikrId.toString(), taps.optInt(dhikrId.toString(), 0) + 1)
-        val tally = DailyTally.add(readTally(context), today(), dhikrId)
+        taps.put(dhikrId.toString(), taps.optInt(dhikrId.toString(), 0) + count)
+        val tally = DailyTally.add(readTally(context), today(), dhikrId, count)
         prefs(context).edit()
             .putString(KEY_TAPS, taps.toString())
             .putString(KEY_DAILY, writeTally(tally))
@@ -231,6 +253,10 @@ object ReminderStore {
     @Synchronized
     fun dailyCount(context: Context, dhikrId: Int): Int =
         DailyTally.count(readTally(context), today(), dhikrId)
+
+    /** Everything said today, all dhikr together, as far as the card knows. */
+    @Synchronized
+    fun todayTotal(context: Context): Int = DailyTally.total(readTally(context), today())
 
     /** The app's own totals for [day]; see [DailyTally.merge]. */
     @Synchronized
@@ -380,6 +406,88 @@ object ReminderStore {
         val id = p.getInt(KEY_OPEN_DHIKR, -1)
         p.edit().remove(KEY_OPEN_DHIKR).apply()
         return if (id < 0) null else id
+    }
+
+    // ---- the extra ways to count (widget, tiles, shortcuts) -----------
+
+    /** The dhikr "count one" adds to, or null before any reminder is known. */
+    fun focus(context: Context): SurfaceRules.Focus? {
+        val raw = prefs(context).getString(KEY_FOCUS, null) ?: return null
+        return try {
+            val o = JSONObject(raw)
+            SurfaceRules.Focus(o.getInt("id"), o.getString("text"))
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    fun setFocus(context: Context, focus: SurfaceRules.Focus) {
+        val json = JSONObject().put("id", focus.dhikrId).put("text", focus.text)
+        prefs(context).edit().putString(KEY_FOCUS, json.toString()).apply()
+    }
+
+    /** The words the surfaces show, in the app's language (see Surfaces.label). */
+    fun surfaceLabels(context: Context): Map<String, String> {
+        val raw = prefs(context).getString(KEY_LABELS, null) ?: return emptyMap()
+        return try {
+            val o = JSONObject(raw)
+            o.keys().asSequence().associateWith { o.optString(it) }
+        } catch (e: Exception) {
+            emptyMap()
+        }
+    }
+
+    /** Stores [labels]; true when they differ from what was there. */
+    fun saveSurfaceLabels(context: Context, labels: Map<String, String>): Boolean {
+        val json = JSONObject()
+        for ((key, value) in labels.toSortedMap()) json.put(key, value)
+        val text = json.toString()
+        if (prefs(context).getString(KEY_LABELS, null) == text) return false
+        prefs(context).edit().putString(KEY_LABELS, text).apply()
+        return true
+    }
+
+    /**
+     * A tile, shortcut or button paused the reminders ([untilMillis]) or lifted
+     * the pause (0). The app is told next time it asks (see [takePauseChange]).
+     */
+    @Synchronized
+    fun setPausedFromSurface(context: Context, untilMillis: Long) {
+        val edit = prefs(context).edit()
+            .putLong(KEY_PAUSED_UNTIL, untilMillis)
+            .putBoolean(KEY_PAUSE_CHANGED, true)
+        if (untilMillis == 0L) edit.putLong(KEY_ACTIVE_SINCE, System.currentTimeMillis())
+        edit.apply()
+    }
+
+    /** The pause set outside the app since the app last asked (0 means lifted), or null. */
+    @Synchronized
+    fun takePauseChange(context: Context): Long? {
+        val p = prefs(context)
+        if (!p.getBoolean(KEY_PAUSE_CHANGED, false)) return null
+        p.edit().putBoolean(KEY_PAUSE_CHANGED, false).apply()
+        return p.getLong(KEY_PAUSED_UNTIL, 0L)
+    }
+
+    /** A launcher shortcut asks the app to show [tab]; Dart takes it when it next asks. */
+    @Synchronized
+    fun setOpenTab(context: Context, tab: String) {
+        prefs(context).edit().putString(KEY_OPEN_TAB, tab).apply()
+    }
+
+    @Synchronized
+    fun takeOpenTab(context: Context): String? {
+        val p = prefs(context)
+        val tab = p.getString(KEY_OPEN_TAB, null) ?: return null
+        p.edit().remove(KEY_OPEN_TAB).apply()
+        return tab
+    }
+
+    /** Whether the widget, tiles and shortcuts were last switched on (true) or off (false). */
+    fun surfacesState(context: Context): Boolean = prefs(context).getBoolean(KEY_SURFACES_STATE, true)
+
+    fun setSurfacesState(context: Context, on: Boolean) {
+        prefs(context).edit().putBoolean(KEY_SURFACES_STATE, on).apply()
     }
 
     // ---- did the lock-screen card start? ------------------------------

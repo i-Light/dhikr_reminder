@@ -104,7 +104,7 @@ jobs:
         run: |
           manifest=$(find build/app/intermediates/merged_manifests/debug -name AndroidManifest.xml | head -1)
           echo "checking $manifest"
-          for name in ReminderReceiver BootReceiver OverlayService LockScreenReminderActivity MainActivity; do
+          for name in ReminderReceiver BootReceiver OverlayService LockScreenReminderActivity MainActivity SurfaceReceiver CountWidget CountTile PauseTile ShortcutActivity; do
             grep -q "com.gratovo.dhikr_reminder.$name" "$manifest" || { echo "missing $name"; exit 1; }
           done
           grep -q 'android.permission.POST_NOTIFICATIONS' "$manifest" || { echo "missing POST_NOTIFICATIONS"; exit 1; }

@@ -90,6 +90,19 @@ abstract class ReminderOverlay {
   /// Cancels every scheduled reminder.
   Future<void> cancel();
 
+  /// Hands over the words the widget, the quick-settings tiles, the launcher
+  /// shortcuts and the notification buttons show, in the app's language. The
+  /// native side keeps them and only redraws when they change.
+  Future<void> setSurfaceLabels(Map<String, String> labels) async {}
+
+  /// A pause set from a tile or shortcut since the last call, as milliseconds
+  /// since the epoch (0 means the pause was lifted), or null if there was none.
+  Future<int?> takePauseChange() async => null;
+
+  /// The page a launcher shortcut asked for ("library"), or null. Forgotten
+  /// once taken.
+  Future<String?> takeOpenTab() async => null;
+
   /// Taps counted on the card since the last call, by dhikr id.
   Future<Map<int, int>> drainTaps();
 
@@ -271,6 +284,33 @@ class ChannelReminderOverlay implements ReminderOverlay {
       await _channel.invokeMethod<void>('cancel');
     } on MissingPluginException {
       // No overlay on this platform.
+    }
+  }
+
+  @override
+  Future<void> setSurfaceLabels(Map<String, String> labels) async {
+    try {
+      await _channel.invokeMethod<void>('setSurfaceLabels', labels);
+    } on MissingPluginException {
+      // No surfaces on this platform.
+    }
+  }
+
+  @override
+  Future<int?> takePauseChange() async {
+    try {
+      return await _channel.invokeMethod<int>('takePauseChange');
+    } on MissingPluginException {
+      return null;
+    }
+  }
+
+  @override
+  Future<String?> takeOpenTab() async {
+    try {
+      return await _channel.invokeMethod<String>('takeOpenTab');
+    } on MissingPluginException {
+      return null;
     }
   }
 

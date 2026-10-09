@@ -311,5 +311,15 @@
   "soundTitle": "Soft sound",
   "soundSubtitle": "A short chime when you finish a dhikr",
 
-  "libraryCountNow": "Count now"
+  "libraryCountNow": "Count now",
+
+  "libraryCopy": "Copy the text",
+  "libraryShare": "Share the text",
+  "libraryCopied": "Copied",
+  "libraryReport": "Report a mistake",
+  "surfaceCountOne": "Count one",
+  "surfaceDone": "Done",
+  "surfaceLater": "Later",
+  "trayTodayTotal": "Today: {count}",
+  "@trayTodayTotal": {"placeholders": {"count": {"type": "int"}}}
 }

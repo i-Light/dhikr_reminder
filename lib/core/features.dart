@@ -34,4 +34,18 @@ abstract final class Features {
 
   /// The "Report a mistake" button on a library entry.
   static const reportMistake = true;
+
+  /// Android: counting from outside the app (home-screen widget, quick-settings
+  /// tiles, launcher shortcuts, "Done" and "Later" on a reminder notification).
+  /// Also the words and the pause hand-over that go with them. The native half
+  /// has its own switch, `Features.SURFACES` in Features.kt; flip both.
+  static const surfaces = true;
+
+  /// Press and hold a library entry to copy (Windows) or share (Android) its
+  /// text. Off, the press goes straight to "Report a mistake".
+  static const shareText = true;
+
+  /// Windows: a "Count one" row in the tray menu and today's total in the tray
+  /// tooltip.
+  static const trayCount = true;
 }

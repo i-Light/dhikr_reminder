@@ -464,7 +464,7 @@ class ReminderCard(
 
         // How much more see-through the background gets, at the most, when a tap
         // makes it breathe. A hint of motion, not a flash.
-        const val DIM_DEPTH = 0.2f
+        const val DIM_DEPTH = 0.06f
 
         val NORMAL_ACCENT = Color.parseColor("#E7AA48")
         val DONE_ACCENT = Color.parseColor("#34D399")

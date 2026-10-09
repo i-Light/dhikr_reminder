@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:dhikr_reminder/core/features.dart';
 import 'package:dhikr_reminder/core/locale/locale_controller.dart';
+import 'package:dhikr_reminder/core/navigation/shell_tab.dart';
 import 'package:dhikr_reminder/core/quiet_hours.dart';
 import 'package:dhikr_reminder/features/library/application/transliteration_controller.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/background_access.dart';
@@ -70,6 +71,20 @@ class MobileReminderSyncer {
       pausedUntil: pause,
       quiet: Features.politeReminders ? settings.quiet : const QuietHours(),
     );
+    if (Features.surfaces) {
+      await _overlay.setSurfaceLabels({
+        'countOne': l10n.surfaceCountOne,
+        'pause': l10n.trayPause,
+        'resume': l10n.trayResume,
+        'library': l10n.navLibrary,
+        'done': l10n.surfaceDone,
+        'later': l10n.surfaceLater,
+        'openApp': l10n.trayOpenApp,
+        'today': l10n.statToday,
+        // The phone fills in the time, so the template is sent.
+        'pausedUntil': l10n.trayPausedUntil('{time}'),
+      });
+    }
   }
 }
 
@@ -121,6 +136,7 @@ class _MobileReminderHostState extends ConsumerState<MobileReminderHost>
   Future<void> _start() async {
     await ref.read(reminderOverlayProvider).requestNotificationPermission();
     await _collectOpenRequest();
+    await _collectSurfaceChanges();
     await _collectOverlayTaps();
     _scheduleSync();
   }
@@ -131,6 +147,32 @@ class _MobileReminderHostState extends ConsumerState<MobileReminderHost>
     final id = await ref.read(reminderOverlayProvider).takeOpenDhikr();
     if (id == null || !mounted) return;
     ref.read(pendingOpenDhikrProvider.notifier).set(id);
+  }
+
+  /// Takes up what was done from outside the app: a pause started or lifted
+  /// from a quick-settings tile or a launcher shortcut, and a shortcut that
+  /// asks for the library. The pause comes first, so the sync that follows
+  /// sends the right one back instead of undoing it.
+  Future<void> _collectSurfaceChanges() async {
+    if (!Features.surfaces) return;
+    final overlay = ref.read(reminderOverlayProvider);
+    final pause = await overlay.takePauseChange();
+    if (!mounted) return;
+    if (pause != null) {
+      final notifier = ref.read(reminderPauseProvider.notifier);
+      final left =
+          DateTime.fromMillisecondsSinceEpoch(pause).difference(DateTime.now());
+      if (pause > 0 && !left.isNegative && left > Duration.zero) {
+        notifier.pauseFor(left);
+      } else {
+        notifier.resume();
+      }
+    }
+    final tab = await overlay.takeOpenTab();
+    if (!mounted) return;
+    if (tab == 'library') {
+      ref.read(shellTabProvider.notifier).show(ShellTab.library);
+    }
   }
 
   /// Takes up a change the person made with the Arabic button on the floating
@@ -156,6 +198,7 @@ class _MobileReminderHostState extends ConsumerState<MobileReminderHost>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       unawaited(_collectOpenRequest());
+      unawaited(_collectSurfaceChanges());
       unawaited(_collectOverlayTaps());
       // Both permissions are granted on a system screen outside the app.
       unawaited(ref.read(overlayAllowedProvider.notifier).refresh());
@@ -199,6 +242,10 @@ class _MobileReminderHostState extends ConsumerState<MobileReminderHost>
   }
 
   Future<void> _syncAndRefresh() async {
+    // A pause made on a tile while the app was open has to be taken up before
+    // the plan is sent, or the plan would lift it.
+    await _collectSurfaceChanges();
+    if (!mounted) return;
     await _syncer.sync(
       settings: ref.read(dhikrSettingsProvider),
       locale: ref.read(localeProvider),

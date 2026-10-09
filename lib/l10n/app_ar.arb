@@ -300,5 +300,14 @@
   "soundTitle": "صوت هادي",
   "soundSubtitle": "نغمة خفيفة لما تخلّص عدّ الذكر",
 
-  "libraryCountNow": "عدّ دلوقتي"
+  "libraryCountNow": "عدّ دلوقتي",
+
+  "libraryCopy": "انسخ النص",
+  "libraryShare": "شارك النص",
+  "libraryCopied": "اتنسخ",
+  "libraryReport": "بلّغ عن غلطة",
+  "surfaceCountOne": "عدّ مرة",
+  "surfaceDone": "خلّصت",
+  "surfaceLater": "بعدين",
+  "trayTodayTotal": "النهارده: {count}"
 }

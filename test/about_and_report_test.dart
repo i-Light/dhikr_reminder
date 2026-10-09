@@ -1,3 +1,4 @@
+import 'package:dhikr_reminder/core/features.dart';
 import 'package:dhikr_reminder/core/support/bug_report.dart';
 import 'package:dhikr_reminder/features/about/about_screen.dart';
 import 'package:dhikr_reminder/features/library/presentation/dhikr_library_screen.dart';
@@ -16,6 +17,17 @@ Widget _app(Widget home, {Locale locale = const Locale('en')}) => MaterialApp(
       supportedLocales: AppLocalizations.supportedLocales,
       home: home,
     );
+
+/// Press and hold the first library card, and (with sharing on) pick the
+/// report row of the sheet that opens.
+Future<void> _holdAndReport(WidgetTester tester) async {
+  await tester.longPress(find.byType(DhikrLibraryCard).first);
+  await tester.pumpAndSettle();
+  if (Features.shareText) {
+    await tester.tap(find.byKey(const ValueKey('dhikr-report')));
+    await tester.pumpAndSettle();
+  }
+}
 
 void main() {
   group('contentReportUri', () {
@@ -75,8 +87,7 @@ void main() {
         tester.element(find.byType(DhikrLibraryScreen)),
       );
 
-      await tester.longPress(find.byType(DhikrLibraryCard).first);
-      await tester.pumpAndSettle();
+      await _holdAndReport(tester);
       expect(find.text(l10n.reportMistakeTitle), findsOneWidget);
       expect(opened, isEmpty, reason: 'nothing opens before the person agrees');
 
@@ -110,8 +121,7 @@ void main() {
         tester.element(find.byType(DhikrLibraryScreen)),
       );
 
-      await tester.longPress(find.byType(DhikrLibraryCard).first);
-      await tester.pumpAndSettle();
+      await _holdAndReport(tester);
       await tester.tap(find.text(l10n.commonCancel));
       await tester.pumpAndSettle();
       expect(opened, isEmpty);

@@ -25,6 +25,8 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // A no-op unless Features.SURFACES was changed since the last start.
+        Surfaces.apply(this)
         rememberOpenRequest(intent)
     }
 
@@ -35,6 +37,11 @@ class MainActivity : FlutterActivity() {
 
     /** A tapped reminder notification names the dhikr to open; Dart asks for it. */
     private fun rememberOpenRequest(intent: Intent?) {
+        // The launcher's "Dhikr Library" shortcut.
+        if (intent?.action == Surfaces.ACTION_LIBRARY) {
+            ReminderStore.setOpenTab(this, "library")
+            intent.action = Intent.ACTION_MAIN
+        }
         if (intent?.hasExtra(EXTRA_OPEN_DHIKR) != true) return
         ReminderStore.setOpenDhikr(this, intent.getIntExtra(EXTRA_OPEN_DHIKR, -1))
         // Once taken it must not come back when the activity is recreated.
@@ -45,6 +52,14 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
             .setMethodCallHandler { call, result -> handle(call, result) }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SHARE_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                if (call.method == "shareText") {
+                    result.success(shareText(call.argument<String>("text") ?: ""))
+                } else {
+                    result.notImplemented()
+                }
+            }
     }
 
     private fun handle(call: MethodCall, result: MethodChannel.Result) {
@@ -78,6 +93,19 @@ class MainActivity : FlutterActivity() {
             "openNotificationSettings" -> result.success(openNotificationSettings())
 
             "takeOpenDhikr" -> result.success(ReminderStore.takeOpenDhikr(this))
+
+            "takeOpenTab" -> result.success(ReminderStore.takeOpenTab(this))
+
+            "takePauseChange" -> result.success(ReminderStore.takePauseChange(this))
+
+            "setSurfaceLabels" -> {
+                val labels = HashMap<String, String>()
+                call.arguments<Map<String, Any?>>()?.forEach { (key, value) ->
+                    (value as? String)?.let { labels[key] = it }
+                }
+                if (ReminderStore.saveSurfaceLabels(this, labels)) Surfaces.onLabelsChanged(this)
+                result.success(null)
+            }
 
             "nextReminderAt" -> result.success(ReminderAlarms.nextDue(this))
 
@@ -148,6 +176,7 @@ class MainActivity : FlutterActivity() {
                     key.toIntOrNull()?.let { id -> counts[id] = (value as? Number)?.toInt() ?: 0 }
                 }
                 ReminderStore.setToday(this, call.argument<String>("day") ?: "", counts)
+                Surfaces.refresh(this)
                 result.success(null)
             }
 
@@ -272,6 +301,15 @@ class MainActivity : FlutterActivity() {
         )
     }
 
+    /** Hands [text] to the system share sheet. False when the phone could not open it. */
+    private fun shareText(text: String): Boolean =
+        tryStart(
+            Intent.createChooser(
+                Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text),
+                null,
+            ),
+        )
+
     private fun openNotificationSettings(): Boolean =
         tryStart(
             Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
@@ -315,6 +353,7 @@ class MainActivity : FlutterActivity() {
 
     companion object {
         private const val CHANNEL = "dhikr_reminder/overlay"
+        private const val SHARE_CHANNEL = "dhikr_reminder/share"
         private const val REQUEST_NOTIFICATIONS = 1001
 
         /** The dhikr id a reminder notification carries for the app to open. */

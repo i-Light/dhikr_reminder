@@ -24,10 +24,13 @@ object DailyTally {
     fun count(stored: Tally?, today: String, dhikrId: Int): Int =
         current(stored, today).counts[dhikrId] ?: 0
 
-    /** [stored] after one more tap on [dhikrId]. */
-    fun add(stored: Tally?, today: String, dhikrId: Int): Tally {
+    /** How many times anything has been said today, all dhikr together. */
+    fun total(stored: Tally?, today: String): Int = current(stored, today).counts.values.sum()
+
+    /** [stored] after [by] more taps on [dhikrId]. */
+    fun add(stored: Tally?, today: String, dhikrId: Int, by: Int = 1): Tally {
         val tally = current(stored, today)
-        return Tally(today, tally.counts + (dhikrId to (tally.counts[dhikrId] ?: 0) + 1))
+        return Tally(today, tally.counts + (dhikrId to (tally.counts[dhikrId] ?: 0) + by))
     }
 
     /**

@@ -1705,6 +1705,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Count now'**
   String get libraryCountNow;
+
+  /// No description provided for @libraryCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the text'**
+  String get libraryCopy;
+
+  /// No description provided for @libraryShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share the text'**
+  String get libraryShare;
+
+  /// No description provided for @libraryCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get libraryCopied;
+
+  /// No description provided for @libraryReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Report a mistake'**
+  String get libraryReport;
+
+  /// No description provided for @surfaceCountOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Count one'**
+  String get surfaceCountOne;
+
+  /// No description provided for @surfaceDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get surfaceDone;
+
+  /// No description provided for @surfaceLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get surfaceLater;
+
+  /// No description provided for @trayTodayTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Today: {count}'**
+  String trayTodayTotal(int count);
 }
 
 class _AppLocalizationsDelegate

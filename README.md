@@ -34,6 +34,13 @@ coming. `lib/core/features.dart` (and `Features.kt`) holds one switch per
 extra: set it to `false` and that feature disappears without touching the rest.
 `docs/roadmap.md` says why the app is kept this simple.
 
+On Android the app can also be counted from outside: a home-screen widget (tap to
+count one), two quick-settings tiles (count one, pause for an hour), the launcher
+icon's long-press shortcuts, and "Done" / "Later" buttons on a reminder
+notification. None of them adds anything to the app's own screens. On Windows the
+tray menu has a "Count one" row and the tray tooltip shows today's total. Press
+and hold a dhikr in the library to share (phone) or copy (Windows) its text.
+
 Publishing the Android app: follow [docs/publishing-guide.md](docs/publishing-guide.md).
 A release build refuses to be made without `android/key.properties` (so a build
 no store would take is never made by accident); for a debug-signed one on

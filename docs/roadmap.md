@@ -6,6 +6,23 @@ This roadmap was re-sorted on 2026-10-09. The first version ordered work by cale
 
 ## Progress log
 
+### 2026-10-10: W6 (1.1) built, waiting on your look at it
+
+Android surfaces, all outside the app so no existing screen changed (analyze clean, 522 Dart tests, 12 new Kotlin tests; run on the Samsung phone: tile, widget, shortcut, notification buttons, library shortcut, share sheet):
+
+- **Home-screen widget** (2 by 2, resizable): the dhikr you were last reminded of, today's total, one tap counts one. Drawn only when something changes, never on a timer. The dhikr stays put between reminders.
+- **Two quick-settings tiles**: "Count one" (shows today's total) and "Pause for 1 hour" (lit while paused, a tap lifts it). The app takes the pause over the next time it opens, and a settings change in between can no longer undo it.
+- **Launcher shortcuts** (long-press the icon): Count one, Pause for 1 hour, Dhikr Library. Count and pause show a short toast and show no screen.
+- **"Done" and "Later" on the fallback notification**: Done counts the whole dhikr, Later brings it back in ten minutes. Both are broadcasts, so they work from the lock screen shade on Android 12 and later.
+- **Windows tray**: a "Count one" row (menu stays open, shows today's total) and today's total under the name in the tray tooltip.
+- **Copy and share**: press and hold a dhikr in the library for a small sheet: Share the text (phone) or Copy the text (Windows), and Report a mistake. Only the text and its source line ever leave, never a count.
+- One switch each: `Features.surfaces`, `Features.shareText`, `Features.trayCount` (Dart) and `Features.SURFACES` (Kotlin; off disables the widget, tiles and shortcuts at the next start).
+- Words for all of it follow the app's language (sent to the phone with the plan), not the phone's.
+
+Parked on purpose: the Windows jump list and the Widgets board (packaging cost), Android 16 Live Updates (rejected for counting), a second widget size.
+
+Needs you: look at the widget and tiles on your own phone (H6), and read the new Arabic strings: "عدّ مرة", "خلّصت", "بعدين", "شارك النص", "انسخ النص", "اتنسخ", "بلّغ عن غلطة", "النهارده: {count}".
+
 ### 2026-10-09: W0 to W5 built, waiting on the 1.0 checkpoint
 
 Built and tested (analyze clean, 510 Dart tests, 59 server tests, the Kotlin unit tests, Windows and Android debug builds compile; the Android parts were also run on the Samsung phone):

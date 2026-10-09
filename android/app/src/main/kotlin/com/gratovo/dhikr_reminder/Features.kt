@@ -11,4 +11,11 @@ object Features {
      * reminder arrives as a notification instead), and keep to quiet hours.
      */
     const val POLITE_REMINDERS = true
+
+    /**
+     * The home-screen widget, the two quick-settings tiles, the launcher
+     * shortcuts and the "Done" and "Later" buttons on a reminder notification.
+     * Off, they are switched off at the next start of the app (see Surfaces.apply).
+     */
+    const val SURFACES = true
 }

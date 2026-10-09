@@ -862,8 +862,8 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 210));
       // A little more see-through, not a flash.
-      expect(lowest(), lessThan(resting - 0.1));
-      expect(lowest(), greaterThan(resting - 0.3));
+      expect(lowest(), lessThan(resting - 0.02));
+      expect(lowest(), greaterThan(resting - 0.1));
 
       await tester.pump(const Duration(milliseconds: 1000));
       expect(lowest(), closeTo(resting, 0.001));

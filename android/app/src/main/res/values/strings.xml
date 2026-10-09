@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Words for the widget, tiles, shortcuts and notification buttons. The app
+     sends the same words in its own language (see Surfaces.label); these are
+     what shows before it has, and in the pickers the system builds itself. -->
+<resources>
+    <string name="tile_count">Count one</string>
+    <string name="tile_pause">Pause for 1 hour</string>
+    <string name="tile_resume">Resume reminders</string>
+    <string name="paused_until">Paused until {time}</string>
+    <string name="shortcut_library">Dhikr Library</string>
+    <string name="widget_description">Today\'s dhikr count. Tap to count one.</string>
+    <string name="widget_open">Open app</string>
+    <string name="widget_today">Today\'s dhikr</string>
+    <string name="action_done">Done</string>
+    <string name="action_later">Later</string>
+</resources>

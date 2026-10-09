@@ -27,7 +27,7 @@ const double kDhikrReminderCardScale = 1.2;
 /// How much more see-through the card's background gets, at the most, when a tap
 /// makes it breathe (see `DhikrTimers.cardDim`). Small on purpose: a hint of
 /// motion, not a flash.
-const double kDhikrCardDimDepth = 0.2;
+const double kDhikrCardDimDepth = 0.06;
 
 class DhikrTimers {
   // Entrance scale/fade and background opacity

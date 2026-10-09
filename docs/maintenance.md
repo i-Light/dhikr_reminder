@@ -23,6 +23,10 @@ Written so someone who did not build the app can keep it alive. Started during t
 
 Every optional feature has one constant in `lib/core/features.dart` (and `android/app/src/main/kotlin/com/gratovo/dhikr_reminder/Features.kt` for the phone's native side). Set it to `false`: its entry point disappears and nothing else depends on it. Build, run the tests, release.
 
+## The extra ways to count (Android)
+
+The widget, the two tiles, the launcher shortcuts and the notification buttons are in `Surfaces.kt`, `CountWidget.kt`, `SurfaceTiles.kt` and `SurfaceReceiver.kt`. They only touch the same store the reminder card writes to (`ReminderStore`), so a count made there reaches the app's totals the next time it opens, the same way a tap on the card does. A pause made on a tile or shortcut is handed to the app the same way (`takePauseChange`). The words they show come from the app's language (`setSurfaceLabels`), with the phone-language `res/values*/strings.xml` as the fallback. To remove all of it, set `Features.SURFACES` to `false` (Kotlin) and `Features.surfaces` to `false` (Dart).
+
 ## Where the user's data is, and what is backed up
 
 - Windows: settings in `%APPDATA%\com.gratovo\dhikr_reminder\shared_preferences.json` (never change `CompanyName` or `ProductName` in `windows/runner/Runner.rc`, the path comes from them). A rolling backup of three copies is kept in `%LOCALAPPDATA%\DhikrReminder\backup*.json`, written a few seconds after a change; if the settings file is lost, the newest good copy is restored on the next start. The log is `dhikr_reminder.log` in the same folder.

@@ -31,6 +31,12 @@ class ReminderReceiver : BroadcastReceiver() {
 
 /** How a reminder that is due gets to the person, whatever state the phone is in. */
 object ReminderDelivery {
+    /** A reminder reached the person: note it for the health check, and for the widget and tiles. */
+    private fun delivered(context: Context, reminder: ReminderStore.Planned) {
+        ReminderStore.markDelivered(context)
+        if (Features.SURFACES) Surfaces.noteDelivered(context, reminder)
+    }
+
     fun deliver(context: Context, reminder: ReminderStore.Planned) {
         // Never interrupts a card that is still being counted, on the lock
         // screen or over an app.
@@ -51,7 +57,7 @@ object ReminderDelivery {
 
         if (!Settings.canDrawOverlays(context)) {
             ReminderNotifier.post(context, reminder)
-            ReminderStore.markDelivered(context)
+            delivered(context, reminder)
             ReminderStore.log(context, "notification", "no overlay permission")
             return
         }
@@ -73,7 +79,7 @@ object ReminderDelivery {
             val audio = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
             if (!PendingRules.cardIsWelcome(manager.currentInterruptionFilter, audio.mode)) {
                 ReminderNotifier.post(context, reminder)
-                ReminderStore.markDelivered(context)
+                delivered(context, reminder)
                 ReminderStore.log(context, "notification", "do not disturb or a call")
                 return
             }
@@ -90,7 +96,7 @@ object ReminderDelivery {
                 // older one nobody got to.
                 ReminderStore.setPending(context, reminder, System.currentTimeMillis())
                 context.startForegroundService(OverlayService.intentLocked(context))
-                ReminderStore.markDelivered(context)
+                delivered(context, reminder)
                 ReminderStore.log(context, "lockscreen")
             } else {
                 // A fresh reminder in front of the person takes the place of
@@ -106,7 +112,7 @@ object ReminderDelivery {
                         reminder.translit,
                     ),
                 )
-                ReminderStore.markDelivered(context)
+                delivered(context, reminder)
                 ReminderStore.log(context, "card")
             }
         } catch (e: Exception) {
@@ -115,7 +121,7 @@ object ReminderDelivery {
             // goes in the log, so a bug report shows why the card did not come.
             ReminderStore.clearPending(context)
             ReminderNotifier.post(context, reminder)
-            ReminderStore.markDelivered(context)
+            delivered(context, reminder)
             ReminderStore.log(context, "notification", e.javaClass.simpleName)
         }
     }

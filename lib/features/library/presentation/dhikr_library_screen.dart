@@ -4,6 +4,7 @@ import 'package:dhikr_reminder/core/features.dart';
 import 'package:dhikr_reminder/core/navigation/shell_tab.dart';
 import 'package:dhikr_reminder/features/library/application/library_controller.dart';
 import 'package:dhikr_reminder/features/library/application/transliteration_controller.dart';
+import 'package:dhikr_reminder/features/library/presentation/dhikr_actions.dart';
 import 'package:dhikr_reminder/features/library/presentation/report_mistake.dart';
 import 'package:dhikr_reminder/features/library/presentation/widgets/dhikr_library_card.dart';
 import 'package:dhikr_reminder/features/library/presentation/widgets/dhikr_tag_label.dart';
@@ -118,13 +119,21 @@ class _DhikrLibraryScreenState extends ConsumerState<DhikrLibraryScreen> {
                               isAdded: addedIds.contains(items[index].id),
                               onToggleReminder: () => libraryNotifier
                                   .toggleExpanded(items[index].id),
-                              onLongPress: Features.reportMistake
-                                  ? () => reportMistake(
+                              // Copy or share the text, or report a mistake in
+                              // it; with sharing off, straight to the report.
+                              onLongPress: Features.shareText
+                                  ? () => showDhikrActions(
                                         context,
                                         ref,
                                         items[index],
                                       )
-                                  : null,
+                                  : Features.reportMistake
+                                      ? () => reportMistake(
+                                            context,
+                                            ref,
+                                            items[index],
+                                          )
+                                      : null,
                             );
                           },
                         ),

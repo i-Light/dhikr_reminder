@@ -303,11 +303,13 @@ class OverlayService : Service() {
 
         override fun onFinished() {
             Chime.playIfEnabled(this@OverlayService)
+            Surfaces.refresh(this@OverlayService)
             handler.removeCallbacks(idleTimeout)
             if (cardIsPending) ReminderStore.clearPending(this@OverlayService)
         }
 
         override fun onClose() {
+            Surfaces.refresh(this@OverlayService)
             // The cross says "not this one": that ends a waiting reminder.
             if (cardIsPending) ReminderStore.clearPending(this@OverlayService)
             closeCard()

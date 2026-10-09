@@ -142,6 +142,34 @@ class FakeOverlay implements ReminderOverlay {
   @override
   Future<void> cancel() async => cancels++;
 
+  /// The words last handed over for the widget, tiles and notification buttons.
+  Map<String, String>? surfaceLabels;
+
+  /// A pause set from a tile: null for none, 0 for lifted, else epoch millis.
+  int? pauseChange;
+
+  /// The page a shortcut asked for.
+  String? openTab;
+
+  @override
+  Future<void> setSurfaceLabels(Map<String, String> labels) async {
+    surfaceLabels = labels;
+  }
+
+  @override
+  Future<int?> takePauseChange() async {
+    final change = pauseChange;
+    pauseChange = null;
+    return change;
+  }
+
+  @override
+  Future<String?> takeOpenTab() async {
+    final tab = openTab;
+    openTab = null;
+    return tab;
+  }
+
   @override
   Future<Map<int, int>> drainTaps() async {
     drains++;

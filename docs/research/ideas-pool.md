@@ -166,6 +166,8 @@ The owner asked that the app stay simple: few buttons, settings and facts on scr
 
 **Built, with the least possible interface:** quiet hours (one folded row), soft sound (one folded row, off), history (one row on the home page), count now (one button inside an open library card), the two warning cards (only when true), do not disturb and calls and full-screen apps and idle (no interface at all), no repeat of the same dhikr (none), the idle close of a Windows card (none), keyboard keys and screen-reader text on the card (none), report a mistake (press and hold, none on screen), About (one quiet link).
 
+**Built in W6 (1.1), outside the app's own screens:** home-screen widget, two quick-settings tiles, launcher shortcuts, "Done" and "Later" on the notification, tray "Count one" and tooltip total, copy and share the text from a long press.
+
 **Parked until users ask (H3), because each adds controls:** favourites, my wird, morning and evening sessions, cycles and sequences, haptic strength, volume-key counting, a global hotkey, a free counter, manual export and import of a file, a theme choice, language from the phone's locale, pause options (until tomorrow, custom), interval jitter, per-dhikr active hours, the always-on mode, a Hijri day adjustment, the "test through the real alarm" button, and the pre-count input guard.
 
 **Needs a decision or a device:** the Android 15 and 16 delivery path (emulator download), the code licence (D4), the always-on Play declaration.

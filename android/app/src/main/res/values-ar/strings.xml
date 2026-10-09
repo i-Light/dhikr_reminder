@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tile_count">عدّ مرة</string>
+    <string name="tile_pause">وقّف التذكيرات ساعة</string>
+    <string name="tile_resume">كمّل التذكيرات</string>
+    <string name="paused_until">واقف لحد {time}</string>
+    <string name="shortcut_library">موسوعة الأذكار</string>
+    <string name="widget_description">عدّاد ذكر النهارده. دوس عشان تعدّ مرة.</string>
+    <string name="widget_open">افتح التطبيق</string>
+    <string name="widget_today">ذكر النهارده</string>
+    <string name="action_done">خلّصت</string>
+    <string name="action_later">بعدين</string>
+</resources>

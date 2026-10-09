@@ -97,12 +97,14 @@ class LockScreenReminderActivity : Activity() {
 
         override fun onFinished() {
             Chime.playIfEnabled(this@LockScreenReminderActivity)
+            Surfaces.refresh(this@LockScreenReminderActivity)
             handler.removeCallbacks(timeout)
             ReminderStore.clearPending(this@LockScreenReminderActivity)
             OverlayService.pendingChanged()
         }
 
         override fun onClose() {
+            Surfaces.refresh(this@LockScreenReminderActivity)
             ReminderStore.clearPending(this@LockScreenReminderActivity)
             OverlayService.pendingChanged()
             finish()

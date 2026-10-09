@@ -934,4 +934,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get libraryCountNow => 'Count now';
+
+  @override
+  String get libraryCopy => 'Copy the text';
+
+  @override
+  String get libraryShare => 'Share the text';
+
+  @override
+  String get libraryCopied => 'Copied';
+
+  @override
+  String get libraryReport => 'Report a mistake';
+
+  @override
+  String get surfaceCountOne => 'Count one';
+
+  @override
+  String get surfaceDone => 'Done';
+
+  @override
+  String get surfaceLater => 'Later';
+
+  @override
+  String trayTodayTotal(int count) {
+    return 'Today: $count';
+  }
 }

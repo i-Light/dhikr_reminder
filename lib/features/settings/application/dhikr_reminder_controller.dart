@@ -56,7 +56,11 @@ class ActiveDhikrReminderNotifier extends Notifier<ActiveDhikrReminder?> {
     });
   }
 
+  /// The dhikr last put on screen: the one "Count one" in the tray adds to.
+  int? _lastShownId;
+
   void show(DhikrEntry entry) {
+    _lastShownId = entry.id;
     state = ActiveDhikrReminder(entry: entry);
     _touch();
     // No sound for now: the system beep this used to play is off on purpose.
@@ -83,6 +87,19 @@ class ActiveDhikrReminderNotifier extends Notifier<ActiveDhikrReminder?> {
     return settings.entries
         .where((entry) => !settings.useChance || entry.chance > 0)
         .firstOrNull;
+  }
+
+  /// One tap on the dhikr last shown (else the first eligible one), counted
+  /// without a card: the tray menu's "Count one". Returns false when the person
+  /// has no dhikr to count.
+  bool countOne() {
+    final settings = ref.read(dhikrSettingsProvider);
+    final entry =
+        settings.entries.where((e) => e.id == _lastShownId).firstOrNull ??
+            testEntry();
+    if (entry == null) return false;
+    ref.read(dhikrStatsProvider.notifier).recordTap(entry.id);
+    return true;
   }
 
   void increment() {

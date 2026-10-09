@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The reminder card's gold, flattened to fit a widget. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:angle="270"
+        android:endColor="#2D1F0F"
+        android:startColor="#765526" />
+    <stroke
+        android:width="2dp"
+        android:color="#E7AA48" />
+    <corners android:radius="22dp" />
+</shape>

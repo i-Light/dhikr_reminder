@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:dhikr_reminder/core/features.dart';
 import 'package:dhikr_reminder/core/toast/dhikr_reminder_overlay.dart';
 import 'package:dhikr_reminder/core/window/app_shell.dart';
 // import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart'; // for the sound toggle, see below
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
+import 'package:dhikr_reminder/features/stats/dhikr_stats.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -52,6 +54,7 @@ class TrayMenuPanel extends ConsumerWidget {
                 label: l10n.trayOpenApp,
                 onTap: shell.openApp,
               ),
+              if (Features.trayCount) _CountOneItem(accent: palette.accent),
               _NextDhikrItem(accent: palette.accent),
               _TrayMenuItem(
                 accent: palette.accent,
@@ -184,6 +187,28 @@ class _TrayMenuItem extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// "Count one": adds one to the dhikr last shown, without a card, and says what
+/// today's total is. The menu stays open so a few can be counted in a row.
+class _CountOneItem extends ConsumerWidget {
+  const _CountOneItem({required this.accent});
+
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final stats = ref.watch(dhikrStatsProvider);
+    final total = stats.day == dhikrDayKey(DateTime.now()) ? stats.today : 0;
+    return _TrayMenuItem(
+      accent: accent,
+      icon: Icons.add_circle_outline_rounded,
+      label: l10n.surfaceCountOne,
+      subtitle: l10n.trayTodayTotal(total),
+      onTap: () => ref.read(activeDhikrReminderProvider.notifier).countOne(),
     );
   }
 }

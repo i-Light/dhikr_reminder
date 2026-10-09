@@ -2,9 +2,13 @@ import 'dart:async';
 import 'dart:developer' as developer;
 import 'dart:io';
 
+import 'package:dhikr_reminder/core/features.dart';
+import 'package:dhikr_reminder/core/locale/locale_controller.dart';
 import 'package:dhikr_reminder/core/window/svg_icon.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
+import 'package:dhikr_reminder/features/stats/dhikr_stats.dart';
+import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
 import 'package:dhikr_reminder/platform/app_platform.dart';
 import 'package:dhikr_reminder/platform/windows/native_window.dart';
 import 'package:dhikr_reminder/platform/windows/window_placement.dart';
@@ -62,9 +66,10 @@ class ShellState {
 }
 
 /// Size of the tray popup, in logical pixels, see `TrayMenuPanel`. Four rows of
-/// 36, the divider, and the padding around them. It was 212 while the menu also
-/// had the sound toggle (hidden for now).
-const kTrayMenuSize = Size(208, 176);
+/// 36, the divider, and the padding around them; one more row while the tray
+/// has "Count one" ([Features.trayCount]). It was 212 while the menu also had
+/// the sound toggle (hidden for now).
+const kTrayMenuSize = Size(208, Features.trayCount ? 212 : 176);
 
 /// Size of the splash window; the splash card fills it.
 const kSplashSize = Size(420, 270);
@@ -194,12 +199,45 @@ class AppShellNotifier extends Notifier<ShellState>
         _enqueue(_onReminderDone);
       }
     });
+    if (Features.trayCount) {
+      ref.listen(dhikrStatsProvider, (_, __) => _scheduleTooltip());
+      ref.onDispose(() => _tooltipTimer?.cancel());
+    }
     ref.onDispose(() {
       if (!_initialised) return;
       trayManager.removeListener(this);
       windowManager.removeListener(this);
     });
     return const ShellState(ShellMode.hidden, revealed: true);
+  }
+
+  Timer? _tooltipTimer;
+
+  /// Puts today's total under the app name in the tray tooltip. Counts come in
+  /// bursts, so it waits for them to stop; nothing happens before the tray exists.
+  void _scheduleTooltip() {
+    if (!_initialised || _quitting) return;
+    _tooltipTimer?.cancel();
+    _tooltipTimer = Timer(const Duration(seconds: 2), () {
+      unawaited(_applyTooltip());
+    });
+  }
+
+  Future<void> _applyTooltip() async {
+    if (_quitting) return;
+    final stats = ref.read(dhikrStatsProvider);
+    final total = stats.day == dhikrDayKey(DateTime.now()) ? stats.today : 0;
+    final l10n = lookupAppLocalizations(ref.read(localeProvider));
+    try {
+      await trayManager.setToolTip(
+        total > 0
+            ? '$_trayTooltip${String.fromCharCode(10)}'
+                '${l10n.trayTodayTotal(total)}'
+            : _trayTooltip,
+      );
+    } catch (_) {
+      // A tooltip that did not update is not worth a message.
+    }
   }
 
   /// Sets up the tray icon and takes over the window's close button. Called
@@ -372,6 +410,7 @@ class AppShellNotifier extends Notifier<ShellState>
   Future<void> quit() async {
     if (_quitting) return;
     _quitting = true;
+    _tooltipTimer?.cancel();
     // The app is going away regardless, so a stalled shutdown must not survive
     // any of the awaits below.
     Timer(const Duration(seconds: 2), () => exit(0));
