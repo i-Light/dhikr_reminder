@@ -80,7 +80,7 @@ if (-not (Test-Path (Join-Path $RepoRoot 'android\key.properties'))) {
     # signed with the debug key; refuse rather than make a file that cannot be
     # used. The APKs are for testing and sideloading, so they may be debug-signed.
     if (-not $ApkOnly) {
-        throw 'android\key.properties not found, so the bundle would be signed with the debug key and Google Play would refuse it. Run .\scripts\create_upload_key.ps1 once to make the upload key (see docs\google-play.md).'
+        throw 'android\key.properties not found, so the bundle would be signed with the debug key and Google Play would refuse it. Run .\scripts\create_upload_key.ps1 once to make the upload key (see docs\publishing-guide.md, Phase 2.1).'
     }
     Write-Warning 'android\key.properties not found: signing with the debug key (fine for testing, not uploadable to a store).'
 }

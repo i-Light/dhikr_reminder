@@ -24,7 +24,7 @@ are in `PendingRules.kt` (unit tested); `adb shell am broadcast -n
 com.gratovo.dhikr_reminder/.DebugTriggerReceiver --ei amount 3` delivers one on
 demand in debug builds.
 
-Publishing the Android app is covered in [docs/google-play.md](docs/google-play.md).
+Publishing the Android app: follow [docs/publishing-guide.md](docs/publishing-guide.md).
 The privacy policy is [PRIVACY.md](PRIVACY.md).
 
 Opening the app (left-click its tray icon) shows three pages behind one bottom

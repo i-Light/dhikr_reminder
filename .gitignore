@@ -58,6 +58,9 @@ app.*.map.json
 android/key.properties
 *.jks
 *.keystore
+# Google Play API key used by scripts/publish_android.ps1 -- never commit
+android/play-service-account.json
+*service-account*.json
 
 # Request service
 /server/dev.sqlite*

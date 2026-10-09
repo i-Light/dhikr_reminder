@@ -88,7 +88,7 @@ The app asks for two things: permission to show over other apps, and permission 
 | Tags | Religion, Productivity (pick what Play offers) |
 | Contact email | An address you are happy to show publicly (required) |
 | Website | `https://github.com/i-Light/dhikr_reminder` (optional) |
-| Privacy policy | see the guide, step 5 |
+| Privacy policy | see docs/publishing-guide.md, 3.2 |
 | App icon | `docs/google-play/icon-512.png` (made by `tool/generate_app_icon.dart`) |
 | Feature graphic | 1024 x 500 PNG or JPEG, not made yet |
-| Phone screenshots | 2 to 8, 16:9 or 9:16, not made yet (see the guide) |
+| Phone screenshots | 2 to 8, 16:9 or 9:16, not made yet (see docs/publishing-guide.md, 2.2) |

@@ -46,6 +46,88 @@
       "group": { "kind": "build", "isDefault": true },
       "problemMatcher": []
     },
+    // ---- Google Play (docs/publishing-guide.md) ----
+    {
+      // Once, before the first store build: makes android/upload-keystore.jks
+      // and android/key.properties. Asks for a password in the terminal.
+      "label": "Play: create upload key (once)",
+      "type": "shell",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\\create_upload_key.ps1",
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": "none",
+      "problemMatcher": []
+    },
+    {
+      // Builds build\app\outputs\bundle\release\app-release.aab without
+      // uploading it. Use this for the very first upload (done by hand on the
+      // Play Console website) and to inspect a bundle.
+      "label": "Play: build bundle only",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}\\scripts\\build_android.ps1"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": "none",
+      "problemMatcher": []
+    },
+    {
+      // Proves the service account, package name and permissions work.
+      // Uploads nothing and changes no file.
+      "label": "Play: check connection",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}\\scripts\\publish_android.ps1", "-Check"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": "none",
+      "problemMatcher": []
+    },
+    {
+      // The everyday one: bump the build number, test, build, upload to
+      // Internal testing (live for your testers within minutes).
+      "label": "Play: upload to internal testing",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile", "-ExecutionPolicy", "Bypass",
+        "-File", "${workspaceFolder}\\scripts\\publish_android.ps1",
+        "-Track", "internal",
+        "-Notes", "${input:playNotes}"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": "none",
+      "problemMatcher": []
+    },
+    {
+      // Closed testing: the track the 12 testers x 14 days rule is about.
+      "label": "Play: upload to closed testing",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile", "-ExecutionPolicy", "Bypass",
+        "-File", "${workspaceFolder}\\scripts\\publish_android.ps1",
+        "-Track", "alpha",
+        "-Notes", "${input:playNotes}"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": "none",
+      "problemMatcher": []
+    },
+    {
+      // Production as a DRAFT: Play Console shows it ready, you read it once
+      // and press "Send for review". Change -Status to completed to skip that.
+      "label": "Play: upload to production (draft)",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile", "-ExecutionPolicy", "Bypass",
+        "-File", "${workspaceFolder}\\scripts\\publish_android.ps1",
+        "-Track", "production",
+        "-Status", "draft",
+        "-Notes", "${input:playNotes}"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": "none",
+      "problemMatcher": []
+    },
     {
       "label": "Test",
       "type": "process",
@@ -65,6 +147,15 @@
       "options": { "cwd": "${workspaceFolder}" },
       "group": "none",
       "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      // Asked once per Play upload task; shown to testers as "What's new".
+      "id": "playNotes",
+      "type": "promptString",
+      "description": "Release notes for this build (English)",
+      "default": "Improvements and fixes."
     }
   ]
 }
