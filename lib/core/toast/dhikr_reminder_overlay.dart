@@ -6,6 +6,9 @@ import 'package:dhikr_reminder/core/toast/dhikr_fit_text.dart';
 import 'package:dhikr_reminder/core/toast/dust_particles_overlay.dart';
 import 'package:dhikr_reminder/core/toast/outer_glow.dart';
 import 'package:dhikr_reminder/core/window/app_logo.dart';
+import 'package:dhikr_reminder/features/library/application/transliteration_controller.dart';
+import 'package:dhikr_reminder/features/library/domain/dhikr_display.dart';
+import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
 import 'package:dhikr_reminder/features/stats/dhikr_stats.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
@@ -21,6 +24,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// height and bigger content, not a wider card.
 const double kDhikrReminderCardScale = 1.2;
 
+/// How much more see-through the card's background gets, at the most, when a tap
+/// makes it breathe (see `DhikrTimers.cardDim`). Small on purpose: a hint of
+/// motion, not a flash.
+const double kDhikrCardDimDepth = 0.2;
+
 class DhikrTimers {
   // Entrance scale/fade and background opacity
   static const Duration cardEntrance = Duration(milliseconds: 200);
@@ -30,6 +38,10 @@ class DhikrTimers {
 
   // The speed of the outer glow pulsing effect
   static const Duration glowPulse = Duration(milliseconds: 500);
+
+  // The breath of the card's background: a little more see-through on a tap,
+  // then back
+  static const Duration cardDim = Duration(milliseconds: 600);
 
   // The time it takes for the progress border to catch up
   static const Duration progressFill = Duration(milliseconds: 300);
@@ -205,7 +217,8 @@ class _DhikrReminderHostState extends ConsumerState<DhikrReminderHost> {
   }
 }
 
-/// A small "label / number" pair: the reminder card's count for the day.
+/// A small "label number" pair on one line: the reminder card's count for the
+/// day. A row rather than a column, so it stays as low as the counter beside it.
 class DhikrStatChip extends StatelessWidget {
   const DhikrStatChip({
     super.key,
@@ -226,22 +239,29 @@ class DhikrStatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Row(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      // Wide enough that the label and the number read as two things, close
+      // enough that they still read as one.
+      spacing: fontSize * 0.6,
       children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: color.withValues(alpha: 0.8),
+            fontSize: fontSize * 0.9,
+          ),
+        ),
         Text(
           goal == null ? '$value' : '$value / $goal',
           style: TextStyle(
             color: color,
-            fontSize: fontSize * 1.25,
+            fontSize: fontSize * 1.2,
             fontWeight: FontWeight.bold,
             fontFeatures: const [FontFeature.tabularFigures()],
           ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-              color: color.withValues(alpha: 0.8), fontSize: fontSize * 0.8),
         ),
       ],
     );
@@ -264,6 +284,10 @@ class DhikrReminderProviderSurface extends ConsumerWidget {
     final notifier = ref.read(activeDhikrReminderProvider.notifier);
     return DhikrReminderSurface(
       reminder: reminder,
+      showTransliteration: ref.watch(showTransliterationProvider),
+      showArabic: ref.watch(
+        dhikrSettingsProvider.select((s) => s.overlayShowArabic),
+      ),
       stats: ref.watch(dhikrStatsProvider),
       onTap: () {
         HapticFeedback.lightImpact();
@@ -291,11 +315,20 @@ class DhikrReminderSurface extends StatelessWidget {
     required this.onTap,
     required this.onDismiss,
     this.stats = const DhikrStats(),
+    this.showTransliteration = false,
+    this.showArabic = true,
   });
 
   final ActiveDhikrReminder? reminder;
   final VoidCallback onTap;
   final VoidCallback onDismiss;
+
+  /// Whether to put the dhikr's transliteration under its Arabic, and whether
+  /// to keep the Arabic. Hiding the Arabic never hides the transliteration, and
+  /// a dhikr with no transliteration keeps its Arabic (see
+  /// [resolveDhikrDisplay]).
+  final bool showTransliteration;
+  final bool showArabic;
 
   /// Today's per-dhikr totals, shown beside the counter. A dhikr's day total
   /// is only shown if it has a daily goal.
@@ -345,6 +378,8 @@ class DhikrReminderSurface extends StatelessWidget {
                     onTap: onTap,
                     onDismiss: onDismiss,
                     stats: stats,
+                    showTransliteration: showTransliteration,
+                    showArabic: showArabic,
                   ),
           ),
         ),
@@ -470,6 +505,8 @@ class _DhikrReminderCard extends StatefulWidget {
     required this.onTap,
     required this.onDismiss,
     required this.stats,
+    required this.showTransliteration,
+    required this.showArabic,
   });
 
   final ActiveDhikrReminder reminder;
@@ -478,6 +515,8 @@ class _DhikrReminderCard extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback onDismiss;
   final DhikrStats stats;
+  final bool showTransliteration;
+  final bool showArabic;
 
   @override
   State<_DhikrReminderCard> createState() => _DhikrReminderCardState();
@@ -529,31 +568,26 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
     ),
   ]).animate(_glowController);
 
-  // Own controller for the main dhikr text's extra glow flash — same
-  // tap trigger as `_glowController`, but scoped to the text's own shadow
-  // stack instead of the card's outer glow, and free to run at its own
-  // speed independent of it.
-  late final AnimationController _textGlowController = AnimationController(
+  // The card's background breathes on every tap: it goes a little more
+  // see-through, then back. Only the gradient behind the text fades (the text
+  // is not under this opacity), so it costs one cheap layer and nothing that
+  // grows with how much text there is.
+  late final AnimationController _cardDimController = AnimationController(
     vsync: this,
-    duration: DhikrTimers.glowPulse,
+    duration: DhikrTimers.cardDim,
   );
-
-  // Same jump-up-then-ease-back-down shape as `_glowOpacity`: invisible on
-  // rest, flashes up to full strength on tap, then eases back down. This
-  // drives the alpha of one extra `Shadow` layered on top of the text's
-  // static shadows below, rather than a `FadeTransition`.
-  late final Animation<double> _textGlowOpacity = TweenSequence<double>([
+  late final Animation<double> _cardDim = TweenSequence<double>([
     TweenSequenceItem(
       tween:
-          Tween(begin: 0.0, end: 0.4).chain(CurveTween(curve: Curves.easeOut)),
+          Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: Curves.easeOut)),
       weight: 35,
     ),
     TweenSequenceItem(
       tween:
-          Tween(begin: 0.4, end: 0.0).chain(CurveTween(curve: Curves.easeIn)),
+          Tween(begin: 1.0, end: 0.0).chain(CurveTween(curve: Curves.easeIn)),
       weight: 65,
     ),
-  ]).animate(_textGlowController);
+  ]).animate(_cardDimController);
 
   late final AnimationController _confettiController = AnimationController(
     vsync: this,
@@ -574,7 +608,7 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
     if (widget.reminder.count != oldWidget.reminder.count) {
       _bumpController.forward(from: 0);
       _glowController.forward(from: 0);
-      _textGlowController.forward(from: 0);
+      _cardDimController.forward(from: 0);
     }
     if (widget.reminder.isComplete && !oldWidget.reminder.isComplete) {
       _confettiController.forward(from: 0);
@@ -585,7 +619,7 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
   void dispose() {
     _bumpController.dispose();
     _glowController.dispose();
-    _textGlowController.dispose();
+    _cardDimController.dispose();
     _confettiController.dispose();
     super.dispose();
   }
@@ -607,6 +641,47 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
     // [DhikrFitText] measures with this and solves for the size itself.
     final dhikrTextStyle = (theme.textTheme.displayLarge ?? const TextStyle())
         .copyWith(fontFamily: 'NotoSansArabic', wordSpacing: 12, height: 1.6);
+
+    // What to draw: the Arabic, the transliteration under it, or the
+    // transliteration alone when the Arabic is switched off.
+    final display = resolveDhikrDisplay(
+      arabic: entry.name,
+      transliteration: entry.transliteration,
+      showTransliteration: widget.showTransliteration,
+      showArabic: widget.showArabic,
+    );
+    final textColor = dhikrTextStyle.color ?? theme.colorScheme.onSurface;
+    final transliterationStyle =
+        (theme.textTheme.titleLarge ?? const TextStyle()).copyWith(
+      color: textColor.withValues(alpha: 0.88),
+      height: 1.35,
+      letterSpacing: 0.2,
+      fontWeight: FontWeight.w500,
+    );
+    // The static glow around the Arabic. It used to flash on every tap; that
+    // animation re-blurred the text every frame (dearer the more text there
+    // was), so the glow now just stays, at the strength it rests at.
+    final glowTint = reminder.isComplete ? accent : null;
+    final arabicShadows = [
+      Shadow(
+        color: (glowTint ?? const Color(0xFFE8B058)).withValues(alpha: 0.85),
+        blurRadius: 10,
+      ),
+      Shadow(
+        color: (glowTint ?? const Color(0xFFD48B28)).withValues(alpha: 0.60),
+        blurRadius: 24,
+      ),
+      Shadow(
+        color: (glowTint ?? const Color(0xFFB36715)).withValues(alpha: 0.35),
+        blurRadius: 30,
+      ),
+      Shadow(
+        offset: const Offset(-3, -12),
+        color: (glowTint ?? const Color.fromARGB(255, 255, 215, 128))
+            .withValues(alpha: 0.6),
+        blurRadius: 60,
+      ),
+    ];
 
     // Everything the window has, less the glow's room on each side.
     final widgetWidth =
@@ -737,8 +812,16 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
                       tween: Tween(end: palette.cardOpacity),
                       duration: DhikrTimers.layoutTransition,
                       curve: Curves.easeOutCubic,
-                      builder: (context, opacity, child) =>
-                          Opacity(opacity: opacity, child: child),
+                      builder: (context, opacity, child) => AnimatedBuilder(
+                        animation: _cardDim,
+                        child: child,
+                        builder: (context, child) => Opacity(
+                          opacity:
+                              (opacity - kDhikrCardDimDepth * _cardDim.value)
+                                  .clamp(0.0, 1.0),
+                          child: child,
+                        ),
+                      ),
                       child: AnimatedContainer(
                         duration: DhikrTimers.layoutTransition,
                         curve: Curves.easeOutCubic,
@@ -754,7 +837,7 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Row(
-                          spacing: 16,
+                          spacing: 20,
                           children: [
                             AppLogo(size: _s(30), color: Colors.white),
                             Text(
@@ -764,23 +847,34 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
                                 fontSize: _s(16),
                               ),
                             ),
-                            const Expanded(child: SizedBox()),
                             // Beside the counter: how far this dhikr, and only
                             // this one, has got today toward its daily goal.
                             // In the dhikr's own colour: the accent is gold and
-                            // is lost against the card's gold fill.
+                            // is lost against the card's gold fill. It takes
+                            // the room the title leaves, on the counter's side,
+                            // and shrinks rather than push the counter out.
                             if (entry.dailyGoal > 0)
-                              DhikrStatChip(
-                                label: l10n.statToday,
-                                value: widget.stats.forToday(
-                                  dhikrDayKey(DateTime.now()),
-                                  entry.id,
+                              Expanded(
+                                child: Align(
+                                  alignment: AlignmentDirectional.centerEnd,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: DhikrStatChip(
+                                      label: l10n.statToday,
+                                      value: widget.stats.forToday(
+                                        dhikrDayKey(DateTime.now()),
+                                        entry.id,
+                                      ),
+                                      goal: entry.dailyGoal,
+                                      color: dhikrTextStyle.color ??
+                                          theme.colorScheme.onSurface,
+                                      fontSize: _s(14),
+                                    ),
+                                  ),
                                 ),
-                                goal: entry.dailyGoal,
-                                color: dhikrTextStyle.color ??
-                                    theme.colorScheme.onSurface,
-                                fontSize: _s(14),
-                              ),
+                              )
+                            else
+                              const Expanded(child: SizedBox()),
                             ScaleTransition(
                               scale: _bump,
                               child: TweenAnimationBuilder<double>(
@@ -862,74 +956,74 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
                               clipBehavior: Clip.none,
                               alignment: Alignment.center,
                               children: [
-                                // Align(
-                                //   alignment: Alignment.topCenter,
-                                //   child: Text(entry.name.length.toString()),
-                                // ),
-                                // The three `Shadow`s below are the text's static,
-                                // state-driven glow. `AnimatedBuilder` here layers
-                                // one extra `Shadow` on top of them, whose alpha
-                                // and blur ride `_textGlowOpacity` — invisible at
-                                // rest, flashing outward on every tap the same
-                                // way the card's own `_glowOpacity` flashes the
-                                // outer card glow, but with its own controller so
-                                // it's free to be tuned independently later.
-                                DhikrFitText(
-                                  text: entry.name,
-                                  style: dhikrTextStyle,
-                                  // Keeps the text clear of the corner ornaments
-                                  // and the "touch anywhere" hint pinned to the
-                                  // frame's bottom edge.
-                                  reserve:
-                                      const EdgeInsets.symmetric(vertical: 24),
-                                  builder: (context, fontSize) =>
-                                      AnimatedBuilder(
-                                    animation: _textGlowController,
-                                    builder: (context, _) {
-                                      final glowColor = !reminder.isComplete
-                                          ? const Color.fromARGB(
-                                              255, 255, 215, 128)
-                                          : accent;
-                                      return Text(
-                                        entry.name,
-                                        textAlign: TextAlign.center,
-                                        textScaler: TextScaler.noScaling,
-                                        style: dhikrTextStyle.copyWith(
-                                          fontSize: fontSize,
-                                          shadows: [
-                                            Shadow(
-                                              color: (!reminder.isComplete
-                                                      ? const Color(0xFFE8B058)
-                                                      : accent)
-                                                  .withValues(alpha: 0.85),
-                                              blurRadius: 10,
+                                // The text is its own repaint boundary: its
+                                // blurred glow is the dearest thing on the
+                                // card, and the background breathing, the
+                                // ring and the confetti must not redraw it.
+                                RepaintBoundary(
+                                  child: DhikrFitStack(
+                                    gap: _s(10),
+                                    // Keeps the text clear of the corner
+                                    // ornaments and the "touch anywhere" hint
+                                    // pinned to the frame's bottom edge.
+                                    reserve: const EdgeInsets.symmetric(
+                                      vertical: 24,
+                                    ),
+                                    blocks: [
+                                      if (display.hasArabic)
+                                        DhikrFitBlock(
+                                          block: DhikrTextBlock(
+                                            text: display.arabic!,
+                                            style: dhikrTextStyle,
+                                            textDirection: TextDirection.rtl,
+                                          ),
+                                          builder: (context, fontSize) => Text(
+                                            display.arabic!,
+                                            textAlign: TextAlign.center,
+                                            textDirection: TextDirection.rtl,
+                                            textScaler: TextScaler.noScaling,
+                                            style: dhikrTextStyle.copyWith(
+                                              fontSize: fontSize,
+                                              shadows: arabicShadows,
                                             ),
-                                            Shadow(
-                                              color: (!reminder.isComplete
-                                                      ? const Color(0xFFD48B28)
-                                                      : accent)
-                                                  .withValues(alpha: 0.60),
-                                              blurRadius: 24,
-                                            ),
-                                            Shadow(
-                                              color: (!reminder.isComplete
-                                                      ? const Color(0xFFB36715)
-                                                      : accent)
-                                                  .withValues(alpha: 0.35),
-                                              blurRadius: 30,
-                                            ),
-                                            Shadow(
-                                              offset: const Offset(-3, -12),
-                                              color: glowColor.withValues(
-                                                alpha: 0.6 +
-                                                    _textGlowOpacity.value,
-                                              ),
-                                              blurRadius: 60,
-                                            ),
-                                          ],
+                                          ),
                                         ),
-                                      );
-                                    },
+                                      if (display.hasTransliteration)
+                                        DhikrFitBlock(
+                                          block: DhikrTextBlock(
+                                            text: display.transliteration!,
+                                            style: transliterationStyle,
+                                            textDirection: TextDirection.ltr,
+                                            // Under the Arabic it is a
+                                            // fraction of it; alone it is the
+                                            // dhikr and sized like one.
+                                            scale: display.hasArabic
+                                                ? kTransliterationRatio
+                                                : 1,
+                                            minFontSize: display.hasArabic
+                                                ? kTransliterationMinFontSize
+                                                : 14,
+                                          ),
+                                          builder: (context, fontSize) => Text(
+                                            display.transliteration!,
+                                            textAlign: TextAlign.center,
+                                            textDirection: TextDirection.ltr,
+                                            textScaler: TextScaler.noScaling,
+                                            style:
+                                                transliterationStyle.copyWith(
+                                              fontSize: fontSize,
+                                              // A softer glow than the Arabic's
+                                              // when it is the only text, so
+                                              // the Latin letters stay sharp.
+                                              shadows: display.hasArabic
+                                                  ? null
+                                                  : arabicShadows
+                                                      .take(2)
+                                                      .toList(),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ),
                                 IgnorePointer(

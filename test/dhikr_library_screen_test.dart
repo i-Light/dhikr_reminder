@@ -156,7 +156,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(Switch).first);
+    await tester.tap(find.byKey(const ValueKey('tashkeel-switch')));
     await tester.pumpAndSettle();
     expect(container.read(dhikrLibraryProvider).showTashkeel, isFalse);
   });

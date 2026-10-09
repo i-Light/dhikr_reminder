@@ -55,7 +55,15 @@ object ReminderDelivery {
                 // one that was still waiting.
                 ReminderStore.clearPending(context)
                 context.startForegroundService(
-                    OverlayService.intentNow(context, reminder.dhikrId, reminder.text, reminder.amount, reminder.goal),
+                    OverlayService.intentNow(
+                        context,
+                        reminder.dhikrId,
+                        reminder.text,
+                        reminder.amount,
+                        reminder.goal,
+                        reminder.translit,
+                        reminder.hideArabic,
+                    ),
                 )
             }
         } catch (e: Exception) {

@@ -13,6 +13,7 @@ const _dhikrNextIdPrefsKey = 'dhikr_reminder.dhikr.nextId';
 const _dhikrIntervalPrefsKey = 'dhikr_reminder.dhikr.reminderIntervalMinutes';
 const _dhikrUseChancePrefsKey = 'dhikr_reminder.dhikr.useChance';
 const _dhikrMutedPrefsKey = 'dhikr_reminder.dhikr.muted';
+const _dhikrOverlayArabicPrefsKey = 'dhikr_reminder.dhikr.overlayShowArabic';
 
 /// Bounds for [DhikrSettings.intervalMinutes] — how many minutes sit between
 /// one reminder toast and the next.
@@ -86,6 +87,11 @@ class DhikrEntry {
   /// null for a dhikr typed in by hand before the library took over adding
   /// them. A linked entry keeps its [name] in step with the text in the library.
   final String? libraryId;
+
+  /// The Latin-letter pronunciation of this dhikr, when its library entry has
+  /// one. Looked up rather than stored, so a corrected transliteration reaches
+  /// everyone who added the dhikr; one typed in by hand has none.
+  String? get transliteration => libraryTransliteration(libraryId);
 
   DhikrEntry copyWith({
     String? name,
@@ -226,6 +232,7 @@ class DhikrSettings {
     required this.isLoaded,
     this.useChance = false,
     this.isMuted = false,
+    this.overlayShowArabic = true,
   });
 
   /// What the app shows before the first prefs read completes: the seeds,
@@ -235,6 +242,7 @@ class DhikrSettings {
         intervalMinutes = dhikrReminderIntervalDefault,
         useChance = false,
         isMuted = false,
+        overlayShowArabic = true,
         isLoaded = false;
 
   final List<DhikrEntry> entries;
@@ -251,6 +259,11 @@ class DhikrSettings {
   /// the card's Save button.
   final bool isMuted;
 
+  /// Whether the reminder card shows the dhikr's Arabic. Off, it shows the
+  /// transliteration alone (a dhikr that has none keeps its Arabic). Set on the
+  /// notifications page; the library cards have their own switch.
+  final bool overlayShowArabic;
+
   /// True once the persisted values have been read (or the read has failed
   /// and the defaults stand as the real answer). Nothing should schedule a
   /// reminder or seed an editable draft from this state until it's true.
@@ -261,6 +274,7 @@ class DhikrSettings {
     int? intervalMinutes,
     bool? useChance,
     bool? isMuted,
+    bool? overlayShowArabic,
     bool? isLoaded,
   }) {
     return DhikrSettings(
@@ -268,6 +282,7 @@ class DhikrSettings {
       intervalMinutes: intervalMinutes ?? this.intervalMinutes,
       useChance: useChance ?? this.useChance,
       isMuted: isMuted ?? this.isMuted,
+      overlayShowArabic: overlayShowArabic ?? this.overlayShowArabic,
       isLoaded: isLoaded ?? this.isLoaded,
     );
   }
@@ -296,6 +311,7 @@ class DhikrSettingsNotifier extends Notifier<DhikrSettings> {
     var intervalMinutes = dhikrReminderIntervalDefault;
     var useChance = false;
     var isMuted = false;
+    var overlayShowArabic = true;
     try {
       final prefs = await SharedPreferences.getInstance();
       _nextId = prefs.getInt(_dhikrNextIdPrefsKey) ?? _nextId;
@@ -335,6 +351,8 @@ class DhikrSettingsNotifier extends Notifier<DhikrSettings> {
       }
       useChance = prefs.getBool(_dhikrUseChancePrefsKey) ?? useChance;
       isMuted = prefs.getBool(_dhikrMutedPrefsKey) ?? isMuted;
+      overlayShowArabic =
+          prefs.getBool(_dhikrOverlayArabicPrefsKey) ?? overlayShowArabic;
     } catch (error, stackTrace) {
       developer.log(
         'Failed to load persisted dhikr settings; keeping defaults.',
@@ -349,6 +367,7 @@ class DhikrSettingsNotifier extends Notifier<DhikrSettings> {
       intervalMinutes: intervalMinutes,
       useChance: useChance,
       isMuted: isMuted,
+      overlayShowArabic: overlayShowArabic,
       isLoaded: true,
     );
   }
@@ -423,6 +442,13 @@ class DhikrSettingsNotifier extends Notifier<DhikrSettings> {
   Future<void> updateMuted(bool value) async {
     state = state.copyWith(isMuted: value, isLoaded: true);
     await _persist((prefs) => prefs.setBool(_dhikrMutedPrefsKey, value));
+  }
+
+  Future<void> updateOverlayShowArabic(bool value) async {
+    state = state.copyWith(overlayShowArabic: value, isLoaded: true);
+    await _persist(
+      (prefs) => prefs.setBool(_dhikrOverlayArabicPrefsKey, value),
+    );
   }
 
   Future<void> _persist(

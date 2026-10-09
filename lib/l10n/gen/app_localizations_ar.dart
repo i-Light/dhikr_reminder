@@ -229,6 +229,17 @@ class AppLocalizationsAr extends AppLocalizations {
   String get notifPrioritySubtitle => 'حدّد نسبة ظهور كل ذكر';
 
   @override
+  String get notifOverlayArabicTitle => 'العربي في التذكير';
+
+  @override
+  String get notifOverlayArabicSubtitle =>
+      'اقفله عشان يظهر النطق بس في التذكير';
+
+  @override
+  String get notifOverlayArabicNeedsTransliteration =>
+      'شغّل النطق من إعدادات المكتبة الأول';
+
+  @override
   String get notifMySection => 'أذكاري';
 
   @override
@@ -428,6 +439,23 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get libraryHideAddedSubtitle =>
       'الأذكار اللي ضفتها لتذكيراتك مش هتظهر في القايمة';
+
+  @override
+  String get libraryTransliterationLabel => 'النطق بحروف إنجليزي';
+
+  @override
+  String get libraryTransliterationSubtitle =>
+      'اعرض طريقة نطق الذكر بحروف إنجليزي تحت الكلام العربي';
+
+  @override
+  String get libraryArabicLabel => 'إظهار العربي';
+
+  @override
+  String get libraryArabicSubtitle =>
+      'اقفله لو عايز تقرا النطق بس. الذكر اللي ملوش نطق هيفضل بالعربي';
+
+  @override
+  String get libraryArabicNeedsTransliteration => 'شغّل النطق الأول';
 
   @override
   String get libraryHidingAdded => 'من غير اللي عندك';

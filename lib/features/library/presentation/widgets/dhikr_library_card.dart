@@ -1,4 +1,6 @@
 import 'package:dhikr_reminder/features/library/application/library_controller.dart';
+import 'package:dhikr_reminder/features/library/data/dhikr_library.dart';
+import 'package:dhikr_reminder/features/library/domain/dhikr_display.dart';
 import 'package:dhikr_reminder/features/library/domain/dhikr_item.dart';
 import 'package:dhikr_reminder/features/library/presentation/widgets/reminder_panel.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
@@ -17,6 +19,16 @@ const String _dhikrFontFamily = 'NotoSansArabic';
 /// line collide with the next. The taller line box is what keeps a vowelled
 /// paragraph readable at every size the quick settings allow.
 const double _dhikrLineHeight = 2.0;
+
+/// The transliteration under the Arabic is this much of the Arabic's size, kept
+/// between the two bounds so it stays readable at the smallest text size and
+/// does not shout at the largest. Alone (the Arabic is switched off) it is the
+/// dhikr itself and gets [_aloneRatio] of the size instead.
+const double _transliterationRatio = 0.6;
+const double _aloneRatio = 0.85;
+const double _transliterationMin = 13;
+const double _transliterationMax = 24;
+const double _aloneMax = 34;
 
 /// One entry in the library list: the optional lead-in, the dhikr, the
 /// optional source reference and the optional note, in that order, as a
@@ -38,12 +50,18 @@ class DhikrLibraryCard extends StatelessWidget {
     super.key,
     required this.item,
     required this.view,
+    this.showTransliteration = false,
     this.isAdded = false,
     this.onToggleReminder,
   });
 
   final DhikrItem item;
   final DhikrLibraryView view;
+
+  /// Whether to put the dhikr's transliteration under its Arabic (see
+  /// `showTransliterationProvider`). A plain parameter, like [view], so the
+  /// list rebuilds once rather than each card subscribing on its own.
+  final bool showTransliteration;
 
   /// Whether the dhikr is already in the person's reminders.
   final bool isAdded;
@@ -67,11 +85,29 @@ class DhikrLibraryCard extends StatelessWidget {
     // The tashkeel toggle is a formatting change only, see [stripTashkeel].
     final text = view.showTashkeel ? item.text : stripTashkeel(item.text);
 
+    final display = resolveDhikrDisplay(
+      arabic: text,
+      transliteration: libraryTransliteration(item.id),
+      showTransliteration: showTransliteration,
+      showArabic: view.showArabic,
+    );
+
     final dhikrStyle = TextStyle(
       fontFamily: _dhikrFontFamily,
       fontSize: view.fontSize,
       height: _dhikrLineHeight,
       color: colors.onSurface,
+    );
+    // Under the Arabic the transliteration is a note on it; alone it is the
+    // dhikr, so it is bigger and in the full text color.
+    final withArabic = display.hasArabic;
+    final transliterationStyle = TextStyle(
+      fontSize:
+          (view.fontSize * (withArabic ? _transliterationRatio : _aloneRatio))
+              .clamp(_transliterationMin,
+                  withArabic ? _transliterationMax : _aloneMax),
+      height: 1.5,
+      color: withArabic ? colors.onSurfaceVariant : colors.onSurface,
     );
 
     return Card(
@@ -93,12 +129,25 @@ class DhikrLibraryCard extends StatelessWidget {
               ),
               const SizedBox(height: 10),
             ],
-            Text(
-              text,
-              textDirection: TextDirection.rtl,
-              textAlign: TextAlign.right,
-              style: dhikrStyle,
-            ),
+            if (display.hasArabic)
+              Text(
+                display.arabic!,
+                textDirection: TextDirection.rtl,
+                textAlign: TextAlign.right,
+                style: dhikrStyle,
+              ),
+            if (display.hasTransliteration) ...[
+              if (display.hasArabic) const SizedBox(height: 8),
+              // Latin letters read left to right whatever the app's language,
+              // and are left-aligned, so the two lines sit on opposite sides
+              // of the card the way a bilingual page does.
+              Text(
+                display.transliteration!,
+                textDirection: TextDirection.ltr,
+                textAlign: TextAlign.left,
+                style: transliterationStyle,
+              ),
+            ],
             if (item.hasReference) ...[
               const SizedBox(height: 8),
               Text(

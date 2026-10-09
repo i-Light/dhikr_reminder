@@ -223,6 +223,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notifPrioritySubtitle => 'Set how often each one comes up';
 
   @override
+  String get notifOverlayArabicTitle => 'Arabic in the reminder';
+
+  @override
+  String get notifOverlayArabicSubtitle =>
+      'Turn off to show only the transliteration in the reminder';
+
+  @override
+  String get notifOverlayArabicNeedsTransliteration =>
+      'Turn on the transliteration in the library settings first';
+
+  @override
   String get notifMySection => 'My dhikr';
 
   @override
@@ -418,6 +429,24 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get libraryHideAddedSubtitle =>
       'Dhikr already in your reminders are left out of the list';
+
+  @override
+  String get libraryTransliterationLabel => 'Transliteration';
+
+  @override
+  String get libraryTransliterationSubtitle =>
+      'Show how the dhikr sounds, in Latin letters under the Arabic';
+
+  @override
+  String get libraryArabicLabel => 'Show Arabic';
+
+  @override
+  String get libraryArabicSubtitle =>
+      'Turn off to read the transliteration alone. A dhikr without one keeps its Arabic';
+
+  @override
+  String get libraryArabicNeedsTransliteration =>
+      'Turn on the transliteration first';
 
   @override
   String get libraryHidingAdded => 'Without mine';

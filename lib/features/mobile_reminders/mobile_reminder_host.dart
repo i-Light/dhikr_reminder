@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:dhikr_reminder/core/locale/locale_controller.dart';
+import 'package:dhikr_reminder/features/library/application/transliteration_controller.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/background_access.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/notification_service.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/overlay_service.dart';
@@ -42,6 +43,7 @@ class MobileReminderSyncer {
   Future<void> sync({
     required DhikrSettings settings,
     required Locale locale,
+    bool showTransliteration = false,
     DateTime? now,
   }) async {
     if (!settings.isLoaded) return;
@@ -51,6 +53,8 @@ class MobileReminderSyncer {
       entries: settings.entries,
       useChance: settings.useChance,
       random: _random,
+      showTransliteration: showTransliteration,
+      showArabic: settings.overlayShowArabic,
     );
     final l10n = lookupAppLocalizations(locale);
     if (await _overlay.canDraw()) {
@@ -173,6 +177,7 @@ class _MobileReminderHostState extends ConsumerState<MobileReminderHost>
       unawaited(_syncer.sync(
         settings: ref.read(dhikrSettingsProvider),
         locale: ref.read(localeProvider),
+        showTransliteration: ref.read(showTransliterationProvider),
       ));
     });
   }
@@ -196,12 +201,14 @@ class _MobileReminderHostState extends ConsumerState<MobileReminderHost>
           previous.isLoaded != next.isLoaded ||
           previous.intervalMinutes != next.intervalMinutes ||
           previous.useChance != next.useChance ||
+          previous.overlayShowArabic != next.overlayShowArabic ||
           !listEquals(previous.entries, next.entries);
       if (changed) _scheduleSync();
       _openPending();
     });
     ref.listen(dhikrStatsProvider, (_, __) => _pushToday());
     ref.listen(localeProvider, (_, __) => _scheduleSync());
+    ref.listen(showTransliterationProvider, (_, __) => _scheduleSync());
     ref.listen(pendingOpenDhikrProvider, (_, __) => _openPending());
     return widget.child;
   }

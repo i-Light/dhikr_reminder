@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:dhikr_reminder/features/library/domain/dhikr_display.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
 import 'package:flutter/foundation.dart';
@@ -7,13 +8,27 @@ import 'package:flutter/foundation.dart';
 /// One notification to be delivered at [at], carrying [entry].
 @immutable
 class PlannedReminder {
-  const PlannedReminder(
-      {required this.id, required this.at, required this.entry});
+  const PlannedReminder({
+    required this.id,
+    required this.at,
+    required this.entry,
+    this.transliteration,
+    this.hideArabic = false,
+  });
 
   /// Unique within one plan; the plan always replaces the previous one whole.
   final int id;
   final DateTime at;
   final DhikrEntry entry;
+
+  /// The transliteration the card shows under the Arabic, or null for none.
+  /// Settled when the plan is made, because the native card has to show it with
+  /// the app closed.
+  final String? transliteration;
+
+  /// Whether the card leaves the Arabic out and shows the transliteration
+  /// alone. Only ever true when there is a [transliteration] to show.
+  final bool hideArabic;
 
   /// What the native overlay needs to show this reminder with the app closed.
   Map<String, Object> toOverlayMap() => {
@@ -23,6 +38,8 @@ class PlannedReminder {
         'text': entry.name,
         'amount': entry.amount,
         'goal': entry.dailyGoal,
+        'translit': transliteration ?? '',
+        'hideArabic': hideArabic,
       };
 }
 
@@ -49,6 +66,8 @@ List<PlannedReminder> planReminders({
   required Random random,
   DateTime? pausedUntil,
   int? count,
+  bool showTransliteration = false,
+  bool showArabic = true,
 }) {
   final total = count ?? reminderPlanLength(interval);
   final plan = <PlannedReminder>[];
@@ -61,7 +80,19 @@ List<PlannedReminder> planReminders({
       useChance: useChance,
     );
     if (entry == null) return const [];
-    plan.add(PlannedReminder(id: step, at: at, entry: entry));
+    final display = resolveDhikrDisplay(
+      arabic: entry.name,
+      transliteration: entry.transliteration,
+      showTransliteration: showTransliteration,
+      showArabic: showArabic,
+    );
+    plan.add(PlannedReminder(
+      id: step,
+      at: at,
+      entry: entry,
+      transliteration: display.transliteration,
+      hideArabic: !display.hasArabic,
+    ));
   }
   return plan;
 }

@@ -47,6 +47,8 @@ class MainActivity : FlutterActivity() {
                         text = it["text"] as String,
                         amount = (it["amount"] as Number).toInt(),
                         goal = (it["goal"] as? Number)?.toInt() ?: 0,
+                        translit = it["translit"] as? String ?: "",
+                        hideArabic = it["hideArabic"] as? Boolean ?: false,
                     )
                 }
                 ReminderStore.savePlan(
@@ -80,6 +82,8 @@ class MainActivity : FlutterActivity() {
                             call.argument<String>("text") ?: "",
                             call.argument<Int>("amount") ?: 1,
                             call.argument<Int>("goal") ?: 0,
+                            call.argument<String>("translit") ?: "",
+                            call.argument<Boolean>("hideArabic") ?: false,
                         ),
                     )
                     result.success(true)

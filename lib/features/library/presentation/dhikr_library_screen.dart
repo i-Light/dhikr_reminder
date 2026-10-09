@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dhikr_reminder/core/navigation/shell_tab.dart';
 import 'package:dhikr_reminder/features/library/application/library_controller.dart';
+import 'package:dhikr_reminder/features/library/application/transliteration_controller.dart';
 import 'package:dhikr_reminder/features/library/presentation/widgets/dhikr_library_card.dart';
 import 'package:dhikr_reminder/features/library/presentation/widgets/dhikr_tag_label.dart';
 import 'package:dhikr_reminder/features/library/presentation/widgets/library_popups.dart';
@@ -56,6 +57,7 @@ class _DhikrLibraryScreenState extends ConsumerState<DhikrLibraryScreen> {
     final view = ref.watch(dhikrLibraryProvider);
     final items = ref.watch(filteredDhikrProvider);
     final addedIds = ref.watch(addedLibraryIdsProvider);
+    final showTransliteration = ref.watch(showTransliterationProvider);
     final libraryNotifier = ref.read(dhikrLibraryProvider.notifier);
     final canRequest = ref.watch(requestsEnabledProvider);
 
@@ -110,6 +112,7 @@ class _DhikrLibraryScreenState extends ConsumerState<DhikrLibraryScreen> {
                               key: ValueKey(items[index].id),
                               item: items[index],
                               view: view,
+                              showTransliteration: showTransliteration,
                               isAdded: addedIds.contains(items[index].id),
                               onToggleReminder: () => libraryNotifier
                                   .toggleExpanded(items[index].id),

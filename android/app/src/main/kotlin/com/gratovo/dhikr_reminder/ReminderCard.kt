@@ -8,7 +8,6 @@ import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.text.TextUtils
@@ -27,9 +26,10 @@ import android.widget.TextView
 
 /**
  * One dhikr as a card: the phone's version of the Windows reminder popup, with
- * the same look. The app icon and title, the dhikr in Ali Meshref with a golden
- * glow, a counter whose frame fills as you count, a "touch anywhere to count"
- * hint, and a green confetti finish. Tap the card to count, the cross to close it.
+ * the same look. The app icon and title, the dhikr in Noto Sans Arabic with a
+ * golden glow (and its transliteration under it, when there is one), a counter
+ * whose frame fills as you count, a "touch anywhere to count" hint, and a green
+ * confetti finish. Tap the card to count, the cross to close it.
  *
  * The card is only the view and what happens inside it. Where it is put on
  * screen is the host's business: [OverlayService] floats it over other apps,
@@ -71,11 +71,12 @@ class ReminderCard(
     private var released = false
 
     private val background: GradientDrawable
+    private val glowView: TextView
     private val titleView: TextView
     private val closeView: TextView
     private val dayNumber: TextView
     private val dayChip: LinearLayout
-    private val dhikrView: TextView
+    private val stack: DhikrTextStack
     private val pill: CounterPill
     private val tipRow: View
     private val tipIcon: ImageView
@@ -84,8 +85,13 @@ class ReminderCard(
 
     private var accent = NORMAL_ACCENT
     private var doneFraction = 0f
-    private var glowFlash = 0f
+
+    /** How far the background has gone see-through for the breath a tap gives it, 0 to 1. */
+    private var cardDim = 0f
     private var strokeBoost = 0f
+
+    /** The [doneFraction] the glow was last painted for, so it is only painted again when it changes. */
+    private var glowDone = -1f
 
     /** The card itself, ready to be added to a window. Starts invisible: call [animateIn]. */
     val view: View
@@ -132,16 +138,20 @@ class ReminderCard(
         val dayLabel = TextView(context).apply {
             text = ReminderStore.dayLabel(context)
             setTextColor(Color.argb(204, Color.red(cream), Color.green(cream), Color.blue(cream)))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             gravity = Gravity.CENTER
             maxLines = 1
         }
+        // The label and the number on one line, with room between them.
         dayChip = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
             visibility = if (goal > 0) View.VISIBLE else View.GONE
-            addView(dayNumber)
             addView(dayLabel)
+            addView(dayNumber, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { marginStart = dp(8) })
         }
         val header = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -153,24 +163,27 @@ class ReminderCard(
             addView(dayChip, LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
-            ).apply { marginStart = dp(8) })
+            ).apply {
+                marginStart = dp(16)
+                marginEnd = dp(4)
+            })
             addView(closeView)
         }
 
-        // The dhikr, as large as fits.
-        dhikrView = TextView(context).apply {
-            this.text = reminder.text
-            typeface = arabic
-            setTextColor(cream)
-            gravity = Gravity.CENTER
-            textDirection = View.TEXT_DIRECTION_RTL
-            setLineSpacing(0f, 1.45f)
-            if (Build.VERSION.SDK_INT >= 26) {
-                setAutoSizeTextTypeUniformWithConfiguration(18, 46, 1, TypedValue.COMPLEX_UNIT_SP)
-            } else {
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 30f)
-            }
+        // The dhikr, as large as fits: the Arabic and, under it, the transliteration.
+        // With the Arabic switched off the transliteration stands alone.
+        val translit = reminder.translit.trim().takeIf { it.isNotEmpty() }
+        val arabicOff = translit != null && reminder.hideArabic
+        stack = DhikrTextStack(context).apply {
+            setTypeface(arabic)
+            setColors(
+                cream,
+                if (arabicOff) cream else Color.argb(224, Color.red(cream), Color.green(cream), Color.blue(cream)),
+            )
+            setTexts(if (arabicOff) null else reminder.text, translit)
         }
+        // The glow sits on whichever text is the dhikr.
+        glowView = if (arabicOff) stack.translitView else stack.arabicView
 
         pill = CounterPill(context).apply {
             this.accent = this@ReminderCard.accent
@@ -200,7 +213,7 @@ class ReminderCard(
             // Takes all the height the card has left, so the dhikr sits in the
             // middle of a big, easy-to-hit target.
             addView(
-                dhikrView,
+                stack,
                 LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
                     .apply { topMargin = dp(8); bottomMargin = dp(12) },
             )
@@ -280,10 +293,12 @@ class ReminderCard(
         handler.removeCallbacksAndMessages(null)
     }
 
-    /** Paints everything that depends on [doneFraction], [glowFlash] and [strokeBoost]. */
+    /** Paints everything that depends on [doneFraction], [cardDim] and [strokeBoost]. */
     private fun applyLook() {
+        val see = 1f - DIM_DEPTH * cardDim
         val colors = IntArray(NORMAL_COLORS.size) {
-            evaluator.evaluate(doneFraction, NORMAL_COLORS[it], DONE_COLORS[it]) as Int
+            val c = evaluator.evaluate(doneFraction, NORMAL_COLORS[it], DONE_COLORS[it]) as Int
+            Color.argb((Color.alpha(c) * see).toInt(), Color.red(c), Color.green(c), Color.blue(c))
         }
         background.colors = colors
         accent = evaluator.evaluate(doneFraction, NORMAL_ACCENT, DONE_ACCENT) as Int
@@ -298,15 +313,19 @@ class ReminderCard(
         tipText.setTextColor(hint)
         tipIcon.setColorFilter(hint, PorterDuff.Mode.SRC_IN)
 
-        // The golden glow around the dhikr; it flashes outward on every tap.
-        val glowBase = evaluator.evaluate(doneFraction, NORMAL_GLOW, DONE_ACCENT) as Int
-        val glowAlpha = (255 * (0.85f + 0.15f * glowFlash)).toInt()
-        dhikrView.setShadowLayer(
-            (dp(10) + dp(14) * glowFlash),
-            0f,
-            0f,
-            Color.argb(glowAlpha, Color.red(glowBase), Color.green(glowBase), Color.blue(glowBase)),
-        )
+        // The golden glow around the dhikr. It stays as it is (it used to flash
+        // on every tap, which redrew the blurred text each frame), and is only
+        // painted again when the colour changes on the way to green.
+        if (doneFraction != glowDone) {
+            glowDone = doneFraction
+            val glowBase = evaluator.evaluate(doneFraction, NORMAL_GLOW, DONE_ACCENT) as Int
+            glowView.setShadowLayer(
+                dp(10).toFloat(),
+                0f,
+                0f,
+                Color.argb(217, Color.red(glowBase), Color.green(glowBase), Color.blue(glowBase)),
+            )
+        }
     }
 
     private fun animateLook(duration: Long, interpolator: TimeInterpolator, update: (Float) -> Unit) {
@@ -334,7 +353,7 @@ class ReminderCard(
         view.performHapticFeedback(HapticFeedback_TAP)
         render(animate = true)
 
-        // The counter squashes and settles; the glow and the frame flash.
+        // The counter squashes and settles; the frame flashes and the background breathes.
         pill.animate().scaleX(0.7f).scaleY(0.7f).setDuration(90)
             .setInterpolator(DecelerateInterpolator())
             .withEndAction {
@@ -343,7 +362,7 @@ class ReminderCard(
             }.start()
         animateLook(500, LinearInterpolator()) { t ->
             val pulse = if (t < 0.35f) t / 0.35f else 1f - (t - 0.35f) / 0.65f
-            glowFlash = pulse
+            cardDim = pulse
             strokeBoost = pulse
         }
 
@@ -376,6 +395,10 @@ class ReminderCard(
         // Long enough for the confetti burst to play out.
         const val DONE_DWELL_MS = 2200L
         const val HapticFeedback_TAP = HapticFeedbackConstants.VIRTUAL_KEY
+
+        // How much more see-through the background gets, at the most, when a tap
+        // makes it breathe. A hint of motion, not a flash.
+        const val DIM_DEPTH = 0.2f
 
         val NORMAL_ACCENT = Color.parseColor("#E7AA48")
         val DONE_ACCENT = Color.parseColor("#34D399")

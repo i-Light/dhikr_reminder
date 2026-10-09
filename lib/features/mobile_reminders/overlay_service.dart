@@ -40,6 +40,8 @@ abstract class ReminderOverlay {
     required String closeLabel,
     required String tip,
     required String dayLabel,
+    String translit = '',
+    bool hideArabic = false,
   });
 
   /// Cancels every scheduled reminder.
@@ -117,6 +119,8 @@ class ChannelReminderOverlay implements ReminderOverlay {
     required String closeLabel,
     required String tip,
     required String dayLabel,
+    String translit = '',
+    bool hideArabic = false,
   }) async {
     try {
       return await _channel.invokeMethod<bool>('showNow', {
@@ -124,6 +128,8 @@ class ChannelReminderOverlay implements ReminderOverlay {
             'text': text,
             'amount': amount,
             'goal': goal,
+            'translit': translit,
+            'hideArabic': hideArabic,
             'title': title,
             'closeLabel': closeLabel,
             'tip': tip,

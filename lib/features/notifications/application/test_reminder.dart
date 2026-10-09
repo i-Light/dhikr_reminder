@@ -1,4 +1,7 @@
+import 'package:dhikr_reminder/features/library/application/transliteration_controller.dart';
+import 'package:dhikr_reminder/features/library/domain/dhikr_display.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/overlay_service.dart';
+import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
 import 'package:dhikr_reminder/platform/app_platform.dart';
@@ -14,11 +17,19 @@ Future<void> showTestReminder(BuildContext context, WidgetRef ref) async {
   if (entry == null) return;
   if (ref.read(appPlatformProvider).usesNotifications) {
     final l10n = AppLocalizations.of(context);
+    final display = resolveDhikrDisplay(
+      arabic: entry.name,
+      transliteration: entry.transliteration,
+      showTransliteration: ref.read(showTransliterationProvider),
+      showArabic: ref.read(dhikrSettingsProvider).overlayShowArabic,
+    );
     final shown = await ref.read(reminderOverlayProvider).showNow(
           dhikrId: entry.id,
           text: entry.name,
           amount: entry.amount,
           goal: entry.dailyGoal,
+          translit: display.transliteration ?? '',
+          hideArabic: !display.hasArabic,
           title: l10n.dhikrReminderTitle,
           closeLabel: l10n.commonClose,
           tip: l10n.dhikrReminderTouchEverywhereTip,

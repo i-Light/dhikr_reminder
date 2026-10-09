@@ -48,7 +48,16 @@ object ReminderPlan {
         for (added in 0 until (wanted - ahead)) {
             val pattern = plan[added % plan.size]
             extended.add(
-                ReminderStore.Planned(nextId++, nextAt, pattern.dhikrId, pattern.text, pattern.amount, pattern.goal),
+                ReminderStore.Planned(
+                    nextId++,
+                    nextAt,
+                    pattern.dhikrId,
+                    pattern.text,
+                    pattern.amount,
+                    pattern.goal,
+                    pattern.translit,
+                    pattern.hideArabic,
+                ),
             )
             nextAt += intervalMillis
         }

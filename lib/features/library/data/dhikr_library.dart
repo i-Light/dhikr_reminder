@@ -1,4 +1,5 @@
 import 'package:dhikr_reminder/features/library/data/dhikr_library_data.dart';
+import 'package:dhikr_reminder/features/library/data/dhikr_transliteration_data.dart';
 import 'package:dhikr_reminder/features/library/domain/arabic_text.dart';
 import 'package:dhikr_reminder/features/library/domain/dhikr_item.dart';
 
@@ -26,6 +27,11 @@ final Map<String, DhikrItem> _byNormalizedText = () {
 /// The library entry with [id], or null when this version of the app has none
 /// (an id saved by a newer or older release).
 DhikrItem? libraryItemById(String id) => _byId[id];
+
+/// The transliteration of the library entry [id], or null when it has none
+/// (explanation texts, and anything this version of the app does not know).
+String? libraryTransliteration(String? id) =>
+    id == null ? null : dhikrTransliterations[id];
 
 /// The library entry whose words are [text], whatever its vowels, kashida or
 /// punctuation, or null when nothing in the library says exactly that.

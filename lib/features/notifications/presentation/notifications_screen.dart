@@ -1,6 +1,7 @@
 import 'package:dhikr_reminder/core/navigation/shell_tab.dart';
 import 'package:dhikr_reminder/core/widgets/collapsible_card.dart';
 import 'package:dhikr_reminder/features/library/application/library_controller.dart';
+import 'package:dhikr_reminder/features/library/application/transliteration_controller.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/setup_requirement_cards.dart';
 import 'package:dhikr_reminder/features/notifications/application/test_reminder.dart';
 import 'package:dhikr_reminder/features/notifications/presentation/dhikr_edit_dialog.dart';
@@ -187,6 +188,7 @@ class _ReminderSettingsCardState extends ConsumerState<_ReminderSettingsCard> {
     final theme = Theme.of(context);
     final settings = widget.settings;
     final notifier = ref.read(dhikrSettingsProvider.notifier);
+    final showTransliteration = ref.watch(showTransliterationProvider);
     final minutes = _dragging ?? settings.intervalMinutes.toDouble();
     final muted = theme.colorScheme.onSurfaceVariant;
 
@@ -279,6 +281,22 @@ class _ReminderSettingsCardState extends ConsumerState<_ReminderSettingsCard> {
             subtitle: l10n.notifPrioritySubtitle,
             value: settings.useChance,
             onChanged: settings.isLoaded ? notifier.updateUseChance : null,
+          ),
+          const Divider(height: 24),
+          // The same switch as the library's "Show Arabic", for the reminder
+          // card. It only hides the Arabic: the transliteration itself is
+          // switched on in the library settings.
+          _CompactSwitchRow(
+            rowKey: const ValueKey('overlay-arabic-row'),
+            switchKey: const ValueKey('overlay-arabic-switch'),
+            title: l10n.notifOverlayArabicTitle,
+            subtitle: showTransliteration
+                ? l10n.notifOverlayArabicSubtitle
+                : l10n.notifOverlayArabicNeedsTransliteration,
+            value: settings.overlayShowArabic || !showTransliteration,
+            onChanged: settings.isLoaded && showTransliteration
+                ? notifier.updateOverlayShowArabic
+                : null,
           ),
           const Divider(height: 24),
           OutlinedButton.icon(

@@ -470,6 +470,24 @@ abstract class AppLocalizations {
   /// **'Set how often each one comes up'**
   String get notifPrioritySubtitle;
 
+  /// No description provided for @notifOverlayArabicTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Arabic in the reminder'**
+  String get notifOverlayArabicTitle;
+
+  /// No description provided for @notifOverlayArabicSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off to show only the transliteration in the reminder'**
+  String get notifOverlayArabicSubtitle;
+
+  /// No description provided for @notifOverlayArabicNeedsTransliteration.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on the transliteration in the library settings first'**
+  String get notifOverlayArabicNeedsTransliteration;
+
   /// No description provided for @notifMySection.
   ///
   /// In en, this message translates to:
@@ -793,6 +811,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dhikr already in your reminders are left out of the list'**
   String get libraryHideAddedSubtitle;
+
+  /// No description provided for @libraryTransliterationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Transliteration'**
+  String get libraryTransliterationLabel;
+
+  /// No description provided for @libraryTransliterationSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show how the dhikr sounds, in Latin letters under the Arabic'**
+  String get libraryTransliterationSubtitle;
+
+  /// No description provided for @libraryArabicLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Arabic'**
+  String get libraryArabicLabel;
+
+  /// No description provided for @libraryArabicSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off to read the transliteration alone. A dhikr without one keeps its Arabic'**
+  String get libraryArabicSubtitle;
+
+  /// No description provided for @libraryArabicNeedsTransliteration.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on the transliteration first'**
+  String get libraryArabicNeedsTransliteration;
 
   /// No description provided for @libraryHidingAdded.
   ///

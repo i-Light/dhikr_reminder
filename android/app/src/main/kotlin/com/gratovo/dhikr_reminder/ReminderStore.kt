@@ -36,6 +36,10 @@ object ReminderStore {
         val amount: Int,
         /** How many times a day this dhikr is meant to be said, or 0 for no goal. */
         val goal: Int = 0,
+        /** The Latin-letter pronunciation shown under the Arabic, or empty for none. */
+        val translit: String = "",
+        /** Leave the Arabic out and show [translit] alone. Only set when [translit] is not empty. */
+        val hideArabic: Boolean = false,
     )
 
     /**
@@ -82,7 +86,9 @@ object ReminderStore {
                     .put("dhikrId", p.dhikrId)
                     .put("text", p.text)
                     .put("amount", p.amount)
-                    .put("goal", p.goal),
+                    .put("goal", p.goal)
+                    .put("translit", p.translit)
+                    .put("hideArabic", p.hideArabic),
             )
         }
         return array.toString()
@@ -114,6 +120,8 @@ object ReminderStore {
                     o.getString("text"),
                     o.getInt("amount"),
                     o.optInt("goal", 0),
+                    o.optString("translit", ""),
+                    o.optBoolean("hideArabic", false),
                 )
             }
         } catch (e: Exception) {
@@ -203,6 +211,8 @@ object ReminderStore {
             .put("text", reminder.text)
             .put("amount", reminder.amount)
             .put("goal", reminder.goal)
+            .put("translit", reminder.translit)
+            .put("hideArabic", reminder.hideArabic)
             .put("count", 0)
             .put("savedAt", nowMillis)
         prefs(context).edit().putString(KEY_PENDING, json.toString()).apply()
@@ -230,6 +240,8 @@ object ReminderStore {
                     o.getString("text"),
                     o.getInt("amount"),
                     o.optInt("goal", 0),
+                    o.optString("translit", ""),
+                    o.optBoolean("hideArabic", false),
                 ),
                 o.optInt("count", 0),
                 savedAt,

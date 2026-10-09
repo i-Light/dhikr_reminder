@@ -1,5 +1,9 @@
+import 'package:dhikr_reminder/core/toast/dhikr_fit_text.dart';
 import 'package:dhikr_reminder/core/toast/dhikr_reminder_overlay.dart';
 import 'package:dhikr_reminder/core/window/app_logo.dart';
+import 'package:dhikr_reminder/features/library/application/transliteration_controller.dart';
+import 'package:dhikr_reminder/features/library/domain/dhikr_display.dart';
+import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
 import 'package:dhikr_reminder/features/stats/dhikr_stats.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
@@ -30,6 +34,14 @@ class MobileReminderScreen extends ConsumerWidget {
         ? (reminder.count / reminder.entry.amount).clamp(0.0, 1.0)
         : null;
     const textColor = Color(0xFFF6E7C8);
+    final display = resolveDhikrDisplay(
+      arabic: reminder.entry.name,
+      transliteration: reminder.entry.transliteration,
+      showTransliteration: ref.watch(showTransliterationProvider),
+      showArabic: ref.watch(
+        dhikrSettingsProvider.select((s) => s.overlayShowArabic),
+      ),
+    );
 
     return Material(
       color: const Color(0xFF1B140B),
@@ -76,18 +88,8 @@ class MobileReminderScreen extends ConsumerWidget {
                     ),
                     Expanded(
                       child: Center(
-                        child: SingleChildScrollView(
-                          child: Text(
-                            reminder.entry.name,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontFamily: 'NotoSansArabic',
-                              fontSize: 34,
-                              height: 1.7,
-                              color: textColor,
-                            ),
-                          ),
-                        ),
+                        child:
+                            _ReminderText(display: display, color: textColor),
                       ),
                     ),
                     SizedBox(
@@ -148,6 +150,84 @@ class MobileReminderScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The dhikr on this screen: the Arabic at one size, scrolling when it is long;
+/// and, when there is a transliteration, the Arabic with it under, or alone
+/// when the Arabic is switched off, sized together to the room there is (the
+/// same fitting the desktop card uses) so the Latin letters are never pushed
+/// off the bottom of a long dhikr.
+class _ReminderText extends StatelessWidget {
+  const _ReminderText({required this.display, required this.color});
+
+  final DhikrDisplay display;
+  final Color color;
+
+  static const _arabicSize = 34.0;
+  static const _aloneSize = 30.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final arabicStyle = TextStyle(
+      fontFamily: 'NotoSansArabic',
+      height: 1.7,
+      color: color,
+    );
+    if (!display.hasTransliteration) {
+      return SingleChildScrollView(
+        child: Text(
+          display.arabic!,
+          textAlign: TextAlign.center,
+          textDirection: TextDirection.rtl,
+          style: arabicStyle.copyWith(fontSize: _arabicSize),
+        ),
+      );
+    }
+
+    final latinStyle = TextStyle(
+      height: 1.4,
+      color: display.hasArabic ? color.withValues(alpha: 0.85) : color,
+    );
+    return DhikrFitStack(
+      gap: 12,
+      // As big as the old fixed size and no bigger, whatever the room.
+      maxFontSize: display.hasArabic ? _arabicSize : _aloneSize,
+      minFillRatio: 1,
+      blocks: [
+        if (display.hasArabic)
+          DhikrFitBlock(
+            block: DhikrTextBlock(
+              text: display.arabic!,
+              style: arabicStyle,
+              textDirection: TextDirection.rtl,
+            ),
+            builder: (context, fontSize) => Text(
+              display.arabic!,
+              textAlign: TextAlign.center,
+              textDirection: TextDirection.rtl,
+              textScaler: TextScaler.noScaling,
+              style: arabicStyle.copyWith(fontSize: fontSize),
+            ),
+          ),
+        DhikrFitBlock(
+          block: DhikrTextBlock(
+            text: display.transliteration!,
+            style: latinStyle,
+            textDirection: TextDirection.ltr,
+            scale: display.hasArabic ? kTransliterationRatio : 1,
+            minFontSize: display.hasArabic ? kTransliterationMinFontSize : 14,
+          ),
+          builder: (context, fontSize) => Text(
+            display.transliteration!,
+            textAlign: TextAlign.center,
+            textDirection: TextDirection.ltr,
+            textScaler: TextScaler.noScaling,
+            style: latinStyle.copyWith(fontSize: fontSize),
+          ),
+        ),
+      ],
     );
   }
 }

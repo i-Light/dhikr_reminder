@@ -25,6 +25,7 @@ const double dhikrLibraryFontDefault = 24;
 /// library that reopened showing only yesterday's filtered subset, with no
 /// obvious reason on screen, reads as a bug rather than as remembered state.
 const _showTashkeelPrefsKey = 'dhikr_reminder.library.showTashkeel';
+const _showArabicPrefsKey = 'dhikr_reminder.library.showArabic';
 const _fontSizePrefsKey = 'dhikr_reminder.library.fontSize';
 const _hideAddedPrefsKey = 'dhikr_reminder.library.hideAdded';
 
@@ -37,6 +38,7 @@ class DhikrLibraryView {
     this.query = '',
     this.selectedTags = const <DhikrTag>{},
     this.showTashkeel = true,
+    this.showArabic = true,
     this.fontSize = dhikrLibraryFontDefault,
     this.expandedId,
     this.showAddHint = false,
@@ -55,6 +57,11 @@ class DhikrLibraryView {
 
   /// Whether the dhikr text is rendered vocalised or through [stripTashkeel].
   final bool showTashkeel;
+
+  /// Whether the Arabic text is shown on the library cards. Off, a card shows
+  /// only its transliteration (a dhikr that has none keeps its Arabic). The
+  /// reminder cards have a switch of their own, on the notifications page.
+  final bool showArabic;
 
   /// Logical pixels for the dhikr text itself; the card's other type scales
   /// with it (see `DhikrLibraryCard`).
@@ -91,6 +98,7 @@ class DhikrLibraryView {
     String? query,
     Set<DhikrTag>? selectedTags,
     bool? showTashkeel,
+    bool? showArabic,
     double? fontSize,
     String? expandedId,
     bool clearExpanded = false,
@@ -103,6 +111,7 @@ class DhikrLibraryView {
       query: query ?? this.query,
       selectedTags: selectedTags ?? this.selectedTags,
       showTashkeel: showTashkeel ?? this.showTashkeel,
+      showArabic: showArabic ?? this.showArabic,
       fontSize: fontSize ?? this.fontSize,
       expandedId: clearExpanded ? null : (expandedId ?? this.expandedId),
       showAddHint: showAddHint ?? this.showAddHint,
@@ -138,6 +147,7 @@ class DhikrLibraryNotifier extends Notifier<DhikrLibraryView> {
       final stored = prefs.getDouble(_fontSizePrefsKey);
       state = state.copyWith(
         showTashkeel: showTashkeel,
+        showArabic: prefs.getBool(_showArabicPrefsKey) ?? state.showArabic,
         fontSize: stored == null ? state.fontSize : _clampFont(stored),
         hideAdded: prefs.getBool(_hideAddedPrefsKey) ?? state.hideAdded,
       );
@@ -220,6 +230,12 @@ class DhikrLibraryNotifier extends Notifier<DhikrLibraryView> {
     final next = !state.showTashkeel;
     state = state.copyWith(showTashkeel: next);
     await _persist((prefs) => prefs.setBool(_showTashkeelPrefsKey, next));
+  }
+
+  Future<void> toggleArabic() async {
+    final next = !state.showArabic;
+    state = state.copyWith(showArabic: next);
+    await _persist((prefs) => prefs.setBool(_showArabicPrefsKey, next));
   }
 
   /// Moves the text size one step, clamped at both ends. [direction] is `1`
