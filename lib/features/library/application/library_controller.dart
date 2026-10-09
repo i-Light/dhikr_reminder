@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:dhikr_reminder/features/library/application/transliteration_controller.dart';
 import 'package:dhikr_reminder/features/library/data/dhikr_library.dart';
 import 'package:dhikr_reminder/features/library/domain/dhikr_item.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
@@ -284,10 +285,14 @@ final filteredDhikrProvider = Provider<List<DhikrItem>>((ref) {
   // that is not hiding anything.
   final added =
       view.hideAdded ? ref.watch(addedLibraryIdsProvider) : const <String>{};
+  // In English the search also reads the transliterations and the English
+  // wording, besides the Arabic it always reads.
+  final english = ref.watch(isEnglishProvider);
   return dhikrLibrary
       .where((item) =>
           !added.contains(item.id) &&
           item.matchesTags(view.selectedTags) &&
-          item.matchesQuery(view.query))
+          (item.matchesQuery(view.query) ||
+              (english && libraryMatchesEnglishQuery(item, view.query))))
       .toList(growable: false);
 });

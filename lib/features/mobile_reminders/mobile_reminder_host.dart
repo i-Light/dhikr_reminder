@@ -54,10 +54,10 @@ class MobileReminderSyncer {
       useChance: settings.useChance,
       random: _random,
       showTransliteration: showTransliteration,
-      showArabic: settings.overlayShowArabic,
     );
     final l10n = lookupAppLocalizations(locale);
     if (await _overlay.canDraw()) {
+      await _overlay.setArabicHidden(!settings.overlayShowArabic);
       await _notifications.replaceAll(const [], title: l10n.dhikrReminderTitle);
       await _overlay.schedule(
         plan,
@@ -130,6 +130,18 @@ class _MobileReminderHostState extends ConsumerState<MobileReminderHost>
     _scheduleSync();
   }
 
+  /// Takes up a change the person made with the Arabic button on the floating
+  /// card while the app was closed. Waits for the saved settings, which the
+  /// change would otherwise be overwritten by.
+  Future<void> _collectArabicChange() async {
+    if (!ref.read(dhikrSettingsProvider).isLoaded) return;
+    final hidden = await ref.read(reminderOverlayProvider).takeArabicHidden();
+    if (hidden == null || !mounted) return;
+    unawaited(ref
+        .read(dhikrSettingsProvider.notifier)
+        .updateOverlayShowArabic(!hidden));
+  }
+
   @override
   void dispose() {
     _debounce?.cancel();
@@ -150,6 +162,7 @@ class _MobileReminderHostState extends ConsumerState<MobileReminderHost>
 
   /// Hands the taps made on the overlay while the app was closed to the stats.
   Future<void> _collectOverlayTaps() async {
+    unawaited(_collectArabicChange());
     final taps = await ref.read(reminderOverlayProvider).drainTaps();
     if (!mounted) return;
     final stats = ref.read(dhikrStatsProvider.notifier);
@@ -201,9 +214,19 @@ class _MobileReminderHostState extends ConsumerState<MobileReminderHost>
           previous.isLoaded != next.isLoaded ||
           previous.intervalMinutes != next.intervalMinutes ||
           previous.useChance != next.useChance ||
-          previous.overlayShowArabic != next.overlayShowArabic ||
           !listEquals(previous.entries, next.entries);
       if (changed) _scheduleSync();
+      if (previous?.isLoaded != true && next.isLoaded) {
+        unawaited(_collectArabicChange());
+      }
+      // The card reads this when it appears, so it goes over at once instead
+      // of waiting for the plan to be rebuilt.
+      if (previous != null &&
+          previous.overlayShowArabic != next.overlayShowArabic) {
+        unawaited(ref
+            .read(reminderOverlayProvider)
+            .setArabicHidden(!next.overlayShowArabic));
+      }
       _openPending();
     });
     ref.listen(dhikrStatsProvider, (_, __) => _pushToday());

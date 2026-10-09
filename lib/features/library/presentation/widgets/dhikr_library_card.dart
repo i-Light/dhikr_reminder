@@ -1,6 +1,7 @@
 import 'package:dhikr_reminder/features/library/application/library_controller.dart';
 import 'package:dhikr_reminder/features/library/data/dhikr_library.dart';
 import 'package:dhikr_reminder/features/library/domain/dhikr_display.dart';
+import 'package:dhikr_reminder/features/library/domain/dhikr_english.dart';
 import 'package:dhikr_reminder/features/library/domain/dhikr_item.dart';
 import 'package:dhikr_reminder/features/library/presentation/widgets/reminder_panel.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
@@ -58,8 +59,9 @@ class DhikrLibraryCard extends StatelessWidget {
   final DhikrItem item;
   final DhikrLibraryView view;
 
-  /// Whether to put the dhikr's transliteration under its Arabic (see
-  /// `showTransliterationProvider`). A plain parameter, like [view], so the
+  /// Whether the app is in English, which is when the card puts the dhikr's
+  /// transliteration under its Arabic and words everything around it in English
+  /// (see `showTransliterationProvider`). A plain parameter, like [view], so the
   /// list rebuilds once rather than each card subscribing on its own.
   final bool showTransliteration;
 
@@ -92,6 +94,19 @@ class DhikrLibraryCard extends StatelessWidget {
       showArabic: view.showArabic,
     );
 
+    // In English everything around the dhikr is in English too; what has no
+    // English wording (the entry has none of it, or it is a dhikr itself) keeps
+    // its Arabic. The Arabic switch reaches the lead-in as well, so no Arabic
+    // is left on a card whose Arabic is off.
+    final english = showTransliteration ? libraryEnglish(item.id) : null;
+    final leadIn = english?.subtitle ?? item.subtitle;
+    final subtitle = leadIn != null && showTransliteration
+        ? leadInFor(leadIn, showArabic: display.hasArabic)
+        : leadIn;
+    final reference = english?.reference ?? item.reference;
+    final description = english?.description ?? item.description;
+    final hasReference = reference != null && reference.trim().isNotEmpty;
+
     final dhikrStyle = TextStyle(
       fontFamily: _dhikrFontFamily,
       fontSize: view.fontSize,
@@ -117,9 +132,9 @@ class DhikrLibraryCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (item.subtitle != null) ...[
+            if (subtitle != null) ...[
               Text(
-                item.subtitle!,
+                subtitle,
                 // The lead-in is the one line that says *when* the dhikr is
                 // said, so it is the one line allowed the brand color.
                 style: theme.textTheme.labelLarge?.copyWith(
@@ -148,25 +163,30 @@ class DhikrLibraryCard extends StatelessWidget {
                 style: transliterationStyle,
               ),
             ],
-            if (item.hasReference) ...[
+            if (hasReference) ...[
               const SizedBox(height: 8),
               Text(
-                '[${item.reference}]',
+                '[$reference]',
                 // Its own line and its own direction, so the square brackets
                 // are the RTL pair rather than a mirrored one mid-paragraph.
-                textDirection: TextDirection.rtl,
-                textAlign: TextAlign.right,
+                // The English source reads left to right, on the left.
+                textDirection: english?.reference != null
+                    ? TextDirection.ltr
+                    : TextDirection.rtl,
+                textAlign: english?.reference != null
+                    ? TextAlign.left
+                    : TextAlign.right,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: colors.onSurfaceVariant,
                 ),
               ),
             ],
-            if (item.description != null) ...[
+            if (description != null) ...[
               const SizedBox(height: 16),
               Divider(height: 1, color: colors.outlineVariant),
               const SizedBox(height: 12),
               Text(
-                item.description!,
+                description,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colors.onSurfaceVariant,
                   height: 1.7,

@@ -135,38 +135,23 @@ class DhikrQuickSettingsPopup extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // The transliteration is switched on and off here, and only here. The
-          // Arabic switch under it hides the Arabic and nothing else, so it has
-          // nothing to do while there is no transliteration to read instead.
-          SwitchListTile(
-            key: const ValueKey('transliteration-switch'),
-            contentPadding: EdgeInsets.zero,
-            value: showTransliteration,
-            onChanged: (value) => unawaited(
-              ref.read(transliterationChoiceProvider.notifier).choose(value),
+          // Only in English, where every dhikr has its transliteration to read
+          // instead. It hides the Arabic and nothing else; in Arabic there is
+          // nothing to read in its place, so the switch is not offered.
+          if (showTransliteration) ...[
+            SwitchListTile(
+              key: const ValueKey('library-arabic-switch'),
+              contentPadding: EdgeInsets.zero,
+              value: view.showArabic,
+              onChanged: (_) => unawaited(notifier.toggleArabic()),
+              secondary: const Icon(Icons.format_textdirection_r_to_l),
+              title: Text(l10n.libraryArabicLabel),
+              subtitle: Text(l10n.libraryArabicSubtitle),
             ),
-            secondary: const Icon(Icons.translate),
-            title: Text(l10n.libraryTransliterationLabel),
-            subtitle: Text(l10n.libraryTransliterationSubtitle),
-          ),
-          SwitchListTile(
-            key: const ValueKey('library-arabic-switch'),
-            contentPadding: EdgeInsets.zero,
-            value: view.showArabic || !showTransliteration,
-            onChanged: showTransliteration
-                ? (_) => unawaited(notifier.toggleArabic())
-                : null,
-            secondary: const Icon(Icons.format_textdirection_r_to_l),
-            title: Text(l10n.libraryArabicLabel),
-            subtitle: Text(
-              showTransliteration
-                  ? l10n.libraryArabicSubtitle
-                  : l10n.libraryArabicNeedsTransliteration,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Divider(height: 1, color: theme.colorScheme.outlineVariant),
-          const SizedBox(height: 8),
+            const SizedBox(height: 8),
+            Divider(height: 1, color: theme.colorScheme.outlineVariant),
+            const SizedBox(height: 8),
+          ],
           if (_showTashkeelOption ?? libraryHasTashkeel) ...[
             SwitchListTile(
               key: const ValueKey('tashkeel-switch'),

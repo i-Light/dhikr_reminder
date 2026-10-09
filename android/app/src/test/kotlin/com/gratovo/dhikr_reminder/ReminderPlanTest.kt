@@ -63,16 +63,15 @@ class ReminderPlanTest {
     }
 
     @Test
-    fun theTransliterationAndTheArabicSwitchCarryOverToTheNewReminders() {
+    fun theTransliterationCarriesOverToTheNewReminders() {
         val plan = listOf(
-            ReminderStore.Planned(1, now + 30 * minute, 1, "dhikr", 33, 0, "latin one", true),
-            ReminderStore.Planned(2, now + 60 * minute, 2, "other", 3, 0, "", false),
+            ReminderStore.Planned(1, now + 30 * minute, 1, "dhikr", 33, 0, "latin one"),
+            ReminderStore.Planned(2, now + 60 * minute, 2, "other", 3, 0, ""),
         )
 
         val added = ReminderPlan.extend(plan, 30 * minute, now).drop(2)
 
         assertEquals(listOf("latin one", "", "latin one", ""), added.take(4).map { it.translit })
-        assertEquals(listOf(true, false, true, false), added.take(4).map { it.hideArabic })
     }
 
     @Test

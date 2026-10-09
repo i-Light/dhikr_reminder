@@ -48,7 +48,6 @@ class MainActivity : FlutterActivity() {
                         amount = (it["amount"] as Number).toInt(),
                         goal = (it["goal"] as? Number)?.toInt() ?: 0,
                         translit = it["translit"] as? String ?: "",
-                        hideArabic = it["hideArabic"] as? Boolean ?: false,
                     )
                 }
                 ReminderStore.savePlan(
@@ -83,7 +82,6 @@ class MainActivity : FlutterActivity() {
                             call.argument<Int>("amount") ?: 1,
                             call.argument<Int>("goal") ?: 0,
                             call.argument<String>("translit") ?: "",
-                            call.argument<Boolean>("hideArabic") ?: false,
                         ),
                     )
                     result.success(true)
@@ -103,6 +101,13 @@ class MainActivity : FlutterActivity() {
                 ReminderStore.setToday(this, call.argument<String>("day") ?: "", counts)
                 result.success(null)
             }
+
+            "setArabicHidden" -> {
+                ReminderStore.setArabicHidden(this, call.argument<Boolean>("hidden") ?: false)
+                result.success(null)
+            }
+
+            "takeArabicHidden" -> result.success(ReminderStore.takeArabicChange(this))
 
             "drainTaps" -> {
                 val taps = ReminderStore.drainTaps(this)

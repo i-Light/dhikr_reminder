@@ -5,6 +5,7 @@ import android.animation.TimeInterpolator
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
@@ -71,7 +72,16 @@ class ReminderCard(
     private var released = false
 
     private val background: GradientDrawable
-    private val glowView: TextView
+
+    /** The text that carries the golden glow: the Arabic, or the transliteration when the Arabic is off. */
+    private var glowView: TextView
+    private val arabicToggle: TextView
+    private val reminderText = reminder.text
+    private val translit = reminder.translit.trim().takeIf { it.isNotEmpty() }
+    private val cream = Color.parseColor("#F6E7C8")
+
+    /** Whether the Arabic is left out and the transliteration stands alone. Only possible with a transliteration. */
+    private var arabicOff = translit != null && ReminderStore.arabicHidden(context)
     private val titleView: TextView
     private val closeView: TextView
     private val dayNumber: TextView
@@ -97,7 +107,6 @@ class ReminderCard(
     val view: View
 
     init {
-        val cream = Color.parseColor("#F6E7C8")
         val arabic = try {
             Typeface.createFromAsset(context.assets, "flutter_assets/assets/fonts/NotoSansArabic-Variable.ttf")
         } catch (e: Exception) {
@@ -153,6 +162,21 @@ class ReminderCard(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
             ).apply { marginStart = dp(8) })
         }
+        // The Arabic on or off, for this card and the ones after it. Only where
+        // there is a transliteration to read instead, which is English only.
+        arabicToggle = TextView(context).apply {
+            text = "ع"
+            typeface = arabic
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
+            gravity = Gravity.CENTER
+            includeFontPadding = false
+            minWidth = dp(40)
+            minHeight = dp(30)
+            setPadding(dp(8), 0, dp(8), 0)
+            visibility = if (translit != null) View.VISIBLE else View.GONE
+            contentDescription = arabicLabel()
+            setOnClickListener { toggleArabic() }
+        }
         val header = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -167,23 +191,18 @@ class ReminderCard(
                 marginStart = dp(16)
                 marginEnd = dp(4)
             })
+            addView(arabicToggle, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                dp(30),
+            ).apply { marginEnd = dp(8) })
             addView(closeView)
         }
 
         // The dhikr, as large as fits: the Arabic and, under it, the transliteration.
         // With the Arabic switched off the transliteration stands alone.
-        val translit = reminder.translit.trim().takeIf { it.isNotEmpty() }
-        val arabicOff = translit != null && reminder.hideArabic
-        stack = DhikrTextStack(context).apply {
-            setTypeface(arabic)
-            setColors(
-                cream,
-                if (arabicOff) cream else Color.argb(224, Color.red(cream), Color.green(cream), Color.blue(cream)),
-            )
-            setTexts(if (arabicOff) null else reminder.text, translit)
-        }
-        // The glow sits on whichever text is the dhikr.
-        glowView = if (arabicOff) stack.translitView else stack.arabicView
+        stack = DhikrTextStack(context).apply { setTypeface(arabic) }
+        glowView = stack.arabicView
+        showTexts()
 
         pill = CounterPill(context).apply {
             this.accent = this@ReminderCard.accent
@@ -271,6 +290,52 @@ class ReminderCard(
             context.resources.displayMetrics,
         ).toInt()
 
+    /** Puts the Arabic and the transliteration on the card as [arabicOff] says. */
+    private fun showTexts() {
+        stack.setColors(
+            cream,
+            if (arabicOff) cream else Color.argb(224, Color.red(cream), Color.green(cream), Color.blue(cream)),
+        )
+        stack.setTexts(if (arabicOff) null else reminderText, translit)
+        // The glow sits on whichever text is the dhikr; the other one has none.
+        val target = if (arabicOff) stack.translitView else stack.arabicView
+        if (target !== glowView) {
+            glowView.setShadowLayer(0f, 0f, 0f, Color.TRANSPARENT)
+            glowView = target
+        }
+        glowDone = -1f
+    }
+
+    private fun toggleArabic() {
+        if (translit == null || released) return
+        arabicOff = !arabicOff
+        ReminderStore.changeArabicHiddenFromCard(context, arabicOff)
+        arabicToggle.contentDescription = arabicLabel()
+        showTexts()
+        applyLook()
+        view.performHapticFeedback(HapticFeedback_TAP)
+    }
+
+    /** What the button does, for a screen reader. The button only exists in English. */
+    private fun arabicLabel(): String = if (arabicOff) "Show the Arabic" else "Hide the Arabic"
+
+    /** The button is a filled pill while the Arabic shows, hollow and struck through while it does not. */
+    private fun styleArabicToggle() {
+        arabicToggle.background = GradientDrawable().apply {
+            cornerRadius = dp(15).toFloat()
+            setStroke(dp(1) + 1, accent)
+            if (!arabicOff) {
+                setColor(Color.argb(72, Color.red(accent), Color.green(accent), Color.blue(accent)))
+            }
+        }
+        arabicToggle.setTextColor(if (arabicOff) Color.argb(180, Color.red(accent), Color.green(accent), Color.blue(accent)) else accent)
+        arabicToggle.paintFlags = if (arabicOff) {
+            arabicToggle.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+        } else {
+            arabicToggle.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+        }
+    }
+
     /** Fades and floats the card in. */
     fun animateIn() {
         view.animate()
@@ -306,6 +371,7 @@ class ReminderCard(
 
         titleView.setTextColor(accent)
         closeView.setTextColor(accent)
+        styleArabicToggle()
         pill.accent = accent
         pill.textColor = if (doneFraction > 0.5f) accent else Color.parseColor("#F6E7C8")
 

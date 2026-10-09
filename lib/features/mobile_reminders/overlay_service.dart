@@ -41,8 +41,17 @@ abstract class ReminderOverlay {
     required String tip,
     required String dayLabel,
     String translit = '',
-    bool hideArabic = false,
   });
+
+  /// Tells the card whether to leave the Arabic out (showing the transliteration
+  /// alone). The card reads it when it appears, so it holds for the reminders
+  /// that come with the app closed too. The card has a button for it as well.
+  Future<void> setArabicHidden(bool hidden);
+
+  /// The new value if the person pressed that button on the card since the last
+  /// call, or null if they did not. The app is not running when they do, so it
+  /// asks when it comes back.
+  Future<bool?> takeArabicHidden();
 
   /// Cancels every scheduled reminder.
   Future<void> cancel();
@@ -120,7 +129,6 @@ class ChannelReminderOverlay implements ReminderOverlay {
     required String tip,
     required String dayLabel,
     String translit = '',
-    bool hideArabic = false,
   }) async {
     try {
       return await _channel.invokeMethod<bool>('showNow', {
@@ -129,7 +137,6 @@ class ChannelReminderOverlay implements ReminderOverlay {
             'amount': amount,
             'goal': goal,
             'translit': translit,
-            'hideArabic': hideArabic,
             'title': title,
             'closeLabel': closeLabel,
             'tip': tip,
@@ -138,6 +145,24 @@ class ChannelReminderOverlay implements ReminderOverlay {
           false;
     } on MissingPluginException {
       return false;
+    }
+  }
+
+  @override
+  Future<void> setArabicHidden(bool hidden) async {
+    try {
+      await _channel.invokeMethod<void>('setArabicHidden', {'hidden': hidden});
+    } on MissingPluginException {
+      // No overlay on this platform.
+    }
+  }
+
+  @override
+  Future<bool?> takeArabicHidden() async {
+    try {
+      return await _channel.invokeMethod<bool>('takeArabicHidden');
+    } on MissingPluginException {
+      return null;
     }
   }
 

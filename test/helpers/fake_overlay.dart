@@ -17,7 +17,8 @@ class FakeOverlay implements ReminderOverlay {
   int cancels = 0;
   String? shownNow;
   String? shownNowTranslit;
-  bool? shownNowHideArabic;
+  bool? arabicHidden;
+  bool? arabicHiddenOnCard;
   int? shownNowGoal;
   String? todayDay;
   Map<int, int>? todayCounts;
@@ -59,12 +60,10 @@ class FakeOverlay implements ReminderOverlay {
     required String tip,
     required String dayLabel,
     String translit = '',
-    bool hideArabic = false,
   }) async {
     if (!allowed) return false;
     shownNow = text;
     shownNowTranslit = translit;
-    shownNowHideArabic = hideArabic;
     shownNowGoal = goal;
     return true;
   }
@@ -74,6 +73,19 @@ class FakeOverlay implements ReminderOverlay {
     todayPushes++;
     todayDay = day;
     todayCounts = counts;
+  }
+
+  @override
+  Future<void> setArabicHidden(bool hidden) async {
+    arabicHidden = hidden;
+    arabicHiddenOnCard = null;
+  }
+
+  @override
+  Future<bool?> takeArabicHidden() async {
+    final result = arabicHiddenOnCard;
+    arabicHiddenOnCard = null;
+    return result;
   }
 
   @override

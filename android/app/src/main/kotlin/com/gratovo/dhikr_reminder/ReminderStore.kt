@@ -27,6 +27,8 @@ object ReminderStore {
     private const val KEY_PENDING = "pending"
     private const val KEY_LOCK_REQUESTED = "lock_requested"
     private const val KEY_LOCK_SHOWN = "lock_shown"
+    private const val KEY_ARABIC_HIDDEN = "arabic_hidden"
+    private const val KEY_ARABIC_CHANGED = "arabic_changed"
 
     data class Planned(
         val id: Int,
@@ -38,8 +40,6 @@ object ReminderStore {
         val goal: Int = 0,
         /** The Latin-letter pronunciation shown under the Arabic, or empty for none. */
         val translit: String = "",
-        /** Leave the Arabic out and show [translit] alone. Only set when [translit] is not empty. */
-        val hideArabic: Boolean = false,
     )
 
     /**
@@ -87,8 +87,7 @@ object ReminderStore {
                     .put("text", p.text)
                     .put("amount", p.amount)
                     .put("goal", p.goal)
-                    .put("translit", p.translit)
-                    .put("hideArabic", p.hideArabic),
+                    .put("translit", p.translit),
             )
         }
         return array.toString()
@@ -121,7 +120,6 @@ object ReminderStore {
                     o.getInt("amount"),
                     o.optInt("goal", 0),
                     o.optString("translit", ""),
-                    o.optBoolean("hideArabic", false),
                 )
             }
         } catch (e: Exception) {
@@ -200,6 +198,38 @@ object ReminderStore {
         prefs(context).edit().putString(KEY_DAILY, writeTally(merged)).apply()
     }
 
+    // ---- whether the card leaves the Arabic out -----------------------
+
+    /** Whether the card shows the transliteration alone, leaving the Arabic out. */
+    fun arabicHidden(context: Context): Boolean = prefs(context).getBoolean(KEY_ARABIC_HIDDEN, false)
+
+    /** The app's own setting: it wins over, and so forgets, a change made on the card that was never collected. */
+    @Synchronized
+    fun setArabicHidden(context: Context, hidden: Boolean) {
+        prefs(context).edit()
+            .putBoolean(KEY_ARABIC_HIDDEN, hidden)
+            .putBoolean(KEY_ARABIC_CHANGED, false)
+            .apply()
+    }
+
+    /** The person pressed the card's Arabic button; the app is told next time it asks. */
+    @Synchronized
+    fun changeArabicHiddenFromCard(context: Context, hidden: Boolean) {
+        prefs(context).edit()
+            .putBoolean(KEY_ARABIC_HIDDEN, hidden)
+            .putBoolean(KEY_ARABIC_CHANGED, true)
+            .apply()
+    }
+
+    /** The value the card's button last set if the app has not heard of it yet, else null. */
+    @Synchronized
+    fun takeArabicChange(context: Context): Boolean? {
+        val p = prefs(context)
+        if (!p.getBoolean(KEY_ARABIC_CHANGED, false)) return null
+        p.edit().putBoolean(KEY_ARABIC_CHANGED, false).apply()
+        return p.getBoolean(KEY_ARABIC_HIDDEN, false)
+    }
+
     // ---- the reminder waiting for the next unlock ---------------------
 
     /** Makes [reminder] the one waiting, in place of any earlier one. */
@@ -212,7 +242,6 @@ object ReminderStore {
             .put("amount", reminder.amount)
             .put("goal", reminder.goal)
             .put("translit", reminder.translit)
-            .put("hideArabic", reminder.hideArabic)
             .put("count", 0)
             .put("savedAt", nowMillis)
         prefs(context).edit().putString(KEY_PENDING, json.toString()).apply()
@@ -241,7 +270,6 @@ object ReminderStore {
                     o.getInt("amount"),
                     o.optInt("goal", 0),
                     o.optString("translit", ""),
-                    o.optBoolean("hideArabic", false),
                 ),
                 o.optInt("count", 0),
                 savedAt,

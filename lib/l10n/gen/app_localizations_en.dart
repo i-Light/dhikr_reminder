@@ -35,6 +35,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dhikrReminderTouchEverywhereTip => 'Touch anywhere to count';
 
   @override
+  String get dhikrReminderHideArabic => 'Hide the Arabic';
+
+  @override
+  String get dhikrReminderShowArabic => 'Show the Arabic';
+
+  @override
   String get trayOpenApp => 'Open app';
 
   @override
@@ -228,10 +234,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get notifOverlayArabicSubtitle =>
       'Turn off to show only the transliteration in the reminder';
-
-  @override
-  String get notifOverlayArabicNeedsTransliteration =>
-      'Turn on the transliteration in the library settings first';
 
   @override
   String get notifMySection => 'My dhikr';
@@ -431,22 +433,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Dhikr already in your reminders are left out of the list';
 
   @override
-  String get libraryTransliterationLabel => 'Transliteration';
-
-  @override
-  String get libraryTransliterationSubtitle =>
-      'Show how the dhikr sounds, in Latin letters under the Arabic';
-
-  @override
   String get libraryArabicLabel => 'Show Arabic';
 
   @override
   String get libraryArabicSubtitle =>
-      'Turn off to read the transliteration alone. A dhikr without one keeps its Arabic';
-
-  @override
-  String get libraryArabicNeedsTransliteration =>
-      'Turn on the transliteration first';
+      'Turn off to read the transliteration alone';
 
   @override
   String get libraryHidingAdded => 'Without mine';

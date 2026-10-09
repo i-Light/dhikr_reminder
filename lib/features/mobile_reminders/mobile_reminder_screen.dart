@@ -34,14 +34,19 @@ class MobileReminderScreen extends ConsumerWidget {
         ? (reminder.count / reminder.entry.amount).clamp(0.0, 1.0)
         : null;
     const textColor = Color(0xFFF6E7C8);
+    final showTransliteration = ref.watch(showTransliterationProvider);
     final display = resolveDhikrDisplay(
       arabic: reminder.entry.name,
       transliteration: reminder.entry.transliteration,
-      showTransliteration: ref.watch(showTransliterationProvider),
+      showTransliteration: showTransliteration,
       showArabic: ref.watch(
         dhikrSettingsProvider.select((s) => s.overlayShowArabic),
       ),
     );
+    // The same button as the desktop card's: English only, and only where there
+    // is a transliteration to read in the Arabic's place.
+    final canToggleArabic =
+        showTransliteration && reminder.entry.transliteration != null;
 
     return Material(
       color: const Color(0xFF1B140B),
@@ -78,6 +83,20 @@ class MobileReminderScreen extends ConsumerWidget {
                                 ?.copyWith(color: palette.accent),
                           ),
                         ),
+                        if (canToggleArabic) ...[
+                          DhikrArabicToggleButton(
+                            arabicShown: display.hasArabic,
+                            color: palette.accent,
+                            size: 32,
+                            tooltip: display.hasArabic
+                                ? l10n.dhikrReminderHideArabic
+                                : l10n.dhikrReminderShowArabic,
+                            onPressed: () => ref
+                                .read(dhikrSettingsProvider.notifier)
+                                .updateOverlayShowArabic(!display.hasArabic),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
                         IconButton(
                           tooltip: MaterialLocalizations.of(context)
                               .closeButtonTooltip,

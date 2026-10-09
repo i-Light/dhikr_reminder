@@ -56,7 +56,6 @@ object ReminderPlan {
                     pattern.amount,
                     pattern.goal,
                     pattern.translit,
-                    pattern.hideArabic,
                 ),
             )
             nextAt += intervalMillis

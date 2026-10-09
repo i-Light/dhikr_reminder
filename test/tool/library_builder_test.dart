@@ -51,16 +51,19 @@ void main() {
 
   group('cleanReference', () {
     test('strips the brackets and dots the scraper left', () {
-      expect(cleanReference('[آية الكرسى - البقرة 255].'), 'آية الكرسى - البقرة 255');
+      expect(cleanReference('[آية الكرسى - البقرة 255].'),
+          'آية الكرسى - البقرة 255');
       expect(cleanReference('. [البقرة - 201].'), 'البقرة - 201');
-      expect(cleanReference('رواه مسلم (1084) عن أبي هريرة.'), 'رواه مسلم (1084) عن أبي هريرة');
+      expect(cleanReference('رواه مسلم (1084) عن أبي هريرة.'),
+          'رواه مسلم (1084) عن أبي هريرة');
       expect(cleanReference(''), '');
     });
   });
 
   group('cleanSubtitle', () {
     test('drops the final full stop and the quotes around the line', () {
-      expect(cleanSubtitle('"واذكروا الله في أيام معدودات ".'), 'واذكروا الله في أيام معدودات');
+      expect(cleanSubtitle('"واذكروا الله في أيام معدودات ".'),
+          'واذكروا الله في أيام معدودات');
     });
   });
 
@@ -87,7 +90,8 @@ void main() {
       expect(report.items.single.count, 3);
     });
 
-    test('keeps the same words apart when they are said a different number '
+    test(
+        'keeps the same words apart when they are said a different number '
         'of times', () {
       final report = buildLibrary(sections([
         ['تسابيح', _entry(text: 'سبحان الله', count: '100')],
@@ -114,7 +118,8 @@ void main() {
       final report = buildLibrary(sections([
         [
           'أدعية النَّبِيِّ صَلَّى اللهُ عَلَيْهِ وَسَلَّمَ',
-          _entry(text: 'اللهم اغفر لي', benefit: 'رواه البخاري (834) عن أبي بكر.'),
+          _entry(
+              text: 'اللهم اغفر لي', benefit: 'رواه البخاري (834) عن أبي بكر.'),
         ],
       ]));
 
@@ -194,7 +199,8 @@ void main() {
 
   group('parseScraped', () {
     test('reads a run of arrays that is not wrapped in an outer one', () {
-      final parsed = parseScraped('[\n "أ",\n {"text": "ب"}\n],\n[\n "ج"\n],\n');
+      final parsed =
+          parseScraped('[\n "أ",\n {"text": "ب"}\n],\n[\n "ج"\n],\n');
       expect(parsed, hasLength(2));
       expect(parsed.first.first, 'أ');
     });
@@ -240,14 +246,19 @@ void main() {
     test('is exactly what the generator makes of the scraped file', () {
       final scraped = File('tool/data/zekrel_scraped.json').readAsStringSync();
       final expected = emitDart(buildLibrary(parseScraped(scraped)).items);
-      final shipped =
-          File('lib/features/library/data/dhikr_library_data.dart')
-              .readAsStringSync()
-              .replaceAll('\r\n', '\n');
+      final shipped = File('lib/features/library/data/dhikr_library_data.dart')
+          .readAsStringSync()
+          .replaceAll('\r\n', '\n');
+
+      // The shipped file is run through `dart format`, which only moves
+      // whitespace and adds trailing commas, so compare without those.
+      String bare(String source) => source
+          .replaceAll(RegExp(r',(?=\s*[)\]])'), '')
+          .replaceAll(RegExp(r'\s+'), '');
 
       expect(
-        shipped,
-        expected,
+        bare(shipped),
+        bare(expected),
         reason: 'Run: dart run tool/generate_library.dart',
       );
     });
@@ -265,8 +276,7 @@ void main() {
           expect(field.contains('*'), isFalse, reason: item.id);
           expect(field.contains('  '), isFalse, reason: item.id);
           expect(field, field.trim(), reason: item.id);
-          expect(RegExp(' [،؛:]').hasMatch(field), isFalse,
-              reason: item.id);
+          expect(RegExp(' [،؛:]').hasMatch(field), isFalse, reason: item.id);
         }
       }
     });

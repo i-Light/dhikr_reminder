@@ -201,7 +201,6 @@ void main() {
         'amount': 33,
         'goal': 0,
         'translit': '',
-        'hideArabic': false,
       });
     });
 

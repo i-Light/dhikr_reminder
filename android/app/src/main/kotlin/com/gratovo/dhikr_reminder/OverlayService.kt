@@ -369,7 +369,6 @@ class OverlayService : Service() {
             intent.getIntExtra(EXTRA_AMOUNT, 1),
             intent.getIntExtra(EXTRA_GOAL, 0),
             intent.getStringExtra(EXTRA_TRANSLIT) ?: "",
-            intent.getBooleanExtra(EXTRA_HIDE_ARABIC, false),
         )
     }
 
@@ -388,7 +387,6 @@ class OverlayService : Service() {
         private const val EXTRA_AMOUNT = "reminder_amount"
         private const val EXTRA_GOAL = "reminder_goal"
         private const val EXTRA_TRANSLIT = "reminder_translit"
-        private const val EXTRA_HIDE_ARABIC = "reminder_hide_arabic"
 
         @Volatile
         private var current: OverlayService? = null
@@ -406,7 +404,6 @@ class OverlayService : Service() {
             amount: Int,
             goal: Int = 0,
             translit: String = "",
-            hideArabic: Boolean = false,
         ): Intent =
             Intent(context, OverlayService::class.java)
                 .putExtra(EXTRA_TEXT, text)
@@ -414,7 +411,6 @@ class OverlayService : Service() {
                 .putExtra(EXTRA_AMOUNT, amount)
                 .putExtra(EXTRA_GOAL, goal)
                 .putExtra(EXTRA_TRANSLIT, translit)
-                .putExtra(EXTRA_HIDE_ARABIC, hideArabic)
 
         /** The reminder just saved as pending arrived while the phone was locked. */
         fun intentLocked(context: Context): Intent =

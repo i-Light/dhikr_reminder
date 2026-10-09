@@ -62,7 +62,6 @@ object ReminderDelivery {
                         reminder.amount,
                         reminder.goal,
                         reminder.translit,
-                        reminder.hideArabic,
                     ),
                 )
             }

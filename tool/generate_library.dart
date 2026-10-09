@@ -18,6 +18,8 @@ void main() {
   final report = buildLibrary(parseScraped(source));
 
   File(_output).writeAsStringSync(emitDart(report.items));
+  // Format it the way the editor does, so saving the file later changes nothing.
+  Process.runSync(Platform.resolvedExecutable, ['format', _output]);
 
   stdout
     ..writeln('Read ${report.rawCount} entries from $_input.')

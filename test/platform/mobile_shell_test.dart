@@ -131,4 +131,72 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     container.dispose();
   });
+
+  testWidgets(
+      'the Arabic button pressed on the card while the app was closed is '
+      'taken up once the settings have loaded', (tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final overlay = FakeOverlay(allowed: true)..arabicHiddenOnCard = true;
+    final container = _container(
+      PlatformKind.android,
+      _FakeNotifications(),
+      overlay,
+    );
+    expect(container.read(dhikrSettingsProvider).overlayShowArabic, isTrue);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const DhikrReminderApp(),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(container.read(dhikrSettingsProvider).overlayShowArabic, isFalse);
+    // And the card is told what the app now says, not left to its own copy.
+    expect(overlay.arabicHidden, isTrue);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    container.dispose();
+  });
+
+  testWidgets(
+      'the Arabic setting changed in the app is handed to the card at once',
+      (tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final overlay = FakeOverlay(allowed: true);
+    final container = _container(
+      PlatformKind.android,
+      _FakeNotifications(),
+      overlay,
+    );
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const DhikrReminderApp(),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 1));
+
+    await tester.runAsync(
+      () => container
+          .read(dhikrSettingsProvider.notifier)
+          .updateOverlayShowArabic(false),
+    );
+    await tester.pump();
+    expect(overlay.arabicHidden, isTrue);
+
+    await tester.runAsync(
+      () => container
+          .read(dhikrSettingsProvider.notifier)
+          .updateOverlayShowArabic(true),
+    );
+    await tester.pump();
+    expect(overlay.arabicHidden, isFalse);
+
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpWidget(const SizedBox.shrink());
+    container.dispose();
+  });
 }

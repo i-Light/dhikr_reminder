@@ -282,22 +282,21 @@ class _ReminderSettingsCardState extends ConsumerState<_ReminderSettingsCard> {
             value: settings.useChance,
             onChanged: settings.isLoaded ? notifier.updateUseChance : null,
           ),
-          const Divider(height: 24),
           // The same switch as the library's "Show Arabic", for the reminder
-          // card. It only hides the Arabic: the transliteration itself is
-          // switched on in the library settings.
-          _CompactSwitchRow(
-            rowKey: const ValueKey('overlay-arabic-row'),
-            switchKey: const ValueKey('overlay-arabic-switch'),
-            title: l10n.notifOverlayArabicTitle,
-            subtitle: showTransliteration
-                ? l10n.notifOverlayArabicSubtitle
-                : l10n.notifOverlayArabicNeedsTransliteration,
-            value: settings.overlayShowArabic || !showTransliteration,
-            onChanged: settings.isLoaded && showTransliteration
-                ? notifier.updateOverlayShowArabic
-                : null,
-          ),
+          // card (which has a button for it too). English only: it hides the
+          // Arabic and leaves the transliteration, which exists only there.
+          if (showTransliteration) ...[
+            const Divider(height: 24),
+            _CompactSwitchRow(
+              rowKey: const ValueKey('overlay-arabic-row'),
+              switchKey: const ValueKey('overlay-arabic-switch'),
+              title: l10n.notifOverlayArabicTitle,
+              subtitle: l10n.notifOverlayArabicSubtitle,
+              value: settings.overlayShowArabic,
+              onChanged:
+                  settings.isLoaded ? notifier.updateOverlayShowArabic : null,
+            ),
+          ],
           const Divider(height: 24),
           OutlinedButton.icon(
             key: const ValueKey('test-reminder-button'),
@@ -392,6 +391,9 @@ class _DhikrTile extends ConsumerWidget {
     final colors = theme.colorScheme;
     // A dhikr set to "never" is dimmed: it stays in the list but is skipped.
     final skipped = showFrequency && entry.chance == 0;
+    final transliteration = ref.watch(showTransliterationProvider)
+        ? entry.transliteration?.replaceAll('\n', ' ')
+        : null;
 
     final hasGoal = entry.dailyGoal > 0;
     final todayKey = dhikrDayKey(ref.watch(dhikrStatsClockProvider)());
@@ -435,6 +437,23 @@ class _DhikrTile extends ConsumerWidget {
                           height: 1.7,
                         ),
                       ),
+                      // In English, how it sounds, under the Arabic and on the
+                      // opposite side, the way the library shows it.
+                      if (transliteration != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          transliteration,
+                          key: ValueKey('tile-transliteration-${entry.id}'),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textDirection: TextDirection.ltr,
+                          textAlign: TextAlign.left,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colors.onSurfaceVariant,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: 8,

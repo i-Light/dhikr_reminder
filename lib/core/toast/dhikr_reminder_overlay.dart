@@ -282,12 +282,22 @@ class DhikrReminderProviderSurface extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final reminder = visible ? ref.watch(activeDhikrReminderProvider) : null;
     final notifier = ref.read(activeDhikrReminderProvider.notifier);
+    final showTransliteration = ref.watch(showTransliterationProvider);
+    final showArabic = ref.watch(
+      dhikrSettingsProvider.select((s) => s.overlayShowArabic),
+    );
     return DhikrReminderSurface(
       reminder: reminder,
-      showTransliteration: ref.watch(showTransliterationProvider),
-      showArabic: ref.watch(
-        dhikrSettingsProvider.select((s) => s.overlayShowArabic),
-      ),
+      showTransliteration: showTransliteration,
+      showArabic: showArabic,
+      // The button is there in English only: Arabic has no transliteration to
+      // stand in for the Arabic it would hide. It writes the same setting as the
+      // switch on the notifications page.
+      onToggleArabic: showTransliteration
+          ? () => ref
+              .read(dhikrSettingsProvider.notifier)
+              .updateOverlayShowArabic(!showArabic)
+          : null,
       stats: ref.watch(dhikrStatsProvider),
       onTap: () {
         HapticFeedback.lightImpact();
@@ -317,6 +327,7 @@ class DhikrReminderSurface extends StatelessWidget {
     this.stats = const DhikrStats(),
     this.showTransliteration = false,
     this.showArabic = true,
+    this.onToggleArabic,
   });
 
   final ActiveDhikrReminder? reminder;
@@ -329,6 +340,9 @@ class DhikrReminderSurface extends StatelessWidget {
   /// [resolveDhikrDisplay]).
   final bool showTransliteration;
   final bool showArabic;
+
+  /// What the card's Arabic button does. Null leaves the button out.
+  final VoidCallback? onToggleArabic;
 
   /// Today's per-dhikr totals, shown beside the counter. A dhikr's day total
   /// is only shown if it has a daily goal.
@@ -380,6 +394,7 @@ class DhikrReminderSurface extends StatelessWidget {
                     stats: stats,
                     showTransliteration: showTransliteration,
                     showArabic: showArabic,
+                    onToggleArabic: onToggleArabic,
                   ),
           ),
         ),
@@ -507,6 +522,7 @@ class _DhikrReminderCard extends StatefulWidget {
     required this.stats,
     required this.showTransliteration,
     required this.showArabic,
+    required this.onToggleArabic,
   });
 
   final ActiveDhikrReminder reminder;
@@ -517,6 +533,7 @@ class _DhikrReminderCard extends StatefulWidget {
   final DhikrStats stats;
   final bool showTransliteration;
   final bool showArabic;
+  final VoidCallback? onToggleArabic;
 
   @override
   State<_DhikrReminderCard> createState() => _DhikrReminderCardState();
@@ -650,10 +667,16 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
       showTransliteration: widget.showTransliteration,
       showArabic: widget.showArabic,
     );
+    // The button only means something where there is a transliteration to read
+    // in the Arabic's place.
+    final canToggleArabic = widget.onToggleArabic != null &&
+        widget.showTransliteration &&
+        entry.transliteration != null;
     final textColor = dhikrTextStyle.color ?? theme.colorScheme.onSurface;
     final transliterationStyle =
         (theme.textTheme.titleLarge ?? const TextStyle()).copyWith(
-      color: textColor.withValues(alpha: 0.88),
+      // A note under the Arabic is a little softer; alone it is the dhikr.
+      color: display.hasArabic ? textColor.withValues(alpha: 0.88) : textColor,
       height: 1.35,
       letterSpacing: 0.2,
       fontWeight: FontWeight.w500,
@@ -931,6 +954,16 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
                                 ),
                               ),
                             ),
+                            if (canToggleArabic)
+                              DhikrArabicToggleButton(
+                                arabicShown: display.hasArabic,
+                                color: accent,
+                                size: _s(30),
+                                tooltip: display.hasArabic
+                                    ? l10n.dhikrReminderHideArabic
+                                    : l10n.dhikrReminderShowArabic,
+                                onPressed: widget.onToggleArabic!,
+                              ),
                             InkWell(
                               borderRadius: BorderRadius.circular(999),
                               onTap: widget.onDismiss,
@@ -1012,14 +1045,11 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
                                             style:
                                                 transliterationStyle.copyWith(
                                               fontSize: fontSize,
-                                              // A softer glow than the Arabic's
-                                              // when it is the only text, so
-                                              // the Latin letters stay sharp.
+                                              // Alone, it is the dhikr and takes
+                                              // the glow the Arabic would have.
                                               shadows: display.hasArabic
                                                   ? null
-                                                  : arabicShadows
-                                                      .take(2)
-                                                      .toList(),
+                                                  : arabicShadows,
                                             ),
                                           ),
                                         ),
@@ -1050,6 +1080,71 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The reminder card's "Arabic" button: a small pill with the letter ع in it.
+/// Filled while the Arabic is on the card, hollow and struck through while it is
+/// off. A letter rather than a word so it reads the same whatever the app's
+/// language, and stays as small as the cross beside it.
+class DhikrArabicToggleButton extends StatelessWidget {
+  const DhikrArabicToggleButton({
+    super.key,
+    required this.arabicShown,
+    required this.onPressed,
+    required this.color,
+    required this.tooltip,
+    this.size = 30,
+  });
+
+  final bool arabicShown;
+  final VoidCallback onPressed;
+  final Color color;
+  final String tooltip;
+
+  /// The pill's height; it is a little wider than that.
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    // No Tooltip: the reminder card is mounted above the app's Navigator, so
+    // there is no Overlay for a tooltip to open in. The label is for screen
+    // readers.
+    return Semantics(
+      button: true,
+      toggled: arabicShown,
+      label: tooltip,
+      excludeSemantics: true,
+      child: InkWell(
+        key: const ValueKey('reminder-arabic-button'),
+        customBorder: const StadiumBorder(),
+        onTap: onPressed,
+        child: Container(
+          width: size * 1.3,
+          height: size,
+          alignment: Alignment.center,
+          decoration: ShapeDecoration(
+            shape: StadiumBorder(side: BorderSide(color: color, width: 1.5)),
+            color: arabicShown ? color.withValues(alpha: 0.28) : null,
+          ),
+          child: Text(
+            'ع',
+            textScaler: TextScaler.noScaling,
+            style: TextStyle(
+              fontFamily: 'NotoSansArabic',
+              fontSize: size * 0.6,
+              height: 1,
+              color: arabicShown ? color : color.withValues(alpha: 0.7),
+              decoration: arabicShown
+                  ? TextDecoration.none
+                  : TextDecoration.lineThrough,
+              decorationColor: color,
+              decorationThickness: 2,
+            ),
+          ),
         ),
       ),
     );
