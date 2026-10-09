@@ -1,0 +1,30 @@
+version: 2
+
+# One small batch of update pull requests a month. They merge only when CI is
+# green; nothing is merged without a look.
+updates:
+  - package-ecosystem: pub
+    directory: /
+    schedule:
+      interval: monthly
+    ignore:
+      # Both need a deliberate change, not a version bump.
+      - dependency-name: tray_manager
+        versions: ['>=0.6.0']
+      - dependency-name: flutter_lints
+        versions: ['>=6.0.0']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+
+  - package-ecosystem: gradle
+    directory: /android
+    schedule:
+      interval: monthly
+
+  - package-ecosystem: npm
+    directory: /server
+    schedule:
+      interval: monthly

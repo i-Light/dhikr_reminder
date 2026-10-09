@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:dhikr_reminder/core/storage/storage_guard.dart';
 import 'package:dhikr_reminder/features/library/application/transliteration_controller.dart';
 import 'package:dhikr_reminder/features/library/data/dhikr_library.dart';
 import 'package:dhikr_reminder/features/library/domain/dhikr_item.dart';
@@ -254,6 +255,7 @@ class DhikrLibraryNotifier extends Notifier<DhikrLibraryView> {
   Future<void> _persist(
     Future<void> Function(SharedPreferences prefs) write,
   ) async {
+    if (!StorageGuard.canWrite) return;
     try {
       await write(await SharedPreferences.getInstance());
     } catch (error, stackTrace) {
@@ -289,10 +291,12 @@ final filteredDhikrProvider = Provider<List<DhikrItem>>((ref) {
   // wording, besides the Arabic it always reads.
   final english = ref.watch(isEnglishProvider);
   return dhikrLibrary
-      .where((item) =>
-          !added.contains(item.id) &&
-          item.matchesTags(view.selectedTags) &&
-          (item.matchesQuery(view.query) ||
-              (english && libraryMatchesEnglishQuery(item, view.query))))
+      .where(
+        (item) =>
+            !added.contains(item.id) &&
+            item.matchesTags(view.selectedTags) &&
+            (item.matchesQuery(view.query) ||
+                (english && libraryMatchesEnglishQuery(item, view.query))),
+      )
       .toList(growable: false);
 });

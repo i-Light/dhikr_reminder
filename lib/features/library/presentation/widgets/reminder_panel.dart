@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:dhikr_reminder/core/features.dart';
 import 'package:dhikr_reminder/core/widgets/amount_stepper.dart';
 import 'package:dhikr_reminder/features/library/domain/dhikr_item.dart';
+import 'package:dhikr_reminder/features/notifications/application/test_reminder.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -94,14 +96,27 @@ class _ReminderPanelState extends ConsumerState<ReminderPanel> {
                 ),
               ),
               const SizedBox(height: 8),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: TextButton.icon(
-                  onPressed: () => unawaited(_remove()),
-                  icon: const Icon(Icons.notifications_off_outlined),
-                  label: Text(l10n.libraryRemoveButton),
-                  style: TextButton.styleFrom(foregroundColor: colors.error),
-                ),
+              Row(
+                children: [
+                  TextButton.icon(
+                    onPressed: () => unawaited(_remove()),
+                    icon: const Icon(Icons.notifications_off_outlined),
+                    label: Text(l10n.libraryRemoveButton),
+                    style: TextButton.styleFrom(foregroundColor: colors.error),
+                  ),
+                  const Spacer(),
+                  // Only here, one tap deep, for a dhikr that is already in
+                  // the reminders: counts it now on the same card a reminder
+                  // uses, instead of a counter screen of its own.
+                  if (Features.counter)
+                    FilledButton.tonalIcon(
+                      key: const ValueKey('count-now-button'),
+                      onPressed: () =>
+                          unawaited(showReminderFor(context, ref, entry)),
+                      icon: const Icon(Icons.touch_app_outlined),
+                      label: Text(l10n.libraryCountNow),
+                    ),
+                ],
               ),
             ] else ...[
               Text(l10n.libraryAddRepeatsLabel,

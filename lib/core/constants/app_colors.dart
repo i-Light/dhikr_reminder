@@ -39,23 +39,6 @@ class AppColors {
   static const Color sparkCitron = Color(0xFFC7E25A); // lemon-lime
   static const Color sparkIris = Color(0xFF8B7BFF); // blue↔pink periwinkle
 
-  /// The "archived" chart series — a muted plum that pairs with the bright
-  /// blue "live" series without the shout of the full brand magenta. Archived
-  /// data is context, not the headline, so its color is dialled down.
-  static const Color archivedSeries = Color(0xFFD9A441);
-
-  /// The "archive due" chart series — a warm amber sitting between the bright
-  /// blue "live" series and the plum "archived" one, so a three-way stacked
-  /// bar reads left to right as still-live, counting down, then gone. Amber
-  /// rather than a third cool tone on purpose: it is the one series that still
-  /// wants a "notice me" cast, since it is the population someone can still
-  /// act on before it becomes [archivedSeries].
-  static const Color archiveDueSeries = Color(0xFF9C6591);
-
-  /// The darkest brand shade. Anchors the dark surface ramp below and the
-  /// far stop of any deep brand gradient.
-  static const Color brandNavy = Color(0xFF0A2A47); // deep ocean blue
-
   /// Muted foreground — captions, secondary labels on light surfaces.
   /// Roughly what `ColorScheme.fromSeed` derives for `onSurfaceVariant`
   /// in light mode, pinned so it's addressable by name where needed.

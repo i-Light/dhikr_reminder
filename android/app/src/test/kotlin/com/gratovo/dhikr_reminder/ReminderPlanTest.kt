@@ -114,4 +114,35 @@ class ReminderPlanTest {
 
         assertEquals(ReminderPlan.MIN_AHEAD, extended.count { it.atMillis > now })
     }
+
+    @Test
+    fun aPausedPlanIsExtendedAfterThePauseNotInsideIt() {
+        val interval = 30 * minute
+        val pausedUntil = now + 10 * 60 * minute
+        val plan = plan(3, interval)
+
+        val added = ReminderPlan.extend(plan, interval, now, pausedUntil).drop(3)
+
+        assertTrue(added.isNotEmpty())
+        assertTrue(added.all { it.atMillis > pausedUntil })
+    }
+
+    @Test
+    fun anEmptiedPlanStaysEmptyWhenToppedUp() {
+        // What cancel leaves behind: no plan and no interval. A reboot or a
+        // fired reminder tops up from that, and must not bring reminders back.
+        val empty = emptyList<ReminderStore.Planned>()
+
+        assertSame(empty, ReminderPlan.extend(empty, 0, now, 0))
+        assertEquals(0L, ReminderPlan.nextDue(empty, now))
+    }
+
+    @Test
+    fun theNextDueReminderSkipsThePastAndThePause() {
+        val plan = plan(4, 30 * minute)
+
+        assertEquals(now + 30 * minute, ReminderPlan.nextDue(plan, now))
+        assertEquals(now + 90 * minute, ReminderPlan.nextDue(plan, now, now + 70 * minute))
+        assertEquals(0L, ReminderPlan.nextDue(plan, now + 10 * 60 * minute))
+    }
 }

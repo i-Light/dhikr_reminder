@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dhikr_reminder/core/logging/app_logger.dart';
 import 'package:dhikr_reminder/core/update/update_source.dart';
+import 'package:dhikr_reminder/features/mobile_reminders/reminder_health.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -14,6 +16,7 @@ class BugReportDetails {
     required this.appVersion,
     required this.device,
     this.logTail,
+    this.reminders,
   });
 
   /// `0.1.2 (3)`.
@@ -24,6 +27,10 @@ class BugReportDetails {
 
   /// The end of the app's log, when it has one and it is not empty.
   final String? logTail;
+
+  /// On a phone, whether reminders are getting through and the last few
+  /// reminder events (times and the path taken; never the dhikr text).
+  final String? reminders;
 }
 
 /// How much of what the person wrote goes into the report.
@@ -62,7 +69,19 @@ Future<BugReportDetails> collectBugReportDetails() async {
     appVersion: appVersion,
     device: device,
     logTail: _readLogTail(),
+    reminders: await _readReminderHealth(),
   );
+}
+
+Future<String?> _readReminderHealth() async {
+  if (kIsWeb || !Platform.isAndroid) return null;
+  try {
+    final map = await const MethodChannel('dhikr_reminder/overlay')
+        .invokeMapMethod<Object?, Object?>('health');
+    return map == null ? null : ReminderHealth.fromMap(map).describe();
+  } catch (_) {
+    return null;
+  }
 }
 
 String? _readLogTail() {
@@ -100,6 +119,8 @@ String _body(
     ..writeln('---')
     ..writeln('App version: ${details.appVersion}')
     ..writeln('Device: ${details.device}');
+  final reminders = details.reminders;
+  if (reminders != null) buffer.writeln(reminders);
   final log = details.logTail;
   if (withLog && log != null) {
     buffer
@@ -153,6 +174,37 @@ Uri bugReportUri(String description, BugReportDetails details) {
       length = length * 4 ~/ 5;
     }
   }
+}
+
+/// The page where a correction to a library dhikr is read over and sent: a new
+/// issue labelled `content`, already holding the entry's id, text and source and
+/// the app version, so whoever fixes it knows exactly which entry and build.
+Uri contentReportUri({
+  required String id,
+  required String text,
+  required String? reference,
+  required BugReportDetails details,
+}) {
+  final body = StringBuffer()
+    ..writeln('What is wrong with this dhikr? (please write here)')
+    ..writeln()
+    ..writeln()
+    ..writeln('---')
+    ..writeln('Entry: $id')
+    ..writeln('Text: $text');
+  if (reference != null && reference.trim().isNotEmpty) {
+    body.writeln('Source line: $reference');
+  }
+  body.writeln('App version: ${details.appVersion}');
+  return Uri.https(
+    'github.com',
+    '/$githubRepoOwner/$githubRepoName/issues/new',
+    {
+      'title': 'Dhikr correction: $id',
+      'labels': 'content',
+      'body': body.toString(),
+    },
+  );
 }
 
 // The seams a test replaces. Each defaults to the real thing.

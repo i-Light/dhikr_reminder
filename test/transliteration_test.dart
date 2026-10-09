@@ -14,7 +14,6 @@ import 'package:dhikr_reminder/features/library/domain/dhikr_item.dart';
 import 'package:dhikr_reminder/features/library/presentation/widgets/dhikr_library_card.dart';
 import 'package:dhikr_reminder/features/library/presentation/widgets/library_popups.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/mobile_reminder_host.dart';
-import 'package:dhikr_reminder/features/mobile_reminders/notification_service.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/reminder_planner.dart';
 import 'package:dhikr_reminder/features/notifications/presentation/notifications_screen.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
@@ -178,8 +177,10 @@ void main() {
     });
 
     test('is found from a saved reminder by its library link', () {
-      expect(_linked(_tasbeehId).transliteration,
-          dhikrTransliterations[_tasbeehId]);
+      expect(
+        _linked(_tasbeehId).transliteration,
+        dhikrTransliterations[_tasbeehId],
+      );
       // One typed in by hand before the library took over has none.
       expect(
         const DhikrEntry(id: 9, name: 'سبحان الله').transliteration,
@@ -259,8 +260,10 @@ void main() {
       final id = _explanationIds.first;
       expect(libraryTransliteration(id), dhikrEnglishData[id]!.text);
       // A dhikr keeps its transliteration.
-      expect(libraryTransliteration(_tasbeehId),
-          dhikrTransliterations[_tasbeehId]);
+      expect(
+        libraryTransliteration(_tasbeehId),
+        dhikrTransliterations[_tasbeehId],
+      );
     });
 
     test('leaves no Arabic in a lead-in once the Arabic is off', () {
@@ -367,11 +370,7 @@ void main() {
 
     test('the syncer hands the overlay the Arabic switch', () async {
       final overlay = FakeOverlay(allowed: true);
-      final syncer = MobileReminderSyncer(
-        _NoNotifications(),
-        overlay,
-        random: Random(1),
-      );
+      final syncer = MobileReminderSyncer(overlay, random: Random(1));
       await syncer.sync(
         settings: DhikrSettings(
           entries: [_linked(_tasbeehId)],
@@ -426,24 +425,27 @@ void main() {
       );
     });
 
-    testWidgets('shows only the Arabic when the transliteration is off',
-        (tester) async {
+    testWidgets('shows only the Arabic when the transliteration is off', (
+      tester,
+    ) async {
       await pump(tester, item: item, translit: false);
 
       expect(find.text(item.text), findsOneWidget);
       expect(find.text(latin), findsNothing);
     });
 
-    testWidgets('the Arabic switch hides the Arabic and keeps the Latin',
-        (tester) async {
+    testWidgets('the Arabic switch hides the Arabic and keeps the Latin', (
+      tester,
+    ) async {
       await pump(tester, item: item, arabic: false);
 
       expect(find.text(item.text), findsNothing);
       expect(find.text(latin), findsOneWidget);
     });
 
-    testWidgets('an entry with no transliteration keeps its Arabic',
-        (tester) async {
+    testWidgets('an entry with no transliteration keeps its Arabic', (
+      tester,
+    ) async {
       // A long dua that has neither a transliteration nor an English text.
       final explanation = libraryItemById('d3b31404057')!;
       await pump(tester, item: explanation, arabic: false);
@@ -475,8 +477,9 @@ void main() {
       );
     }
 
-    testWidgets('is in English in English, the dhikr phrases aside',
-        (tester) async {
+    testWidgets('is in English in English, the dhikr phrases aside', (
+      tester,
+    ) async {
       await pump(tester, item: kursi);
 
       expect(find.text('[${english.reference}]'), findsOneWidget);
@@ -487,15 +490,19 @@ void main() {
       expect(find.text(kursi.subtitle!), findsOneWidget);
     });
 
-    testWidgets('turns that phrase into its pronunciation with the Arabic off',
-        (tester) async {
-      await pump(tester, item: kursi, arabic: false);
+    testWidgets(
+      'turns that phrase into its pronunciation with the Arabic off',
+      (tester) async {
+        await pump(tester, item: kursi, arabic: false);
 
-      expect(find.text(kursi.subtitle!), findsNothing);
-      expect(
-          find.text("A'udhu billahi minash-shaytanir-rajim"), findsOneWidget);
-      expect(find.text(kursi.text), findsNothing);
-    });
+        expect(find.text(kursi.subtitle!), findsNothing);
+        expect(
+          find.text("A'udhu billahi minash-shaytanir-rajim"),
+          findsOneWidget,
+        );
+        expect(find.text(kursi.text), findsNothing);
+      },
+    );
 
     testWidgets('is in Arabic in Arabic', (tester) async {
       await pump(tester, item: kursi, inEnglish: false);
@@ -513,8 +520,9 @@ void main() {
       expect(find.text(dua.subtitle!), findsNothing);
     });
 
-    testWidgets('puts the English of an explanation under its Arabic',
-        (tester) async {
+    testWidgets('puts the English of an explanation under its Arabic', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(900, 3000);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -532,13 +540,16 @@ void main() {
   });
 
   group('the library settings popup', () {
-    Future<ProviderContainer> open(WidgetTester tester,
-        {bool english = true}) async {
+    Future<ProviderContainer> open(
+      WidgetTester tester, {
+      bool english = true,
+    }) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
       if (english) {
-        await tester
-            .runAsync(() => container.read(localeProvider.notifier).toggle());
+        await tester.runAsync(
+          () => container.read(localeProvider.notifier).toggle(),
+        );
       }
       await tester.pumpWidget(
         UncontrolledProviderScope(
@@ -555,9 +566,13 @@ void main() {
 
       // There is no switch for the transliteration: English always has it.
       expect(
-          find.byKey(const ValueKey('transliteration-switch')), findsNothing);
+        find.byKey(const ValueKey('transliteration-switch')),
+        findsNothing,
+      );
       expect(
-          find.byKey(const ValueKey('library-arabic-switch')), findsOneWidget);
+        find.byKey(const ValueKey('library-arabic-switch')),
+        findsOneWidget,
+      );
 
       await tester.tap(find.byKey(const ValueKey('library-arabic-switch')));
       await tester.pumpAndSettle();
@@ -566,27 +581,33 @@ void main() {
       expect(container.read(showTransliterationProvider), isTrue);
     });
 
-    testWidgets('has no Arabic switch in Arabic: nothing to read instead',
-        (tester) async {
+    testWidgets('has no Arabic switch in Arabic: nothing to read instead', (
+      tester,
+    ) async {
       await open(tester, english: false);
 
       expect(find.byKey(const ValueKey('library-arabic-switch')), findsNothing);
       expect(
-          find.byKey(const ValueKey('transliteration-switch')), findsNothing);
+        find.byKey(const ValueKey('transliteration-switch')),
+        findsNothing,
+      );
     });
   });
 
   group('the notifications page', () {
-    Future<ProviderContainer> open(WidgetTester tester,
-        {bool english = true}) async {
+    Future<ProviderContainer> open(
+      WidgetTester tester, {
+      bool english = true,
+    }) async {
       tester.view.physicalSize = const Size(900, 1600);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       final container = ProviderContainer();
       addTearDown(container.dispose);
       if (english) {
-        await tester
-            .runAsync(() => container.read(localeProvider.notifier).toggle());
+        await tester.runAsync(
+          () => container.read(localeProvider.notifier).toggle(),
+        );
       }
       await tester.pumpWidget(
         UncontrolledProviderScope(
@@ -600,8 +621,9 @@ void main() {
       return container;
     }
 
-    testWidgets('has the same Arabic switch, for the reminder, in English',
-        (tester) async {
+    testWidgets('has the same Arabic switch, for the reminder, in English', (
+      tester,
+    ) async {
       final container = await open(tester);
 
       await tester.tap(find.byKey(const ValueKey('overlay-arabic-switch')));
@@ -617,8 +639,9 @@ void main() {
       expect(find.byKey(const ValueKey('overlay-arabic-row')), findsNothing);
     });
 
-    testWidgets('shows the transliteration under the dhikr in the list',
-        (tester) async {
+    testWidgets('shows the transliteration under the dhikr in the list', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(900, 1600);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -627,13 +650,14 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
       await tester.runAsync(
-        () => container
-            .read(dhikrSettingsProvider.notifier)
-            .updateEntries([entry]),
+        () => container.read(dhikrSettingsProvider.notifier).updateEntries([
+          entry,
+        ]),
       );
 
-      await tester
-          .runAsync(() => container.read(localeProvider.notifier).toggle());
+      await tester.runAsync(
+        () => container.read(localeProvider.notifier).toggle(),
+      );
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
@@ -653,8 +677,9 @@ void main() {
       );
 
       // And not in Arabic, which has no transliteration.
-      await tester
-          .runAsync(() => container.read(localeProvider.notifier).toggle());
+      await tester.runAsync(
+        () => container.read(localeProvider.notifier).toggle(),
+      );
       await tester.pumpAndSettle();
       expect(tile, findsNothing);
     });
@@ -685,8 +710,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 600));
     }
 
-    testWidgets('shows the Arabic with the transliteration under it',
-        (tester) async {
+    testWidgets('shows the Arabic with the transliteration under it', (
+      tester,
+    ) async {
       final entry = _linked(_tasbeehId);
       await pump(tester, entry: entry);
 
@@ -695,8 +721,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('with the Arabic off shows the transliteration alone',
-        (tester) async {
+    testWidgets('with the Arabic off shows the transliteration alone', (
+      tester,
+    ) async {
       final entry = _linked(_tasbeehId);
       await pump(tester, entry: entry, arabic: false);
 
@@ -704,26 +731,27 @@ void main() {
       expect(find.text(entry.transliteration!), findsOneWidget);
     });
 
-    testWidgets('without a transliteration it is the Arabic, switches or not',
-        (tester) async {
+    testWidgets('without a transliteration it is the Arabic, switches or not', (
+      tester,
+    ) async {
       const entry = DhikrEntry(id: 4, name: 'سبحان الله', amount: 3);
       await pump(tester, entry: entry, arabic: false);
 
       expect(find.text(entry.name), findsOneWidget);
     });
 
-    testWidgets('fits the longest reminders with a transliteration',
-        (tester) async {
+    testWidgets('fits the longest reminders with a transliteration', (
+      tester,
+    ) async {
       // 500 characters of Arabic and the Latin that goes with it, in the
       // smallest room the card is ever given.
       final longest = dhikrLibrary
-          .where((item) =>
-              item.isRemindable && dhikrTransliterations[item.id] != null)
+          .where(
+            (item) =>
+                item.isRemindable && dhikrTransliterations[item.id] != null,
+          )
           .reduce((a, b) => a.text.length >= b.text.length ? a : b);
-      await pump(
-        tester,
-        entry: _linked(longest.id),
-      );
+      await pump(tester, entry: _linked(longest.id));
       expect(tester.takeException(), isNull);
       expect(find.text(dhikrTransliterations[longest.id]!), findsOneWidget);
     });
@@ -758,8 +786,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 600));
     }
 
-    testWidgets('has a button that turns the Arabic off and on',
-        (tester) async {
+    testWidgets('has a button that turns the Arabic off and on', (
+      tester,
+    ) async {
       var presses = 0;
       await pumpWithButton(
         tester,
@@ -770,9 +799,11 @@ void main() {
       const button = ValueKey('reminder-arabic-button');
       expect(find.byKey(button), findsOneWidget);
       expect(
-          find.byWidgetPredicate((w) =>
-              w is DhikrArabicToggleButton && w.tooltip == 'Hide the Arabic'),
-          findsOneWidget);
+        find.byWidgetPredicate(
+          (w) => w is DhikrArabicToggleButton && w.tooltip == 'Hide the Arabic',
+        ),
+        findsOneWidget,
+      );
       await tester.tap(find.byKey(button));
       expect(presses, 1);
 
@@ -783,13 +814,16 @@ void main() {
         onToggle: () => presses++,
       );
       expect(
-          find.byWidgetPredicate((w) =>
-              w is DhikrArabicToggleButton && w.tooltip == 'Show the Arabic'),
-          findsOneWidget);
+        find.byWidgetPredicate(
+          (w) => w is DhikrArabicToggleButton && w.tooltip == 'Show the Arabic',
+        ),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('has no button where there is nothing to read instead',
-        (tester) async {
+    testWidgets('has no button where there is nothing to read instead', (
+      tester,
+    ) async {
       // A dhikr typed in by hand has no transliteration.
       await pumpWithButton(
         tester,
@@ -804,8 +838,9 @@ void main() {
       expect(find.byKey(button), findsNothing);
     });
 
-    testWidgets('the background breathes on a tap and comes back',
-        (tester) async {
+    testWidgets('the background breathes on a tap and comes back', (
+      tester,
+    ) async {
       final entry = _linked(_tasbeehId);
       await pump(tester, entry: entry);
       double lowest() => tester
@@ -852,12 +887,7 @@ void main() {
       final stacked = fitDhikrStackFontSize(
         blocks: const [
           DhikrTextBlock(text: text, style: style),
-          DhikrTextBlock(
-            text: text,
-            style: style,
-            scale: 0.5,
-            minFontSize: 8,
-          ),
+          DhikrTextBlock(text: text, style: style, scale: 0.5, minFontSize: 8),
         ],
         box: box,
         gap: 10,
@@ -898,18 +928,4 @@ void main() {
       expect(stacked, closeTo(single(text), 0.01));
     });
   });
-}
-
-class _NoNotifications implements ReminderNotifications {
-  @override
-  Future<void> init({required void Function(int entryId) onOpen}) async {}
-
-  @override
-  Future<bool> requestPermission() async => true;
-
-  @override
-  Future<void> replaceAll(
-    List<PlannedReminder> plan, {
-    required String title,
-  }) async {}
 }

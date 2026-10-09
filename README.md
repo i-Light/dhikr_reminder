@@ -24,7 +24,20 @@ are in `PendingRules.kt` (unit tested); `adb shell am broadcast -n
 com.gratovo.dhikr_reminder/.DebugTriggerReceiver --ei amount 3` delivers one on
 demand in debug builds.
 
+A few quiet extras, all optional and all inside what is already there: quiet hours
+and a soft sound (folded away in the Notifications page's reminder settings), a
+history row on the home page, "Count now" inside an open library card, and a
+long press on any dhikr in the library to report a mistake in it. On Android a
+reminder arrives as a notification where the card cannot be drawn, do not
+disturb and phone calls included, and a red card says so if reminders stop
+coming. `lib/core/features.dart` (and `Features.kt`) holds one switch per
+extra: set it to `false` and that feature disappears without touching the rest.
+`docs/roadmap.md` says why the app is kept this simple.
+
 Publishing the Android app: follow [docs/publishing-guide.md](docs/publishing-guide.md).
+A release build refuses to be made without `android/key.properties` (so a build
+no store would take is never made by accident); for a debug-signed one on
+purpose, set `ALLOW_UNSIGNED=true` first.
 The privacy policy is [PRIVACY.md](PRIVACY.md).
 
 Opening the app (left-click its tray icon) shows three pages behind one bottom
@@ -62,12 +75,8 @@ open the app, the countdown to the next dhikr, pause for an hour and close-for-r
 window is hidden raises it, and hides it again once the reminder is done. The
 tray code is in `lib/core/window/`; it only runs on Windows.
 
-Two conveniences worth knowing about:
+One convenience worth knowing about:
 
-- **A reminder pops by itself 3 seconds after launch in debug builds.** The
-  interval defaults to 30 minutes, and waiting that long to answer "does the card
-  render?" gets old fast. See `_debugDemoDelay` in `home_screen.dart`; release
-  builds never schedule it.
 - **"Show a reminder now"** on the Notifications page (inside the folded
   reminder settings card) fires one on demand, from whatever is currently saved
   in the azkar settings.
@@ -125,8 +134,8 @@ entry lives in, only about its `tags`.
 - **The text size, the tashkeel choice and "hide what I already have"** are
   remembered in `SharedPreferences`; the search text, the tag filter and the bell
   deliberately are not.
-- The dhikr itself renders in the bundled `Naksh` face (the reminder card's own),
-  at a line height tall enough that the tashkeel of one line cannot collide with
+- The dhikr itself renders in the bundled `NotoSansArabic` face (the reminder
+  card's own), at a line height tall enough that the tashkeel of one line cannot collide with
   the next.
 
 ### The one rule that matters
@@ -240,9 +249,9 @@ is six characters per letter once encoded.
 
 ## Assets and fonts
 
-`assets/fonts/PanoramaNaskhMobile-Regular.otf` is the face the reminder card
-renders its Arabic in (`fontFamily: 'Naskh'`), and the two `.svg` files in
-`assets/images/` are the card's corner ornament and mandala backdrop. Both are
-declared in `pubspec.yaml`; drop either and the overlay throws at runtime rather
-than at build time.
+`assets/fonts/NotoSansArabic-Variable.ttf` is the face the reminder card and the
+library render the dhikr in (`fontFamily: 'NotoSansArabic'`), and the two `.svg`
+files in `assets/images/` are the card's corner ornament and mandala backdrop.
+All are declared in `pubspec.yaml`; drop one and the overlay throws at runtime
+rather than at build time.
 

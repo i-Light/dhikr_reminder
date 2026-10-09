@@ -147,8 +147,10 @@ class RequestsState {
   /// Requests whose status changed since the person last looked.
   int get unseenCount => requests.where((r) => r.unseen).length;
 
-  /// Requests still going through.
-  int get openCount => requests.where((r) => r.status.isOpen).length;
+  /// Requests still going through at [now]. One that never got sent and is
+  /// days old is stuck and does not count, so it cannot block new requests.
+  int openCountAt(DateTime now) =>
+      requests.where((r) => r.countsAsOpenAt(now)).length;
 
   RequestsState copyWith({
     List<DhikrRequest>? requests,
@@ -236,9 +238,8 @@ class DhikrRequestsNotifier extends Notifier<RequestsState> {
       return saved;
     }
     final random = Random.secure();
-    final token = base64Url
-        .encode([for (var i = 0; i < 32; i++) random.nextInt(256)])
-        .replaceAll('=', '');
+    final token = base64Url.encode(
+        [for (var i = 0; i < 32; i++) random.nextInt(256)]).replaceAll('=', '');
     await prefs.setString(_installPrefsKey, token);
     return token;
   }
@@ -277,23 +278,23 @@ class DhikrRequestsNotifier extends Notifier<RequestsState> {
     if (existing != null) return AlreadyRequested(existing);
 
     final now = _now;
-    if (state.openCount >= requestMaxOpen) {
+    if (state.openCountAt(now) >= requestMaxOpen) {
       return const Refused(RequestProblem.tooManyOpen);
     }
     final lastDay = state.requests
         .where((r) => now.difference(r.createdAt) < const Duration(days: 1))
         .toList();
     if (lastDay.length >= requestMaxPerDay) {
-      final oldest = lastDay.map((r) => r.createdAt).reduce(
-            (a, b) => a.isBefore(b) ? a : b,
-          );
+      final oldest = lastDay
+          .map((r) => r.createdAt)
+          .reduce((a, b) => a.isBefore(b) ? a : b);
       final wait = const Duration(days: 1) - now.difference(oldest);
       return Refused(RequestProblem.dailyLimit, seconds: wait.inSeconds);
     }
     if (lastDay.isNotEmpty) {
-      final newest = lastDay.map((r) => r.createdAt).reduce(
-            (a, b) => a.isAfter(b) ? a : b,
-          );
+      final newest = lastDay
+          .map((r) => r.createdAt)
+          .reduce((a, b) => a.isAfter(b) ? a : b);
       final since = now.difference(newest);
       if (since < requestMinGap) {
         return Refused(
@@ -360,12 +361,20 @@ class DhikrRequestsNotifier extends Notifier<RequestsState> {
         _ => RequestProblem.rejected,
       });
     } on RequestRateLimited catch (error) {
+      if (error.code != 'too_many_open') {
+        // The daily cap or a busy service: nothing is wrong with the request
+        // itself, so it stays on the list and is sent on a later refresh
+        // instead of being thrown away.
+        developer.log(
+          'The service is not taking requests right now: ${error.code}',
+          name: 'dhikr_reminder.requests',
+        );
+        return const _Kept();
+      }
       _remove(request.localId);
       await _save();
       return _Dropped(
-        error.code == 'too_many_open'
-            ? RequestProblem.tooManyOpen
-            : RequestProblem.busy,
+        RequestProblem.tooManyOpen,
         seconds: error.retryAfterSeconds,
       );
     } on RequestUnavailable catch (error) {
@@ -378,16 +387,21 @@ class DhikrRequestsNotifier extends Notifier<RequestsState> {
   }
 
   void _replace(DhikrRequest updated) {
-    state = state.copyWith(requests: [
-      for (final r in state.requests) r.localId == updated.localId ? updated : r,
-    ]);
+    state = state.copyWith(
+      requests: [
+        for (final r in state.requests)
+          r.localId == updated.localId ? updated : r,
+      ],
+    );
   }
 
   void _remove(String localId) {
-    state = state.copyWith(requests: [
-      for (final r in state.requests)
-        if (r.localId != localId) r,
-    ]);
+    state = state.copyWith(
+      requests: [
+        for (final r in state.requests)
+          if (r.localId != localId) r,
+      ],
+    );
   }
 
   /// Sends what is waiting to be sent and asks the service how every request
@@ -444,21 +458,23 @@ class DhikrRequestsNotifier extends Notifier<RequestsState> {
       final changedStatus = now.status != local.status ||
           now.reason != local.reason ||
           now.libraryId != local.libraryId;
-      merged.add(DhikrRequest(
-        localId: local.localId,
-        serverId: local.serverId,
-        text: local.text,
-        source: local.source,
-        createdAt: local.createdAt,
-        status: now.status,
-        reason: now.reason,
-        libraryId: now.libraryId,
-        shippedIn: now.shippedIn,
-        votes: now.votes,
-        // News is the dev team having done something, not just more votes.
-        unseen: local.unseen ||
-            (changedStatus && now.status != RequestStatus.pending),
-      ));
+      merged.add(
+        DhikrRequest(
+          localId: local.localId,
+          serverId: local.serverId,
+          text: local.text,
+          source: local.source,
+          createdAt: local.createdAt,
+          status: now.status,
+          reason: now.reason,
+          libraryId: now.libraryId,
+          shippedIn: now.shippedIn,
+          votes: now.votes,
+          // News is the dev team having done something, not just more votes.
+          unseen: local.unseen ||
+              (changedStatus && now.status != RequestStatus.pending),
+        ),
+      );
     }
     state = state.copyWith(requests: _pruned(merged));
   }
@@ -475,16 +491,20 @@ class DhikrRequestsNotifier extends Notifier<RequestsState> {
   /// The person has looked at the list: nothing in it is news any more.
   Future<void> markAllSeen() async {
     if (state.unseenCount == 0) return;
-    state = state.copyWith(requests: [
-      for (final r in state.requests) r.unseen ? r.copyWith(unseen: false) : r,
-    ]);
+    state = state.copyWith(
+      requests: [
+        for (final r in state.requests)
+          r.unseen ? r.copyWith(unseen: false) : r,
+      ],
+    );
     await _save();
   }
 
   /// Takes a finished request off the person's list.
   Future<void> forget(String localId) async {
-    final request = state.requests.where((r) => r.localId == localId).firstOrNull;
-    if (request == null || request.status.isOpen) return;
+    final request =
+        state.requests.where((r) => r.localId == localId).firstOrNull;
+    if (request == null || !request.canRemove) return;
     _remove(localId);
     await _save();
   }

@@ -812,4 +812,124 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get tagRuqyah => 'الرُّقية الشرعية';
+
+  @override
+  String get aboutLink => 'عن التطبيق';
+
+  @override
+  String get aboutTitle => 'عن ذِكر';
+
+  @override
+  String aboutVersion(String version) {
+    return 'الإصدار $version';
+  }
+
+  @override
+  String get aboutSources =>
+      'الأذكار متجمّعة من مصادر منشورة، ومراجعتها على أيدي أهل العلم لسه مكمّلتش. لو لقيت غلطة، اضغط ضغطة طويلة على الذكر في الموسوعة وابعتها لنا.';
+
+  @override
+  String get aboutPrivacy =>
+      'من غير إعلانات ولا حسابات ولا تتبّع. بياناتك على جهازك بس، ما عدا طلب إضافة ذكر لو إنت اللي بعتّه.';
+
+  @override
+  String get aboutFonts =>
+      'الخطوط: IBM Plex Sans Arabic و Noto Sans Arabic، بترخيص SIL Open Font License.';
+
+  @override
+  String get aboutLicenses => 'تراخيص المكتبات المفتوحة';
+
+  @override
+  String get reportMistakeTitle => 'في غلطة في الذكر ده؟';
+
+  @override
+  String get reportMistakeBody =>
+      'هنفتحلك صفحة جاهزة على GitHub تبعت منها. مفيش حاجة بتتبعت غير لما تدوس إرسال هناك.';
+
+  @override
+  String get reportMistakeSend => 'افتح الصفحة';
+
+  @override
+  String get reportMistakeOpenFailed => 'مقدرناش نفتح المتصفح. البلاغ اتنسخ.';
+
+  @override
+  String get storageRestoredNotice =>
+      'رجّعنا أذكارك من النسخة الاحتياطية لأن ملف الإعدادات كان بايظ.';
+
+  @override
+  String get commonOpenSettings => 'افتح الإعدادات';
+
+  @override
+  String get notifBlockedTitle => 'الإشعارات مقفولة';
+
+  @override
+  String get notifBlockedBody =>
+      'التذكيرات مش هتوصلك لأن إشعارات التطبيق مقفولة. افتحها من الإعدادات.';
+
+  @override
+  String get remindersStoppedTitle => 'التذكيرات شكلها وقفت';
+
+  @override
+  String get remindersStoppedBody =>
+      'مفيش تذكير وصلك من فترة. غالبًا الموبايل بيقفل التطبيق في الخلفية. افتح الإعدادات واسمح له يشتغل.';
+
+  @override
+  String get quietTitle => 'ساعات الهدوء';
+
+  @override
+  String get quietSubtitle => 'من غير تذكيرات وقت النوم';
+
+  @override
+  String quietRange(String start, String end) {
+    return 'من $start إلى $end';
+  }
+
+  @override
+  String get quietChange => 'غيّر';
+
+  @override
+  String get quietPickStart => 'الهدوء يبدأ الساعة كام؟';
+
+  @override
+  String get quietPickEnd => 'الهدوء لحد الساعة كام؟';
+
+  @override
+  String get historyRowTitle => 'ذكرك';
+
+  @override
+  String historyRowToday(int count) {
+    return 'النهارده: $count';
+  }
+
+  @override
+  String get historyToday => 'النهارده';
+
+  @override
+  String get historyLast7 => 'آخر 7 أيام';
+
+  @override
+  String get historyLast30 => 'آخر 30 يوم';
+
+  @override
+  String get historyTotal => 'الإجمالي';
+
+  @override
+  String historyStreak(int days) {
+    return '$days يوم ورا بعض';
+  }
+
+  @override
+  String get historyStreakSwitch => 'اعرض الأيام ورا بعض';
+
+  @override
+  String get historyEmpty => 'لسه مفيش عدّ. أول ما تعدّ ذكر هيظهر هنا.';
+
+  @override
+  String get soundTitle => 'صوت هادي';
+
+  @override
+  String get soundSubtitle => 'نغمة خفيفة لما تخلّص عدّ الذكر';
+
+  @override
+  String get libraryCountNow => 'عدّ دلوقتي';
 }

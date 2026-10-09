@@ -302,6 +302,7 @@ class OverlayService : Service() {
         }
 
         override fun onFinished() {
+            Chime.playIfEnabled(this@OverlayService)
             handler.removeCallbacks(idleTimeout)
             if (cardIsPending) ReminderStore.clearPending(this@OverlayService)
         }

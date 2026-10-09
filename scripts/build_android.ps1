@@ -18,8 +18,10 @@
         keyAlias=upload
         keyPassword=...
 
-    Without it the APKs are signed with the debug key, which is fine for
-    testing, and the App Bundle is refused, because a store would reject it.
+    Without it nothing is built: the Gradle build refuses a release without the
+    key, so a file that no store would take is never made by accident. (For a
+    debug-signed APK on purpose, set $env:ALLOW_UNSIGNED = 'true' and run
+    `flutter build apk --release` by hand; this script never does.)
 
 .PARAMETER Apk
     Also build installable APKs, one per CPU (build\app\outputs\flutter-apk\app-arm64-v8a-release.apk
@@ -77,12 +79,13 @@ if (-not $SkipChecks) {
 
 if (-not (Test-Path (Join-Path $RepoRoot 'android\key.properties'))) {
     # The App Bundle exists to be uploaded to Google Play, which rejects one
-    # signed with the debug key; refuse rather than make a file that cannot be
-    # used. The APKs are for testing and sideloading, so they may be debug-signed.
+    # signed with the debug key. The Gradle build refuses any release without
+    # the key, so say so here and do not start a build that must fail.
     if (-not $ApkOnly) {
         throw 'android\key.properties not found, so the bundle would be signed with the debug key and Google Play would refuse it. Run .\scripts\create_upload_key.ps1 once to make the upload key (see docs\publishing-guide.md, Phase 2.1).'
     }
-    Write-Warning 'android\key.properties not found: signing with the debug key (fine for testing, not uploadable to a store).'
+    Write-Warning 'android\key.properties not found: the Android APKs were not built (a release is never signed with the debug key).'
+    return
 }
 
 # Size flags: --obfuscate shortens the Dart symbol names baked into the

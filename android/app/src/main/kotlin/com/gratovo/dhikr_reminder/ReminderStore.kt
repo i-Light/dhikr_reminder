@@ -29,6 +29,13 @@ object ReminderStore {
     private const val KEY_LOCK_SHOWN = "lock_shown"
     private const val KEY_ARABIC_HIDDEN = "arabic_hidden"
     private const val KEY_ARABIC_CHANGED = "arabic_changed"
+    private const val KEY_PAUSED_UNTIL = "paused_until"
+    private const val KEY_OPEN_DHIKR = "open_dhikr"
+    private const val KEY_QUIET_START = "quiet_start"
+    private const val KEY_QUIET_END = "quiet_end"
+    private const val KEY_EVENTS = "events"
+    private const val KEY_LAST_FIRED = "last_fired"
+    private const val KEY_ACTIVE_SINCE = "active_since"
 
     data class Planned(
         val id: Int,
@@ -60,16 +67,50 @@ object ReminderStore {
         closeLabel: String,
         tip: String,
         dayLabel: String,
+        pausedUntilMillis: Long = 0L,
+        quietStart: Int = QuietWindow.OFF,
+        quietEnd: Int = QuietWindow.OFF,
     ) {
+        val p = prefs(context)
+        val now = System.currentTimeMillis()
+        // "Reminders have been meant to arrive since": the first plan ever, and
+        // again whenever a pause is lifted, so neither reads as "stopped".
+        val wasPaused = p.getLong(KEY_PAUSED_UNTIL, 0L) > 0L
+        if (!p.contains(KEY_ACTIVE_SINCE) || (wasPaused && pausedUntilMillis == 0L)) {
+            p.edit().putLong(KEY_ACTIVE_SINCE, now).apply()
+        }
         prefs(context).edit()
             .putString(KEY_PLAN, encode(plan))
             .putLong(KEY_INTERVAL, intervalMillis)
+            .putLong(KEY_PAUSED_UNTIL, pausedUntilMillis)
+            .putInt(KEY_QUIET_START, quietStart)
+            .putInt(KEY_QUIET_END, quietEnd)
             .putString(KEY_TITLE, title)
             .putString(KEY_CLOSE, closeLabel)
             .putString(KEY_TIP, tip)
             .putString(KEY_DAY_LABEL, dayLabel)
             .apply()
     }
+
+    /**
+     * Forgets the plan, the interval and any pause, so nothing that tops the
+     * plan up (a reboot, an update, a fired reminder) can bring cancelled
+     * reminders back.
+     */
+    fun clearPlan(context: Context) {
+        prefs(context).edit()
+            .remove(KEY_PLAN)
+            .remove(KEY_INTERVAL)
+            .remove(KEY_PAUSED_UNTIL)
+            .apply()
+    }
+
+    fun quietStart(context: Context): Int = prefs(context).getInt(KEY_QUIET_START, QuietWindow.OFF)
+
+    fun quietEnd(context: Context): Int = prefs(context).getInt(KEY_QUIET_END, QuietWindow.OFF)
+
+    /** The end of the pause the person set, as millis since the epoch, or 0 for none. */
+    fun pausedUntilMillis(context: Context): Long = prefs(context).getLong(KEY_PAUSED_UNTIL, 0L)
 
     /** Replaces the plan alone, keeping the labels and the interval Dart handed over. */
     fun replacePlan(context: Context, plan: List<Planned>) {
@@ -295,6 +336,50 @@ object ReminderStore {
     @Synchronized
     fun clearPending(context: Context) {
         prefs(context).edit().remove(KEY_PENDING).apply()
+    }
+
+    // ---- what has happened to the reminders ---------------------------
+
+    /** Adds one line to the rolling log of what happened to reminders. */
+    @Synchronized
+    fun log(context: Context, kind: String, detail: String = "") {
+        val p = prefs(context)
+        val events = HealthRules.append(
+            HealthRules.decode(p.getString(KEY_EVENTS, null)),
+            HealthRules.Event(System.currentTimeMillis(), kind, detail),
+        )
+        p.edit().putString(KEY_EVENTS, HealthRules.encode(events)).apply()
+    }
+
+    fun events(context: Context): List<HealthRules.Event> =
+        HealthRules.decode(prefs(context).getString(KEY_EVENTS, null))
+
+    /** A reminder reached the person (as a card, on the lock screen or as a notification). */
+    fun markDelivered(context: Context) {
+        prefs(context).edit().putLong(KEY_LAST_FIRED, System.currentTimeMillis()).apply()
+    }
+
+    fun lastDeliveredMillis(context: Context): Long = prefs(context).getLong(KEY_LAST_FIRED, 0L)
+
+    /** The moment reminders were last meant to start (see [savePlan]). */
+    fun activeSinceMillis(context: Context): Long = prefs(context).getLong(KEY_ACTIVE_SINCE, 0L)
+
+    // ---- the dhikr a tapped notification asks the app to open ---------
+
+    /** A tapped notification asks the app to open [dhikrId]; Dart takes it when it next asks. */
+    @Synchronized
+    fun setOpenDhikr(context: Context, dhikrId: Int) {
+        prefs(context).edit().putInt(KEY_OPEN_DHIKR, dhikrId).apply()
+    }
+
+    /** The dhikr waiting to be opened, or null. Taking it forgets it. */
+    @Synchronized
+    fun takeOpenDhikr(context: Context): Int? {
+        val p = prefs(context)
+        if (!p.contains(KEY_OPEN_DHIKR)) return null
+        val id = p.getInt(KEY_OPEN_DHIKR, -1)
+        p.edit().remove(KEY_OPEN_DHIKR).apply()
+        return if (id < 0) null else id
     }
 
     // ---- did the lock-screen card start? ------------------------------

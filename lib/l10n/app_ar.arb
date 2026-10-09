@@ -260,5 +260,45 @@
   "tagVirtueOfSuras": "فضل السور",
   "tagVirtueOfQuran": "فضل القرآن",
   "tagDuasForDeceased": "أدعية للميّت",
-  "tagRuqyah": "الرُّقية الشرعية"
+  "tagRuqyah": "الرُّقية الشرعية",
+
+  "aboutLink": "عن التطبيق",
+  "aboutTitle": "عن ذِكر",
+  "aboutVersion": "الإصدار {version}",
+  "aboutSources": "الأذكار متجمّعة من مصادر منشورة، ومراجعتها على أيدي أهل العلم لسه مكمّلتش. لو لقيت غلطة، اضغط ضغطة طويلة على الذكر في الموسوعة وابعتها لنا.",
+  "aboutPrivacy": "من غير إعلانات ولا حسابات ولا تتبّع. بياناتك على جهازك بس، ما عدا طلب إضافة ذكر لو إنت اللي بعتّه.",
+  "aboutFonts": "الخطوط: IBM Plex Sans Arabic و Noto Sans Arabic، بترخيص SIL Open Font License.",
+  "aboutLicenses": "تراخيص المكتبات المفتوحة",
+  "reportMistakeTitle": "في غلطة في الذكر ده؟",
+  "reportMistakeBody": "هنفتحلك صفحة جاهزة على GitHub تبعت منها. مفيش حاجة بتتبعت غير لما تدوس إرسال هناك.",
+  "reportMistakeSend": "افتح الصفحة",
+  "reportMistakeOpenFailed": "مقدرناش نفتح المتصفح. البلاغ اتنسخ.",
+  "storageRestoredNotice": "رجّعنا أذكارك من النسخة الاحتياطية لأن ملف الإعدادات كان بايظ.",
+
+  "commonOpenSettings": "افتح الإعدادات",
+  "notifBlockedTitle": "الإشعارات مقفولة",
+  "notifBlockedBody": "التذكيرات مش هتوصلك لأن إشعارات التطبيق مقفولة. افتحها من الإعدادات.",
+  "remindersStoppedTitle": "التذكيرات شكلها وقفت",
+  "remindersStoppedBody": "مفيش تذكير وصلك من فترة. غالبًا الموبايل بيقفل التطبيق في الخلفية. افتح الإعدادات واسمح له يشتغل.",
+
+  "quietTitle": "ساعات الهدوء",
+  "quietSubtitle": "من غير تذكيرات وقت النوم",
+  "quietRange": "من {start} إلى {end}",
+  "quietChange": "غيّر",
+  "quietPickStart": "الهدوء يبدأ الساعة كام؟",
+  "quietPickEnd": "الهدوء لحد الساعة كام؟",
+
+  "historyRowTitle": "ذكرك",
+  "historyRowToday": "النهارده: {count}",
+  "historyToday": "النهارده",
+  "historyLast7": "آخر 7 أيام",
+  "historyLast30": "آخر 30 يوم",
+  "historyTotal": "الإجمالي",
+  "historyStreak": "{days} يوم ورا بعض",
+  "historyStreakSwitch": "اعرض الأيام ورا بعض",
+  "historyEmpty": "لسه مفيش عدّ. أول ما تعدّ ذكر هيظهر هنا.",
+  "soundTitle": "صوت هادي",
+  "soundSubtitle": "نغمة خفيفة لما تخلّص عدّ الذكر",
+
+  "libraryCountNow": "عدّ دلوقتي"
 }

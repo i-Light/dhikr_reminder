@@ -28,6 +28,12 @@ enum RequestStatus {
   bool get isFinished => !isOpen;
 }
 
+/// A request that has waited this long without ever reaching the service is
+/// stuck (no connection for days, or the service refused it for good). It
+/// stops counting against the number a person may have open, so it can never
+/// block new requests.
+const requestStuckAfter = Duration(days: 2);
+
 /// Why a request was declined. Each one has its own kind message.
 enum DeclineReason { duplicate, unclear, notSuitable, other }
 
@@ -71,6 +77,19 @@ class DhikrRequest {
 
   /// Whether its status changed since the person last looked.
   final bool unseen;
+
+  /// Whether the person may take it off their list: anything the dev team has
+  /// answered, and a request that was never sent (nothing to withdraw yet).
+  bool get canRemove =>
+      status.isFinished || (status == RequestStatus.queued && serverId == null);
+
+  /// Whether it counts against the number a person may have open at [now].
+  bool countsAsOpenAt(DateTime now) {
+    if (!status.isOpen) return false;
+    final stuck = status == RequestStatus.queued &&
+        now.difference(createdAt) >= requestStuckAfter;
+    return !stuck;
+  }
 
   DhikrRequest copyWith({
     String? serverId,

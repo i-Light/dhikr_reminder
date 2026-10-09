@@ -4,8 +4,10 @@ publish_to: 'none'
 version: 0.1.3+4
 
 environment:
-  # Same floor as gratovo_toolbox: the reminder overlay leans on `withValues(alpha:)`,
-  # `OverlayPortal` and `BlurStyle.outer`, all of which need a recent Flutter.
+  # Kept low on purpose: the language version here also picks the style `dart
+  # format` uses (3.7 and up switched to a different one), and the code is
+  # written in the older style. Raise it deliberately, together with a one-time
+  # reformat, not as a side effect.
   sdk: '>=3.5.0 <4.0.0'
   flutter: '>=3.38.0'
 
@@ -39,8 +41,6 @@ dependencies:
   # SHA-256 the downloaded installer is checked against.
   package_info_plus: ^10.2.2
   crypto: ^3.0.7
-  flutter_local_notifications: ^22.3.1
-  timezone: ^0.11.1
   hijri: ^3.0.1
 
   # Opens the bug report and the Play Store page in the browser (or the Play
@@ -49,11 +49,6 @@ dependencies:
 
   # The phone or PC model that goes into a bug report.
   device_info_plus: ^13.3.0
-
-# See packages/flutter_local_notifications_windows/README_VENDORED.md.
-dependency_overrides:
-  flutter_local_notifications_windows:
-    path: packages/flutter_local_notifications_windows
 
 dev_dependencies:
   flutter_test:
@@ -69,14 +64,6 @@ flutter:
   generate: true
 
   fonts:
-    # The reminder card's Arabic text (see `fontFamily: 'Naksh'` in
-    # dhikr_reminder_overlay.dart). This is the one asset font the reminder
-    # actually renders with; gratovo_toolbox's other fonts belong to screens
-    # this app doesn't have.
-    - family: Naksh
-      fonts:
-        - asset: assets/fonts/PanoramaNaskhMobile-Regular.otf
-
     # The app's default face: the theme (core/theme/app_theme.dart) uses it for
     # all UI text. Only the weights Material 3 asks for (regular, medium, bold)
     # plus semibold are bundled, each one is ~100 KB in the app.

@@ -22,4 +22,11 @@ void main() {
     formatHijriDate(newYear, arabic: true);
     expect(formatHijriDate(newYear, arabic: false), isNot(contains('محرم')));
   });
+
+  test('gives an empty line, not an error, for a date the calendar lacks', () {
+    expect(formatHijriDate(DateTime(1100), arabic: true), isEmpty);
+    expect(formatHijriDate(DateTime(3000), arabic: false), isEmpty);
+    // And the language is still put back.
+    expect(formatHijriDate(newYear, arabic: false), isNot(contains('محرم')));
+  });
 }

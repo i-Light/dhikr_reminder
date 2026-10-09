@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12 and newer: the same rule for cloud backup and for a phone-to-phone
+     transfer. See backup_rules.xml for why the scheduler's file stays behind. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="dhikr_overlay.xml"/>
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="dhikr_overlay.xml"/>
+    </device-transfer>
+</data-extraction-rules>

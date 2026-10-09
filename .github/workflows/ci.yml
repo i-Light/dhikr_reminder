@@ -1,12 +1,15 @@
 name: CI
 
-# Every push to main and every pull request. release.yml only fires on a
-# version tag and never tests, so without this the suite runs only on
-# whichever machine remembered to run it before pushing.
+# Every push to main, every pull request, and once a week (so a toolchain that
+# drifts under an untouched repo shows up as a red run, not as a surprise at the
+# next release). Releases are built on the owner's PC by scripts/build_windows.ps1,
+# so this is the only thing that checks the code on a clean machine.
 on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: '17 4 * * 1'
 
 # A newer push to the same branch supersedes the run in progress.
 concurrency:
@@ -19,21 +22,19 @@ permissions:
 jobs:
   flutter:
     name: analyze + flutter test
-    # Linux, not the windows-2022 the release uses: a fraction of the cost per
-    # minute, and everything here is platform-neutral Dart (the scheduler's
-    # weighted pick, the tap counter). The Windows runner stays reserved for
-    # release.yml, where the .exe actually has to be compiled. Pinned rather
-    # than ubuntu-latest so the OS only changes when we change it, together
-    # with the Flutter pin below.
-    runs-on: ubuntu-26.04
+    # Everything here is platform-neutral Dart, so it runs on Linux, at a
+    # fraction of the Windows price. The OS image is pinned to a released
+    # version so it only changes when we change it.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
 
       - uses: subosito/flutter-action@v2
         with:
-          # Pinned so "CI is red" means the code changed, not the SDK. Bump
-          # deliberately, together with the local toolchain.
-          flutter-version: 3.47.0
+          # Pinned so "CI is red" means the code changed, not the SDK. The
+          # number lives in .fvmrc; bump it there, together with the local
+          # toolchain.
+          flutter-version-file: .fvmrc
           channel: stable
           cache: true
 
@@ -50,3 +51,64 @@ jobs:
       - run: flutter analyze --fatal-infos
 
       - run: flutter test --reporter expanded --no-pub
+
+  server:
+    name: dhikr request service tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: node tests
+        working-directory: server
+        run: node --test
+
+  windows:
+    name: build the Windows app
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .fvmrc
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      # The runner's C++ (single instance, window shaping) is only ever compiled
+      # here and on the owner's PC.
+      - run: flutter build windows --release
+
+  android:
+    name: build the Android app + native tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .fvmrc
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter build apk --debug
+
+      # The reminders live in native code that no Dart test reaches: the
+      # receivers and the service must be in the manifest that really ships, or
+      # alarms fire into nothing. This is the check that would have caught a
+      # missing receiver.
+      - name: merged manifest declares the reminder components
+        run: |
+          manifest=$(find build/app/intermediates/merged_manifests/debug -name AndroidManifest.xml | head -1)
+          echo "checking $manifest"
+          for name in ReminderReceiver BootReceiver OverlayService LockScreenReminderActivity MainActivity; do
+            grep -q "com.gratovo.dhikr_reminder.$name" "$manifest" || { echo "missing $name"; exit 1; }
+          done
+          grep -q 'android.permission.POST_NOTIFICATIONS' "$manifest" || { echo "missing POST_NOTIFICATIONS"; exit 1; }
+
+      - name: native unit tests
+        working-directory: android
+        run: ./gradlew :app:testDebugUnitTest

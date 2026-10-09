@@ -1,6 +1,7 @@
 import 'package:dhikr_reminder/features/mobile_reminders/background_access.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/overlay_permission_dialog.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/overlay_service.dart';
+import 'package:dhikr_reminder/features/mobile_reminders/reminder_health.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/setup_requirement_cards.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
 import 'package:dhikr_reminder/platform/app_platform.dart';
@@ -23,12 +24,13 @@ Future<_Setup> _pump(
   required bool overlayAllowed,
   required bool backgroundAllowed,
   Locale locale = const Locale('en'),
+  ReminderHealth? health,
 }) async {
   tester.view.physicalSize = const Size(900, 1800);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
 
-  final overlay = FakeOverlay(allowed: overlayAllowed);
+  final overlay = FakeOverlay(allowed: overlayAllowed)..healthNow = health;
   final background = FakeBackgroundAccess(unrestricted: backgroundAllowed);
   await tester.pumpWidget(
     ProviderScope(
@@ -192,5 +194,95 @@ void main() {
         findsOneWidget);
     expect(find.text('التذكيرات ممكن تقف بعد شوية'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  group('the two cards that only appear when they are true', () {
+    const stoppedKey = ValueKey('requirement-stopped');
+    const notificationsKey = ValueKey('requirement-notifications');
+
+    testWidgets('nothing shows while reminders arrive', (tester) async {
+      await _pump(
+        tester,
+        PlatformKind.android,
+        overlayAllowed: true,
+        backgroundAllowed: true,
+        health: const ReminderHealth(armed: 10),
+      );
+      expect(find.byKey(stoppedKey), findsNothing);
+      expect(find.byKey(notificationsKey), findsNothing);
+    });
+
+    testWidgets('reminders that stopped coming say so and open the settings',
+        (tester) async {
+      final setup = await _pump(
+        tester,
+        PlatformKind.android,
+        overlayAllowed: true,
+        backgroundAllowed: true,
+        health: const ReminderHealth(armed: 10, stopped: true),
+      );
+      expect(find.byKey(stoppedKey), findsOneWidget);
+
+      await tester.tap(find.descendant(
+        of: find.byKey(stoppedKey),
+        matching: find.byType(FilledButton),
+      ));
+      expect(setup.overlay.appLaunchSettingsOpened, 1);
+    });
+
+    testWidgets('no stopped card while the battery card is the cause',
+        (tester) async {
+      await _pump(
+        tester,
+        PlatformKind.android,
+        overlayAllowed: true,
+        backgroundAllowed: false,
+        health: const ReminderHealth(armed: 10, stopped: true),
+      );
+      expect(find.byKey(_backgroundKey), findsOneWidget);
+      expect(find.byKey(stoppedKey), findsNothing);
+    });
+
+    testWidgets(
+        'notifications off with no card allowed is the one case that cannot '
+        'be seen at all', (tester) async {
+      final setup = await _pump(
+        tester,
+        PlatformKind.android,
+        overlayAllowed: false,
+        backgroundAllowed: true,
+        health: const ReminderHealth(notificationsEnabled: false),
+      );
+      expect(find.byKey(notificationsKey), findsOneWidget);
+
+      await tester.tap(find.descendant(
+        of: find.byKey(notificationsKey),
+        matching: find.byType(FilledButton),
+      ));
+      expect(setup.overlay.notificationSettingsOpened, 1);
+    });
+
+    testWidgets('notifications off is fine while the card is allowed',
+        (tester) async {
+      await _pump(
+        tester,
+        PlatformKind.android,
+        overlayAllowed: true,
+        backgroundAllowed: true,
+        health: const ReminderHealth(notificationsEnabled: false),
+      );
+      expect(find.byKey(notificationsKey), findsNothing);
+    });
+
+    test('the bug report snapshot holds no dhikr text, only times and paths', () {
+      final health = ReminderHealth.fromMap(const {
+        'stopped': true,
+        'armed': 3,
+        'events': ['1700000000000|notification|ForegroundServiceStartNotAllowedException'],
+      });
+      expect(health.stopped, isTrue);
+      expect(health.describe(), contains('STOPPED'));
+      expect(health.describe(), contains('ForegroundServiceStartNotAllowedException'));
+    });
   });
 }

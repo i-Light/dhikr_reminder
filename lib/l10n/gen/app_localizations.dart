@@ -1495,6 +1495,216 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ruqyah'**
   String get tagRuqyah;
+
+  /// No description provided for @aboutLink.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get aboutLink;
+
+  /// No description provided for @aboutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About Dhikr'**
+  String get aboutTitle;
+
+  /// No description provided for @aboutVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version}'**
+  String aboutVersion(String version);
+
+  /// No description provided for @aboutSources.
+  ///
+  /// In en, this message translates to:
+  /// **'The dhikr are collected from published sources, and a scholar\'s review is still under way. If you find a mistake, press and hold the dhikr in the library and send it to us.'**
+  String get aboutSources;
+
+  /// No description provided for @aboutPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'No ads, no accounts, no tracking. Your data stays on your device, except a dhikr request when you send one yourself.'**
+  String get aboutPrivacy;
+
+  /// No description provided for @aboutFonts.
+  ///
+  /// In en, this message translates to:
+  /// **'Fonts: IBM Plex Sans Arabic and Noto Sans Arabic, under the SIL Open Font License.'**
+  String get aboutFonts;
+
+  /// No description provided for @aboutLicenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Open-source licenses'**
+  String get aboutLicenses;
+
+  /// No description provided for @reportMistakeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A mistake in this dhikr?'**
+  String get reportMistakeTitle;
+
+  /// No description provided for @reportMistakeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This opens a ready page on GitHub. Nothing is sent until you press Submit there.'**
+  String get reportMistakeBody;
+
+  /// No description provided for @reportMistakeSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the page'**
+  String get reportMistakeSend;
+
+  /// No description provided for @reportMistakeOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the browser. The report was copied.'**
+  String get reportMistakeOpenFailed;
+
+  /// No description provided for @storageRestoredNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Your dhikr list was restored from a backup because the settings file was damaged.'**
+  String get storageRestoredNotice;
+
+  /// No description provided for @commonOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get commonOpenSettings;
+
+  /// No description provided for @notifBlockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are off'**
+  String get notifBlockedTitle;
+
+  /// No description provided for @notifBlockedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders cannot reach you because this app\'s notifications are turned off. Turn them on in Settings.'**
+  String get notifBlockedBody;
+
+  /// No description provided for @remindersStoppedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders seem to have stopped'**
+  String get remindersStoppedTitle;
+
+  /// No description provided for @remindersStoppedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No reminder has reached you for a while. The phone is probably closing the app in the background. Open settings and let it run.'**
+  String get remindersStoppedBody;
+
+  /// No description provided for @quietTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiet hours'**
+  String get quietTitle;
+
+  /// No description provided for @quietSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No reminders while you sleep'**
+  String get quietSubtitle;
+
+  /// No description provided for @quietRange.
+  ///
+  /// In en, this message translates to:
+  /// **'From {start} to {end}'**
+  String quietRange(String start, String end);
+
+  /// No description provided for @quietChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get quietChange;
+
+  /// No description provided for @quietPickStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiet from'**
+  String get quietPickStart;
+
+  /// No description provided for @quietPickEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiet until'**
+  String get quietPickEnd;
+
+  /// No description provided for @historyRowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your dhikr'**
+  String get historyRowTitle;
+
+  /// No description provided for @historyRowToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today: {count}'**
+  String historyRowToday(int count);
+
+  /// No description provided for @historyToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get historyToday;
+
+  /// No description provided for @historyLast7.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get historyLast7;
+
+  /// No description provided for @historyLast30.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get historyLast30;
+
+  /// No description provided for @historyTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'In total'**
+  String get historyTotal;
+
+  /// No description provided for @historyStreak.
+  ///
+  /// In en, this message translates to:
+  /// **'{days} days in a row'**
+  String historyStreak(int days);
+
+  /// No description provided for @historyStreakSwitch.
+  ///
+  /// In en, this message translates to:
+  /// **'Show days in a row'**
+  String get historyStreakSwitch;
+
+  /// No description provided for @historyEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing counted yet. It shows here as soon as you count a dhikr.'**
+  String get historyEmpty;
+
+  /// No description provided for @soundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Soft sound'**
+  String get soundTitle;
+
+  /// No description provided for @soundSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A short chime when you finish a dhikr'**
+  String get soundSubtitle;
+
+  /// No description provided for @libraryCountNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Count now'**
+  String get libraryCountNow;
 }
 
 class _AppLocalizationsDelegate

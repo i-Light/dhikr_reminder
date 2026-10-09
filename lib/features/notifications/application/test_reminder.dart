@@ -11,9 +11,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// apps" allowed it shows the same floating card a real reminder does;
 /// otherwise the in-app one.
 Future<void> showTestReminder(BuildContext context, WidgetRef ref) async {
-  final reminders = ref.read(activeDhikrReminderProvider.notifier);
-  final entry = reminders.testEntry();
+  final entry = ref.read(activeDhikrReminderProvider.notifier).testEntry();
   if (entry == null) return;
+  await showReminderFor(context, ref, entry);
+}
+
+/// Shows [entry] as a reminder right now, counted like any other: the floating
+/// card on a phone that allows it, the in-app one otherwise, the card window on
+/// Windows. This is also "Count now" in the library: the counter is the
+/// reminder card the person already knows, so there is nothing new to learn.
+Future<void> showReminderFor(
+  BuildContext context,
+  WidgetRef ref,
+  DhikrEntry entry,
+) async {
+  final reminders = ref.read(activeDhikrReminderProvider.notifier);
   if (ref.read(appPlatformProvider).usesNotifications) {
     final l10n = AppLocalizations.of(context);
     final overlay = ref.read(reminderOverlayProvider);

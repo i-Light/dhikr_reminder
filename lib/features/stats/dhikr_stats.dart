@@ -2,6 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
 
+import 'package:dhikr_reminder/core/features.dart';
+import 'package:dhikr_reminder/core/storage/storage_guard.dart';
+import 'package:dhikr_reminder/features/history/history.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -122,26 +125,53 @@ class DhikrStatsNotifier extends Notifier<DhikrStats> {
     final byDhikr = rolledOver ? <int, int>{} : Map<int, int>.of(state.byDhikr);
     byDhikr[dhikrId] = (byDhikr[dhikrId] ?? 0) + count;
     state = DhikrStats(day: today, byDhikr: byDhikr);
+    // The History page's daily totals (a no-op while that feature is off).
+    if (Features.history) ref.read(historyProvider.notifier).add(today, count);
     unawaited(_save());
   }
 
+  bool _saving = false;
+  bool _dirty = false;
+  String? _savedDay;
+
+  /// Saves the counts. Taps come in bursts (a person counting a hundred), and
+  /// on Windows every write rewrites the whole settings file, so a tap that
+  /// arrives while a save is running does not start another: it marks the
+  /// state dirty and one more save, with everything counted by then, follows.
   Future<void> _save() async {
+    if (_saving) {
+      _dirty = true;
+      return;
+    }
+    _saving = true;
     try {
       await _loaded;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_dayPrefsKey, _day);
-      await prefs.setString(
-        _todayPrefsKey,
-        jsonEncode({
-          for (final entry in state.byDhikr.entries)
-            '${entry.key}': entry.value,
-        }),
-      );
+      do {
+        _dirty = false;
+        if (!StorageGuard.canWrite) return;
+        final prefs = await SharedPreferences.getInstance();
+        // The day key changes once a day; writing it every tap was a second
+        // whole-file write for nothing.
+        if (_savedDay != _day) {
+          await prefs.setString(_dayPrefsKey, _day);
+          _savedDay = _day;
+        }
+        await prefs.setString(
+          _todayPrefsKey,
+          jsonEncode({
+            for (final entry in state.byDhikr.entries)
+              '${entry.key}': entry.value,
+          }),
+        );
+      } while (_dirty);
     } catch (_) {
       // A count that was not remembered costs one number after a restart.
+    } finally {
+      _saving = false;
     }
   }
 }
 
-final dhikrStatsProvider =
-    NotifierProvider<DhikrStatsNotifier, DhikrStats>(DhikrStatsNotifier.new);
+final dhikrStatsProvider = NotifierProvider<DhikrStatsNotifier, DhikrStats>(
+  DhikrStatsNotifier.new,
+);

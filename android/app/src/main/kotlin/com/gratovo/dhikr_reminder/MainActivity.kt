@@ -1,10 +1,12 @@
 package com.gratovo.dhikr_reminder
 
 import android.Manifest
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
@@ -21,6 +23,24 @@ import io.flutter.plugin.common.MethodChannel
  * depend on: drawing over other apps, and running in the background.
  */
 class MainActivity : FlutterActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        rememberOpenRequest(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        rememberOpenRequest(intent)
+    }
+
+    /** A tapped reminder notification names the dhikr to open; Dart asks for it. */
+    private fun rememberOpenRequest(intent: Intent?) {
+        if (intent?.hasExtra(EXTRA_OPEN_DHIKR) != true) return
+        ReminderStore.setOpenDhikr(this, intent.getIntExtra(EXTRA_OPEN_DHIKR, -1))
+        // Once taken it must not come back when the activity is recreated.
+        intent.removeExtra(EXTRA_OPEN_DHIKR)
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
@@ -34,6 +54,32 @@ class MainActivity : FlutterActivity() {
             "requestOverlayPermission" -> result.success(openOverlaySettings())
 
             "isBackgroundUnrestricted" -> result.success(isBackgroundUnrestricted())
+
+            "requestNotificationPermission" -> result.success(requestNotificationPermission())
+
+            "health" -> result.success(health())
+
+            "setChime" -> {
+                Chime.setEnabled(
+                    this,
+                    call.argument<Boolean>("enabled") ?: false,
+                    call.argument<ByteArray>("wav"),
+                )
+                result.success(null)
+            }
+
+            "playChime" -> {
+                Chime.playIfEnabled(this)
+                result.success(null)
+            }
+
+            "openAppLaunchSettings" -> result.success(openAppLaunchSettings())
+
+            "openNotificationSettings" -> result.success(openNotificationSettings())
+
+            "takeOpenDhikr" -> result.success(ReminderStore.takeOpenDhikr(this))
+
+            "nextReminderAt" -> result.success(ReminderAlarms.nextDue(this))
 
             "requestBackgroundUnrestricted" -> result.success(openBatterySettings())
 
@@ -58,6 +104,9 @@ class MainActivity : FlutterActivity() {
                     call.argument<String>("closeLabel") ?: "",
                     call.argument<String>("tip") ?: "",
                     call.argument<String>("dayLabel") ?: "",
+                    (call.argument<Number>("pausedUntil") ?: 0).toLong(),
+                    (call.argument<Number>("quietStart") ?: QuietWindow.OFF).toInt(),
+                    (call.argument<Number>("quietEnd") ?: QuietWindow.OFF).toInt(),
                 )
                 ReminderAlarms.reschedule(this)
                 result.success(null)
@@ -89,7 +138,7 @@ class MainActivity : FlutterActivity() {
             }
 
             "cancel" -> {
-                ReminderAlarms.cancelAll(this)
+                ReminderAlarms.cancelAndForget(this)
                 result.success(null)
             }
 
@@ -139,6 +188,98 @@ class MainActivity : FlutterActivity() {
         return tryStart(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION))
     }
 
+    /**
+     * Whether notifications are allowed, asking the system first where the
+     * phone requires it (Android 13 and later). The system shows its own
+     * dialog at most twice; after that this only reports the answer. The
+     * answer returned is the one at the moment of asking.
+     */
+    private fun requestNotificationPermission(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
+        val granted = checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        if (!granted) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), REQUEST_NOTIFICATIONS)
+        }
+        return granted
+    }
+
+    /**
+     * What a person (or a bug report) needs to know about whether reminders are
+     * getting through: the permissions that matter, the alarms armed, when the
+     * last reminder arrived, whether that looks stopped, and the last events.
+     */
+    private fun health(): Map<String, Any> {
+        val now = System.currentTimeMillis()
+        val interval = ReminderStore.intervalMillis(this)
+        val paused = ReminderStore.pausedUntilMillis(this)
+        val armed = ReminderStore.armed(this).size
+        val lastDelivered = ReminderStore.lastDeliveredMillis(this)
+        val since = maxOf(lastDelivered, ReminderStore.activeSinceMillis(this), paused)
+        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channel = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            manager.getNotificationChannel("dhikr_reminders")
+        } else {
+            null
+        }
+        return mapOf(
+            "stopped" to HealthRules.isStopped(now, interval, since, paused, armed),
+            "armed" to armed,
+            "nextDue" to ReminderAlarms.nextDue(this),
+            "intervalMillis" to interval,
+            "lastDelivered" to lastDelivered,
+            "notificationsEnabled" to manager.areNotificationsEnabled(),
+            "channelBlocked" to (channel?.importance == NotificationManager.IMPORTANCE_NONE),
+            "canDrawOverlays" to Settings.canDrawOverlays(this),
+            "ignoringBattery" to isBackgroundUnrestricted(),
+            "manufacturer" to Build.MANUFACTURER,
+            "sdk" to Build.VERSION.SDK_INT,
+            "events" to ReminderStore.events(this).takeLast(12).map {
+                "${it.atMillis}|${it.kind}|${it.detail}"
+            },
+        )
+    }
+
+    /**
+     * Opens the screen where this phone's maker hides "start in the background"
+     * (Xiaomi, Oppo, Vivo, Huawei), which is what kills reminders on those phones,
+     * and falls back to this app's own settings page. Silent if nothing opens.
+     */
+    private fun openAppLaunchSettings(): Boolean {
+        val candidates = when (Build.MANUFACTURER.lowercase()) {
+            "xiaomi", "redmi", "poco" -> listOf(
+                "com.miui.securitycenter" to "com.miui.permcenter.autostart.AutoStartManagementActivity",
+            )
+            "oppo", "realme", "oneplus" -> listOf(
+                "com.coloros.safecenter" to "com.coloros.safecenter.startupapp.StartupAppListActivity",
+                "com.oplus.battery" to "com.oplus.powermanager.fuelgaue.PowerUsageModelActivity",
+                "com.coloros.oppoguardelf" to "com.coloros.powermanager.fuelgaue.PowerUsageModelActivity",
+            )
+            "vivo", "iqoo" -> listOf(
+                "com.vivo.permissionmanager" to "com.vivo.permissionmanager.activity.BgStartUpManagerActivity",
+                "com.iqoo.secure" to "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity",
+            )
+            "huawei", "honor" -> listOf(
+                "com.huawei.systemmanager" to "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity",
+            )
+            else -> emptyList()
+        }
+        for ((pkg, cls) in candidates) {
+            if (tryStart(Intent().setClassName(pkg, cls))) return true
+        }
+        return tryStart(
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")),
+        )
+    }
+
+    private fun openNotificationSettings(): Boolean =
+        tryStart(
+            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                .putExtra(Settings.EXTRA_APP_PACKAGE, packageName),
+        ) || tryStart(
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")),
+        )
+
     private fun isBackgroundUnrestricted(): Boolean {
         val power = getSystemService(Context.POWER_SERVICE) as PowerManager
         return power.isIgnoringBatteryOptimizations(packageName)
@@ -174,6 +315,10 @@ class MainActivity : FlutterActivity() {
 
     companion object {
         private const val CHANNEL = "dhikr_reminder/overlay"
+        private const val REQUEST_NOTIFICATIONS = 1001
+
+        /** The dhikr id a reminder notification carries for the app to open. */
+        const val EXTRA_OPEN_DHIKR = "open_dhikr"
 
         // The extras the Settings app reads to scroll to one row of a list.
         private const val FRAGMENT_ARG_KEY = ":settings:fragment_args_key"

@@ -540,9 +540,6 @@ Both the Windows release and the Play upload raise the same build number in
 The app deliberately does not download and install APKs on Android: Google Play
 policy forbids an app distributed there from updating itself any other way.
 
-The app deliberately does not download and install APKs on Android: Google Play
-policy forbids an app distributed there from updating itself any other way.
-
 ---
 
 ## Telling the people who installed the APK from GitHub

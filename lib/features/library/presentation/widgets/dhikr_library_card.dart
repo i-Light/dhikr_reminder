@@ -54,6 +54,7 @@ class DhikrLibraryCard extends StatelessWidget {
     this.showTransliteration = false,
     this.isAdded = false,
     this.onToggleReminder,
+    this.onLongPress,
   });
 
   final DhikrItem item;
@@ -71,6 +72,9 @@ class DhikrLibraryCard extends StatelessWidget {
   /// Opens or closes the reminder panel. Null in places that only show the
   /// entry.
   final VoidCallback? onToggleReminder;
+
+  /// Press and hold on the card (used to report a mistake in the entry).
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -119,129 +123,134 @@ class DhikrLibraryCard extends StatelessWidget {
     final transliterationStyle = TextStyle(
       fontSize:
           (view.fontSize * (withArabic ? _transliterationRatio : _aloneRatio))
-              .clamp(_transliterationMin,
-                  withArabic ? _transliterationMax : _aloneMax),
+              .clamp(
+        _transliterationMin,
+        withArabic ? _transliterationMax : _aloneMax,
+      ),
       height: 1.5,
       color: withArabic ? colors.onSurfaceVariant : colors.onSurface,
     );
 
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (subtitle != null) ...[
-              Text(
-                subtitle,
-                // The lead-in is the one line that says *when* the dhikr is
-                // said, so it is the one line allowed the brand color.
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: colors.primary,
-                  fontWeight: FontWeight.bold,
+    return GestureDetector(
+      onLongPress: onLongPress,
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (subtitle != null) ...[
+                Text(
+                  subtitle,
+                  // The lead-in is the one line that says *when* the dhikr is
+                  // said, so it is the one line allowed the brand color.
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: colors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 10),
-            ],
-            if (display.hasArabic)
-              Text(
-                display.arabic!,
-                textDirection: TextDirection.rtl,
-                textAlign: TextAlign.right,
-                style: dhikrStyle,
-              ),
-            if (display.hasTransliteration) ...[
-              if (display.hasArabic) const SizedBox(height: 8),
-              // Latin letters read left to right whatever the app's language,
-              // and are left-aligned, so the two lines sit on opposite sides
-              // of the card the way a bilingual page does.
-              Text(
-                display.transliteration!,
-                textDirection: TextDirection.ltr,
-                textAlign: TextAlign.left,
-                style: transliterationStyle,
-              ),
-            ],
-            if (hasReference) ...[
-              const SizedBox(height: 8),
-              Text(
-                '[$reference]',
-                // Its own line and its own direction, so the square brackets
-                // are the RTL pair rather than a mirrored one mid-paragraph.
-                // The English source reads left to right, on the left.
-                textDirection: english?.reference != null
-                    ? TextDirection.ltr
-                    : TextDirection.rtl,
-                textAlign: english?.reference != null
-                    ? TextAlign.left
-                    : TextAlign.right,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colors.onSurfaceVariant,
+                const SizedBox(height: 10),
+              ],
+              if (display.hasArabic)
+                Text(
+                  display.arabic!,
+                  textDirection: TextDirection.rtl,
+                  textAlign: TextAlign.right,
+                  style: dhikrStyle,
                 ),
-              ),
-            ],
-            if (description != null) ...[
-              const SizedBox(height: 16),
-              Divider(height: 1, color: colors.outlineVariant),
-              const SizedBox(height: 12),
-              Text(
-                description,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colors.onSurfaceVariant,
-                  height: 1.7,
+              if (display.hasTransliteration) ...[
+                if (display.hasArabic) const SizedBox(height: 8),
+                // Latin letters read left to right whatever the app's language,
+                // and are left-aligned, so the two lines sit on opposite sides
+                // of the card the way a bilingual page does.
+                Text(
+                  display.transliteration!,
+                  textDirection: TextDirection.ltr,
+                  textAlign: TextAlign.left,
+                  style: transliterationStyle,
                 ),
-              ),
-            ],
-            if (showRow) const SizedBox(height: 10),
-            if (showRow)
-              Row(
-                children: [
-                  if (item.count > 1)
-                    _CountChip(label: l10n.notifRepeatCount(item.count)),
-                  const Spacer(),
-                  if (addUi && item.isRemindable && onToggleReminder != null)
-                    TextButton.icon(
-                      key: ValueKey('reminder-button-${item.id}'),
-                      onPressed: onToggleReminder,
-                      icon: Icon(
-                        isAdded
-                            ? Icons.notifications_active
-                            : Icons.add_alert_outlined,
-                      ),
-                      label: Text(
-                        isAdded
-                            ? l10n.libraryAddedButton
-                            : l10n.libraryAddButton,
-                      ),
-                    )
-                  else if (addUi && !item.isRemindable && item.count > 0)
-                    Flexible(
-                      child: Text(
-                        l10n.libraryReadOnlyNote,
-                        textAlign: TextAlign.end,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colors.onSurfaceVariant,
+              ],
+              if (hasReference) ...[
+                const SizedBox(height: 8),
+                Text(
+                  '[$reference]',
+                  // Its own line and its own direction, so the square brackets
+                  // are the RTL pair rather than a mirrored one mid-paragraph.
+                  // The English source reads left to right, on the left.
+                  textDirection: english?.reference != null
+                      ? TextDirection.ltr
+                      : TextDirection.rtl,
+                  textAlign: english?.reference != null
+                      ? TextAlign.left
+                      : TextAlign.right,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ],
+              if (description != null) ...[
+                const SizedBox(height: 16),
+                Divider(height: 1, color: colors.outlineVariant),
+                const SizedBox(height: 12),
+                Text(
+                  description,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colors.onSurfaceVariant,
+                    height: 1.7,
+                  ),
+                ),
+              ],
+              if (showRow) const SizedBox(height: 10),
+              if (showRow)
+                Row(
+                  children: [
+                    if (item.count > 1)
+                      _CountChip(label: l10n.notifRepeatCount(item.count)),
+                    const Spacer(),
+                    if (addUi && item.isRemindable && onToggleReminder != null)
+                      TextButton.icon(
+                        key: ValueKey('reminder-button-${item.id}'),
+                        onPressed: onToggleReminder,
+                        icon: Icon(
+                          isAdded
+                              ? Icons.notifications_active
+                              : Icons.add_alert_outlined,
+                        ),
+                        label: Text(
+                          isAdded
+                              ? l10n.libraryAddedButton
+                              : l10n.libraryAddButton,
+                        ),
+                      )
+                    else if (addUi && !item.isRemindable && item.count > 0)
+                      Flexible(
+                        child: Text(
+                          l10n.libraryReadOnlyNote,
+                          textAlign: TextAlign.end,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.onSurfaceVariant,
+                          ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutCubic,
+                alignment: Alignment.topCenter,
+                child: expanded && item.isRemindable
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 6, bottom: 6),
+                        child: ReminderPanel(
+                          key: ValueKey('reminder-panel-${item.id}'),
+                          item: item,
+                        ),
+                      )
+                    : const SizedBox(width: double.infinity),
               ),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
-              alignment: Alignment.topCenter,
-              child: expanded && item.isRemindable
-                  ? Padding(
-                      padding: const EdgeInsets.only(top: 6, bottom: 6),
-                      child: ReminderPanel(
-                        key: ValueKey('reminder-panel-${item.id}'),
-                        item: item,
-                      ),
-                    )
-                  : const SizedBox(width: double.infinity),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

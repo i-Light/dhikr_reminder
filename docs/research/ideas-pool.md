@@ -2,7 +2,7 @@
 
 Every idea we have, where it came from, how important it is, how hard it is for Claude to build, what only a person can do, and which wave of `docs/roadmap.md` it ships in. Update this file in every release.
 
-Last updated: 2026-10-09 (re-sorted by value and ease; nothing removed)
+Last updated: 2026-10-09 (W0 to W5 built; the simplicity principle parked several W5 ideas, see "Decisions of 2026-10-09")
 
 ## How to read the columns
 
@@ -159,6 +159,16 @@ Intake test for a new idea (all five must be yes): (1) it is remembrance, not an
 | 99 | Performance and battery budgets | BR | P3 | S | H12 (passive) | W13 |
 | 100 | Dependency diet and Flutter upgrade rhythm | BR | P4 | M | none | W13 |
 | 101 | Security pass, bus factor | BR | P1 | S | H8 small, H14 | W13 |
+
+## Decisions of 2026-10-09 (the simplicity principle)
+
+The owner asked that the app stay simple: few buttons, settings and facts on screen, nothing that slows the app or changes how it looks, and every feature removable with one switch (`lib/core/features.dart`). That reorders the pool.
+
+**Built, with the least possible interface:** quiet hours (one folded row), soft sound (one folded row, off), history (one row on the home page), count now (one button inside an open library card), the two warning cards (only when true), do not disturb and calls and full-screen apps and idle (no interface at all), no repeat of the same dhikr (none), the idle close of a Windows card (none), keyboard keys and screen-reader text on the card (none), report a mistake (press and hold, none on screen), About (one quiet link).
+
+**Parked until users ask (H3), because each adds controls:** favourites, my wird, morning and evening sessions, cycles and sequences, haptic strength, volume-key counting, a global hotkey, a free counter, manual export and import of a file, a theme choice, language from the phone's locale, pause options (until tomorrow, custom), interval jitter, per-dhikr active hours, the always-on mode, a Hijri day adjustment, the "test through the real alarm" button, and the pre-count input guard.
+
+**Needs a decision or a device:** the Android 15 and 16 delivery path (emulator download), the code licence (D4), the always-on Play declaration.
 
 ## Stop rule: when the pool is empty
 

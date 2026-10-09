@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
 
+import 'package:dhikr_reminder/core/quiet_hours.dart';
+import 'package:dhikr_reminder/core/storage/storage_guard.dart';
 import 'package:dhikr_reminder/features/library/data/dhikr_library.dart';
 import 'package:dhikr_reminder/features/library/domain/dhikr_item.dart';
 import 'package:flutter/foundation.dart';
@@ -9,11 +11,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _dhikrPrefsKey = 'dhikr_reminder.dhikr.entries';
+
+/// Where the saved list is copied to when part of it could not be read, so a
+/// bad entry (or a file cut short) never costs the person the rest, and the
+/// original is still there to recover by hand.
+const _dhikrUnreadablePrefsKey = 'dhikr_reminder.dhikr.entries.unreadable';
 const _dhikrNextIdPrefsKey = 'dhikr_reminder.dhikr.nextId';
 const _dhikrIntervalPrefsKey = 'dhikr_reminder.dhikr.reminderIntervalMinutes';
 const _dhikrUseChancePrefsKey = 'dhikr_reminder.dhikr.useChance';
 const _dhikrMutedPrefsKey = 'dhikr_reminder.dhikr.muted';
 const _dhikrOverlayArabicPrefsKey = 'dhikr_reminder.dhikr.overlayShowArabic';
+const _soundOnPrefsKey = 'dhikr_reminder.sound.on';
+const _quietEnabledPrefsKey = 'dhikr_reminder.quiet.enabled';
+const _quietStartPrefsKey = 'dhikr_reminder.quiet.start';
+const _quietEndPrefsKey = 'dhikr_reminder.quiet.end';
 
 /// Bounds for [DhikrSettings.intervalMinutes] — how many minutes sit between
 /// one reminder toast and the next.
@@ -135,8 +146,10 @@ class DhikrEntry {
     return DhikrEntry(
       id: json['id'] as int,
       name: json['name'] as String,
-      amount: (json['amount'] as int? ?? dhikrAmountMin)
-          .clamp(dhikrAmountMin, dhikrAmountMax),
+      amount: (json['amount'] as int? ?? dhikrAmountMin).clamp(
+        dhikrAmountMin,
+        dhikrAmountMax,
+      ),
       chance: (rescaleChance ? _rescaleChance(storedChance) : storedChance)
           .clamp(dhikrChanceMin, dhikrChanceMax),
       dailyGoal: (json['dailyGoal'] as int? ?? 0).clamp(0, dailyGoalMax),
@@ -172,6 +185,47 @@ class DhikrEntry {
   }
 }
 
+/// What [parseSavedEntries] could read of a saved list.
+class ParsedEntries {
+  const ParsedEntries(this.entries, this.skipped, this.wholeListOk);
+
+  final List<DhikrEntry> entries;
+
+  /// How many items were left out because they were malformed.
+  final int skipped;
+
+  /// False when the saved text was not a list at all (cut short, corrupt).
+  final bool wholeListOk;
+}
+
+/// Reads the saved list, entry by entry: one malformed entry is skipped instead
+/// of losing the whole list, and text that is not a list at all gives an empty
+/// result flagged as such.
+ParsedEntries parseSavedEntries(String raw, {bool rescaleChance = false}) {
+  final Object? decoded;
+  try {
+    decoded = jsonDecode(raw);
+  } catch (_) {
+    return const ParsedEntries([], 0, false);
+  }
+  if (decoded is! List) return const ParsedEntries([], 0, false);
+  final entries = <DhikrEntry>[];
+  var skipped = 0;
+  for (final item in decoded) {
+    try {
+      entries.add(
+        DhikrEntry.fromJson(
+          (item as Map).cast<String, dynamic>(),
+          rescaleChance: rescaleChance,
+        ),
+      );
+    } catch (_) {
+      skipped++;
+    }
+  }
+  return ParsedEntries(entries, skipped, true);
+}
+
 /// [entries] with each one tied to the library entry it says, when there is
 /// one.
 ///
@@ -179,15 +233,18 @@ class DhikrEntry {
 /// that library entry (so a corrected text reaches everyone who added it); one
 /// without is matched by what it says, ignoring vowels, kashida and
 /// punctuation, which is how the lists people typed before the library took
-/// over adding dhikr get their link. What matches nothing is left as it is and
-/// keeps working as a reminder.
+/// over adding dhikr get their link. An id the library no longer knows (and has
+/// no alias for) falls back to the same match on the saved words, so a reminder
+/// is never orphaned just because its entry was renumbered. What matches
+/// nothing is left as it is and keeps working as a reminder.
 List<DhikrEntry> linkEntriesToLibrary(List<DhikrEntry> entries) {
   return [
     for (final entry in entries)
       () {
-        final item = entry.libraryId != null
-            ? libraryItemById(entry.libraryId!)
-            : libraryItemForText(entry.name);
+        final item = (entry.libraryId != null
+                ? libraryItemById(entry.libraryId!)
+                : null) ??
+            libraryItemForText(entry.name);
         if (item == null) return entry;
         if (entry.libraryId == item.id && entry.name == item.text) return entry;
         return entry.copyWith(name: item.text, libraryId: item.id);
@@ -233,6 +290,8 @@ class DhikrSettings {
     this.useChance = false,
     this.isMuted = false,
     this.overlayShowArabic = true,
+    this.quiet = const QuietHours(),
+    this.soundOn = false,
   });
 
   /// What the app shows before the first prefs read completes: the seeds,
@@ -243,6 +302,8 @@ class DhikrSettings {
         useChance = false,
         isMuted = false,
         overlayShowArabic = true,
+        quiet = const QuietHours(),
+        soundOn = false,
         isLoaded = false;
 
   final List<DhikrEntry> entries;
@@ -264,6 +325,13 @@ class DhikrSettings {
   /// notifications page; the library cards have their own switch.
   final bool overlayShowArabic;
 
+  /// The daily window in which no reminder is shown. Off by default.
+  final QuietHours quiet;
+
+  /// Whether finishing a dhikr plays a soft chime. Off by default: the app is
+  /// silent until someone asks for a sound.
+  final bool soundOn;
+
   /// True once the persisted values have been read (or the read has failed
   /// and the defaults stand as the real answer). Nothing should schedule a
   /// reminder or seed an editable draft from this state until it's true.
@@ -275,6 +343,8 @@ class DhikrSettings {
     bool? useChance,
     bool? isMuted,
     bool? overlayShowArabic,
+    QuietHours? quiet,
+    bool? soundOn,
     bool? isLoaded,
   }) {
     return DhikrSettings(
@@ -283,6 +353,8 @@ class DhikrSettings {
       useChance: useChance ?? this.useChance,
       isMuted: isMuted ?? this.isMuted,
       overlayShowArabic: overlayShowArabic ?? this.overlayShowArabic,
+      quiet: quiet ?? this.quiet,
+      soundOn: soundOn ?? this.soundOn,
       isLoaded: isLoaded ?? this.isLoaded,
     );
   }
@@ -312,6 +384,9 @@ class DhikrSettingsNotifier extends Notifier<DhikrSettings> {
     var useChance = false;
     var isMuted = false;
     var overlayShowArabic = true;
+    var quiet = const QuietHours();
+    var soundOn = false;
+    var loadFailed = false;
     try {
       final prefs = await SharedPreferences.getInstance();
       _nextId = prefs.getInt(_dhikrNextIdPrefsKey) ?? _nextId;
@@ -323,24 +398,35 @@ class DhikrSettingsNotifier extends Notifier<DhikrSettings> {
       final needsRescale = storedSchema < 2;
 
       final raw = prefs.getString(_dhikrPrefsKey);
+      var readable = true;
       if (raw != null) {
-        final decoded = jsonDecode(raw) as List<dynamic>;
-        entries = decoded
-            .map((e) => DhikrEntry.fromJson(
-                  e as Map<String, dynamic>,
-                  rescaleChance: needsRescale,
-                ))
-            .toList();
+        final parsed = parseSavedEntries(raw, rescaleChance: needsRescale);
+        readable = parsed.skipped == 0 && parsed.wholeListOk;
+        // Never `entries = defaults` over a list that merely failed to read:
+        // what could be read is kept, and the original is copied aside.
+        entries = parsed.entries;
+        if (!readable) {
+          await prefs.setString(_dhikrUnreadablePrefsKey, raw);
+          loadFailed = parsed.entries.isEmpty;
+        }
+      }
+      // Ids are never reused, even if the saved counter was lost or is behind.
+      for (final entry in entries) {
+        if (entry.id >= _nextId) _nextId = entry.id + 1;
       }
       final linked = linkEntriesToLibrary(entries);
       final relinked = !listEquals(linked, entries);
       entries = linked;
-      if (needsRescale || storedSchema < _dhikrSchemaVersion || relinked) {
+      if (readable &&
+          (needsRescale || storedSchema < _dhikrSchemaVersion || relinked)) {
         // Written straight back so the conversion happens exactly once.
         // Without this every load would re-divide the old chance scale, and a
-        // weight of 10 would walk down to 1 over ten launches.
+        // weight of 10 would walk down to 1 over ten launches. Not done for a
+        // list that was partly unreadable: that stays as it was until the
+        // person changes it themselves.
         unawaited(_writeEntries(prefs, entries));
       }
+      if (loadFailed) entries = _defaultDhikrEntries;
 
       final storedInterval = prefs.getInt(_dhikrIntervalPrefsKey);
       if (storedInterval != null) {
@@ -353,6 +439,14 @@ class DhikrSettingsNotifier extends Notifier<DhikrSettings> {
       isMuted = prefs.getBool(_dhikrMutedPrefsKey) ?? isMuted;
       overlayShowArabic =
           prefs.getBool(_dhikrOverlayArabicPrefsKey) ?? overlayShowArabic;
+      soundOn = prefs.getBool(_soundOnPrefsKey) ?? false;
+      quiet = QuietHours(
+        enabled: prefs.getBool(_quietEnabledPrefsKey) ?? false,
+        startMinutes: (prefs.getInt(_quietStartPrefsKey) ?? QuietHours.defaultStart)
+            .clamp(0, 1439),
+        endMinutes: (prefs.getInt(_quietEndPrefsKey) ?? QuietHours.defaultEnd)
+            .clamp(0, 1439),
+      );
     } catch (error, stackTrace) {
       developer.log(
         'Failed to load persisted dhikr settings; keeping defaults.',
@@ -368,6 +462,8 @@ class DhikrSettingsNotifier extends Notifier<DhikrSettings> {
       useChance: useChance,
       isMuted: isMuted,
       overlayShowArabic: overlayShowArabic,
+      quiet: quiet,
+      soundOn: soundOn,
       isLoaded: true,
     );
   }
@@ -419,17 +515,22 @@ class DhikrSettingsNotifier extends Notifier<DhikrSettings> {
     SharedPreferences prefs,
     List<DhikrEntry> entries,
   ) async {
+    // Settings written by a newer build are read, never rewritten.
+    if (!StorageGuard.canWrite) return;
     await prefs.setString(
       _dhikrPrefsKey,
       jsonEncode(entries.map((e) => e.toJson()).toList()),
     );
     await prefs.setInt(_dhikrNextIdPrefsKey, _nextId);
     await prefs.setInt(_dhikrSchemaPrefsKey, _dhikrSchemaVersion);
+    await prefs.setInt(storageSchemaKey, currentStorageSchema);
   }
 
   Future<void> updateInterval(int minutes) async {
-    final clamped =
-        minutes.clamp(dhikrReminderIntervalMin, dhikrReminderIntervalMax);
+    final clamped = minutes.clamp(
+      dhikrReminderIntervalMin,
+      dhikrReminderIntervalMax,
+    );
     state = state.copyWith(intervalMinutes: clamped, isLoaded: true);
     await _persist((prefs) => prefs.setInt(_dhikrIntervalPrefsKey, clamped));
   }
@@ -444,6 +545,20 @@ class DhikrSettingsNotifier extends Notifier<DhikrSettings> {
     await _persist((prefs) => prefs.setBool(_dhikrMutedPrefsKey, value));
   }
 
+  Future<void> updateSoundOn(bool value) async {
+    state = state.copyWith(soundOn: value, isLoaded: true);
+    await _persist((prefs) => prefs.setBool(_soundOnPrefsKey, value));
+  }
+
+  Future<void> updateQuiet(QuietHours value) async {
+    state = state.copyWith(quiet: value, isLoaded: true);
+    await _persist((prefs) async {
+      await prefs.setBool(_quietEnabledPrefsKey, value.enabled);
+      await prefs.setInt(_quietStartPrefsKey, value.startMinutes);
+      await prefs.setInt(_quietEndPrefsKey, value.endMinutes);
+    });
+  }
+
   Future<void> updateOverlayShowArabic(bool value) async {
     state = state.copyWith(overlayShowArabic: value, isLoaded: true);
     await _persist(
@@ -454,6 +569,7 @@ class DhikrSettingsNotifier extends Notifier<DhikrSettings> {
   Future<void> _persist(
     Future<void> Function(SharedPreferences prefs) write,
   ) async {
+    if (!StorageGuard.canWrite) return;
     try {
       await write(await SharedPreferences.getInstance());
     } catch (error, stackTrace) {

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 and older: what Auto Backup carries to a new phone. The dhikr
+     list and settings (Flutter's own preferences) are kept. The reminder
+     scheduler's own file is not: it holds alarm ids armed on the old phone and
+     a plan of times that mean nothing on the new one. The app re-plans on its
+     first start after a restore. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="dhikr_overlay.xml"/>
+</full-backup-content>

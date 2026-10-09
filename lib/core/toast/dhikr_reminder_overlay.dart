@@ -643,8 +643,44 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
 
   double _s(double value) => value * kDhikrReminderCardScale;
 
+  /// The card with what a keyboard and a screen reader need: Space or Enter
+  /// counts, Escape closes (the same two things a click does), and the dhikr and
+  /// how far it has got are read out as one thing, with the instruction.
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final reminder = widget.reminder;
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (node, event) {
+        if (event is! KeyDownEvent) return KeyEventResult.ignored;
+        final key = event.logicalKey;
+        if (key == LogicalKeyboardKey.escape) {
+          widget.onDismiss();
+          return KeyEventResult.handled;
+        }
+        final counts = key == LogicalKeyboardKey.space ||
+            key == LogicalKeyboardKey.enter ||
+            key == LogicalKeyboardKey.numpadEnter;
+        if (counts && !reminder.isComplete) {
+          widget.onTap();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Semantics(
+        container: true,
+        label: reminder.entry.name,
+        value: reminder.hasTarget
+            ? '${reminder.count} / ${reminder.entry.amount}'
+            : '${reminder.count}',
+        hint: reminder.isComplete ? null : l10n.dhikrReminderTouchEverywhereTip,
+        child: _buildCard(context),
+      ),
+    );
+  }
+
+  Widget _buildCard(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final reminder = widget.reminder;
@@ -964,15 +1000,22 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
                                     : l10n.dhikrReminderShowArabic,
                                 onPressed: widget.onToggleArabic!,
                               ),
-                            InkWell(
-                              borderRadius: BorderRadius.circular(999),
-                              onTap: widget.onDismiss,
-                              child: Padding(
-                                padding: const EdgeInsets.all(4),
-                                child: Icon(
-                                  Icons.close,
-                                  size: _s(22),
-                                  color: accent,
+                            // No Tooltip here (no Overlay above the Navigator);
+                            // the label is for screen readers.
+                            Semantics(
+                              button: true,
+                              label: l10n.commonClose,
+                              excludeSemantics: true,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(999),
+                                onTap: widget.onDismiss,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(4),
+                                  child: Icon(
+                                    Icons.close,
+                                    size: _s(22),
+                                    color: accent,
+                                  ),
                                 ),
                               ),
                             ),

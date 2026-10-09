@@ -812,4 +812,126 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tagRuqyah => 'Ruqyah';
+
+  @override
+  String get aboutLink => 'About';
+
+  @override
+  String get aboutTitle => 'About Dhikr';
+
+  @override
+  String aboutVersion(String version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get aboutSources =>
+      'The dhikr are collected from published sources, and a scholar\'s review is still under way. If you find a mistake, press and hold the dhikr in the library and send it to us.';
+
+  @override
+  String get aboutPrivacy =>
+      'No ads, no accounts, no tracking. Your data stays on your device, except a dhikr request when you send one yourself.';
+
+  @override
+  String get aboutFonts =>
+      'Fonts: IBM Plex Sans Arabic and Noto Sans Arabic, under the SIL Open Font License.';
+
+  @override
+  String get aboutLicenses => 'Open-source licenses';
+
+  @override
+  String get reportMistakeTitle => 'A mistake in this dhikr?';
+
+  @override
+  String get reportMistakeBody =>
+      'This opens a ready page on GitHub. Nothing is sent until you press Submit there.';
+
+  @override
+  String get reportMistakeSend => 'Open the page';
+
+  @override
+  String get reportMistakeOpenFailed =>
+      'Could not open the browser. The report was copied.';
+
+  @override
+  String get storageRestoredNotice =>
+      'Your dhikr list was restored from a backup because the settings file was damaged.';
+
+  @override
+  String get commonOpenSettings => 'Open settings';
+
+  @override
+  String get notifBlockedTitle => 'Notifications are off';
+
+  @override
+  String get notifBlockedBody =>
+      'Reminders cannot reach you because this app\'s notifications are turned off. Turn them on in Settings.';
+
+  @override
+  String get remindersStoppedTitle => 'Reminders seem to have stopped';
+
+  @override
+  String get remindersStoppedBody =>
+      'No reminder has reached you for a while. The phone is probably closing the app in the background. Open settings and let it run.';
+
+  @override
+  String get quietTitle => 'Quiet hours';
+
+  @override
+  String get quietSubtitle => 'No reminders while you sleep';
+
+  @override
+  String quietRange(String start, String end) {
+    return 'From $start to $end';
+  }
+
+  @override
+  String get quietChange => 'Change';
+
+  @override
+  String get quietPickStart => 'Quiet from';
+
+  @override
+  String get quietPickEnd => 'Quiet until';
+
+  @override
+  String get historyRowTitle => 'Your dhikr';
+
+  @override
+  String historyRowToday(int count) {
+    return 'Today: $count';
+  }
+
+  @override
+  String get historyToday => 'Today';
+
+  @override
+  String get historyLast7 => 'Last 7 days';
+
+  @override
+  String get historyLast30 => 'Last 30 days';
+
+  @override
+  String get historyTotal => 'In total';
+
+  @override
+  String historyStreak(int days) {
+    return '$days days in a row';
+  }
+
+  @override
+  String get historyStreakSwitch => 'Show days in a row';
+
+  @override
+  String get historyEmpty =>
+      'Nothing counted yet. It shows here as soon as you count a dhikr.';
+
+  @override
+  String get soundTitle => 'Soft sound';
+
+  @override
+  String get soundSubtitle => 'A short chime when you finish a dhikr';
+
+  @override
+  String get libraryCountNow => 'Count now';
 }

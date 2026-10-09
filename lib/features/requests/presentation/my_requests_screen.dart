@@ -180,9 +180,8 @@ class _RequestCard extends ConsumerWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
 
-    final item = request.libraryId == null
-        ? null
-        : libraryItemById(request.libraryId!);
+    final item =
+        request.libraryId == null ? null : libraryItemById(request.libraryId!);
     final tone = switch (request.status) {
       RequestStatus.queued => colors.outline,
       RequestStatus.pending => colors.secondary,
@@ -222,8 +221,9 @@ class _RequestCard extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  MaterialLocalizations.of(context)
-                      .formatShortDate(request.createdAt),
+                  MaterialLocalizations.of(
+                    context,
+                  ).formatShortDate(request.createdAt),
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: colors.onSurfaceVariant,
                   ),
@@ -273,7 +273,7 @@ class _RequestCard extends ConsumerWidget {
                     icon: const Icon(Icons.menu_book_outlined),
                     label: Text(l10n.requestShowInLibrary),
                   ),
-                if (request.status.isFinished)
+                if (request.canRemove)
                   TextButton.icon(
                     onPressed: () => unawaited(
                       ref

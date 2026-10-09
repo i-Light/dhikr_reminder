@@ -1,4 +1,5 @@
 import 'package:dhikr_reminder/features/library/data/dhikr_english_data.dart';
+import 'package:dhikr_reminder/features/library/data/dhikr_id_aliases.dart';
 import 'package:dhikr_reminder/features/library/data/dhikr_library_data.dart';
 import 'package:dhikr_reminder/features/library/data/dhikr_transliteration_data.dart';
 import 'package:dhikr_reminder/features/library/domain/arabic_text.dart';
@@ -27,8 +28,9 @@ final Map<String, DhikrItem> _byNormalizedText = () {
 }();
 
 /// The library entry with [id], or null when this version of the app has none
-/// (an id saved by a newer or older release).
-DhikrItem? libraryItemById(String id) => _byId[id];
+/// (an id saved by a newer or older release). An id that was renamed (see
+/// [dhikrIdAliases]) finds the entry it became.
+DhikrItem? libraryItemById(String id) => _byId[id] ?? _byId[dhikrIdAliases[id]];
 
 /// What goes under the Arabic of the library entry [id] in English: its
 /// transliteration, or, for the entries that are explanations and not something

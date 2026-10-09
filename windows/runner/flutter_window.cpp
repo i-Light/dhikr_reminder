@@ -2,6 +2,11 @@
 
 #include <flutter/standard_method_codec.h>
 
+#include <shellapi.h>  // SHQueryUserNotificationState
+#include <mmsystem.h>  // PlaySound
+
+#pragma comment(lib, "winmm.lib")
+
 #include <algorithm>
 #include <cmath>
 #include <optional>
@@ -213,6 +218,39 @@ bool FlutterWindow::OnCreate() {
                                    work.top + gap, work.bottom - height - gap);
           PlaceWindow(hwnd, {x, y, x + width, y + height});
           result->Success(flutter::EncodableValue(dpi != dpi_before));
+        } else if (call.method_name() == "playChime") {
+          // The finishing chime: a small WAV the app made, played once from
+          // memory without blocking. Windows' own volume and mute apply.
+          const auto* bytes = std::get_if<std::vector<uint8_t>>(call.arguments());
+          if (bytes == nullptr || bytes->size() < 44) {
+            result->Error("bad-args", "playChime expects WAV bytes");
+            return;
+          }
+          chime_ = *bytes;
+          ::PlaySoundW(reinterpret_cast<LPCWSTR>(chime_.data()), nullptr,
+                       SND_MEMORY | SND_ASYNC | SND_NODEFAULT);
+          result->Success();
+        } else if (call.method_name() == "userState") {
+          // Whether this is a bad moment for a reminder: what Windows says
+          // about full-screen apps, presentations and Focus Assist, and how
+          // long since the last keyboard or mouse input. Reads two system
+          // values and touches nothing, so it is safe to ask every reminder.
+          QUERY_USER_NOTIFICATION_STATE state = QUNS_ACCEPTS_NOTIFICATIONS;
+          if (FAILED(::SHQueryUserNotificationState(&state))) {
+            state = QUNS_ACCEPTS_NOTIFICATIONS;
+          }
+          int idle_seconds = 0;
+          LASTINPUTINFO input = {sizeof(input)};
+          if (::GetLastInputInfo(&input)) {
+            idle_seconds =
+                static_cast<int>((::GetTickCount() - input.dwTime) / 1000);
+          }
+          flutter::EncodableMap map;
+          map[flutter::EncodableValue("notificationState")] =
+              flutter::EncodableValue(static_cast<int32_t>(state));
+          map[flutter::EncodableValue("idleSeconds")] =
+              flutter::EncodableValue(static_cast<int32_t>(idle_seconds));
+          result->Success(flutter::EncodableValue(map));
         } else {
           result->NotImplemented();
         }

@@ -1,4 +1,6 @@
+import 'package:dhikr_reminder/core/quiet_hours.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/overlay_service.dart';
+import 'package:dhikr_reminder/features/mobile_reminders/reminder_health.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/reminder_planner.dart';
 
 /// A [ReminderOverlay] that remembers what it was asked to do.
@@ -24,7 +26,16 @@ class FakeOverlay implements ReminderOverlay {
   Map<int, int>? todayCounts;
   int todayPushes = 0;
   int permissionRequests = 0;
+  int notificationPermissionRequests = 0;
   int drains = 0;
+  DateTime? pausedUntil;
+  QuietHours quiet = const QuietHours();
+
+  /// The dhikr a tapped notification asked the app to open, until it is taken.
+  int? openDhikrId;
+
+  /// What the native alarms would say is next.
+  DateTime? nextAt;
 
   @override
   Future<bool> canDraw() async => allowed;
@@ -40,13 +51,53 @@ class FakeOverlay implements ReminderOverlay {
     required String closeLabel,
     required String tip,
     required String dayLabel,
+    DateTime? pausedUntil,
+    QuietHours quiet = const QuietHours(),
   }) async {
+    this.pausedUntil = pausedUntil;
+    this.quiet = quiet;
     scheduled = plan;
     this.interval = interval;
     this.title = title;
     this.closeLabel = closeLabel;
     this.tip = tip;
     this.dayLabel = dayLabel;
+  }
+
+  @override
+  Future<bool> requestNotificationPermission() async {
+    notificationPermissionRequests++;
+    return true;
+  }
+
+  @override
+  Future<int?> takeOpenDhikr() async {
+    final id = openDhikrId;
+    openDhikrId = null;
+    return id;
+  }
+
+  @override
+  Future<DateTime?> nextReminderAt() async => nextAt;
+
+  /// What the phone says about whether reminders are getting through.
+  ReminderHealth? healthNow;
+  int appLaunchSettingsOpened = 0;
+  int notificationSettingsOpened = 0;
+
+  @override
+  Future<ReminderHealth?> health() async => healthNow;
+
+  @override
+  Future<bool> openAppLaunchSettings() async {
+    appLaunchSettingsOpened++;
+    return true;
+  }
+
+  @override
+  Future<bool> openNotificationSettings() async {
+    notificationSettingsOpened++;
+    return true;
   }
 
   @override

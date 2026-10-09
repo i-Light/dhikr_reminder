@@ -45,6 +45,7 @@ object ReminderAlarms {
             armed.add(reminder.id)
         }
         ReminderStore.saveArmed(context, armed)
+        HealthJob.ensureScheduled(context)
     }
 
     fun cancelAll(context: Context) {
@@ -66,8 +67,29 @@ object ReminderAlarms {
             plan,
             ReminderStore.intervalMillis(context),
             System.currentTimeMillis(),
+            ReminderStore.pausedUntilMillis(context),
+            ReminderStore.quietStart(context),
+            ReminderStore.quietEnd(context),
         )
         if (extended !== plan) ReminderStore.replacePlan(context, extended)
         reschedule(context)
+    }
+
+    /** When the next reminder is due, in millis since the epoch, or 0 when none is armed. */
+    fun nextDue(context: Context): Long =
+        ReminderPlan.nextDue(
+            ReminderStore.plan(context),
+            System.currentTimeMillis(),
+            ReminderStore.pausedUntilMillis(context),
+        )
+
+    /**
+     * Throws away every alarm and the stored plan with it. The plan has to go
+     * too: [topUp] runs after a reboot, an update and every fired reminder, and
+     * would arm a plan that was only cancelled, not forgotten.
+     */
+    fun cancelAndForget(context: Context) {
+        cancelAll(context)
+        ReminderStore.clearPlan(context)
     }
 }

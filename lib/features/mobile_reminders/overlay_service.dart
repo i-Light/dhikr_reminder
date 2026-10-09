@@ -1,3 +1,5 @@
+import 'package:dhikr_reminder/core/quiet_hours.dart';
+import 'package:dhikr_reminder/features/mobile_reminders/reminder_health.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/reminder_planner.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,7 +21,14 @@ abstract class ReminderOverlay {
   /// between two reminders: the native side uses it to keep the schedule going
   /// on its own once [plan] runs out. [title], [closeLabel], [tip] and
   /// [dayLabel] (the words under the day counter) are the card's (localized)
-  /// texts.
+  /// texts. [pausedUntil] is the end of a pause, if one is on: the native side
+  /// holds back anything due before it, and starts the topped-up plan after it.
+  /// [quiet] is the daily window with no reminders: the native side keeps to it
+  /// too, since it tops the plan up with the app closed.
+  ///
+  /// This is the only way reminders reach the phone. Where drawing over other
+  /// apps is not allowed, the native side posts the same dhikr as an ordinary
+  /// notification, so the plan is handed over either way.
   Future<void> schedule(
     List<PlannedReminder> plan, {
     required Duration interval,
@@ -27,7 +36,32 @@ abstract class ReminderOverlay {
     required String closeLabel,
     required String tip,
     required String dayLabel,
+    DateTime? pausedUntil,
+    QuietHours quiet = const QuietHours(),
   });
+
+  /// Asks for the permission to post notifications (Android 13 and later; the
+  /// system asks once). True if notifications are allowed afterwards.
+  Future<bool> requestNotificationPermission();
+
+  /// The dhikr id of a notification the person tapped, if one is waiting (it is
+  /// forgotten once taken), else null. The app may have been started by it.
+  Future<int?> takeOpenDhikr();
+
+  /// When the next reminder will arrive, as the native alarms really hold it,
+  /// or null when none is armed.
+  Future<DateTime?> nextReminderAt();
+
+  /// Whether reminders are getting through, and what the phone allows. Null
+  /// where there is nothing to ask.
+  Future<ReminderHealth?> health();
+
+  /// Opens the phone maker's "start in the background" screen (or this app's
+  /// settings page where there is none). False when nothing could be opened.
+  Future<bool> openAppLaunchSettings();
+
+  /// Opens this app's notification settings.
+  Future<bool> openNotificationSettings();
 
   /// Shows one reminder card right now, outside the plan. Returns false when
   /// drawing over other apps is not allowed.
@@ -103,10 +137,15 @@ class ChannelReminderOverlay implements ReminderOverlay {
     required String closeLabel,
     required String tip,
     required String dayLabel,
+    DateTime? pausedUntil,
+    QuietHours quiet = const QuietHours(),
   }) async {
     try {
       await _channel.invokeMethod<void>('schedule', {
         'intervalMillis': interval.inMilliseconds,
+        'pausedUntil': pausedUntil?.millisecondsSinceEpoch ?? 0,
+        'quietStart': quiet.enabled ? quiet.startMinutes : -1,
+        'quietEnd': quiet.enabled ? quiet.endMinutes : -1,
         'title': title,
         'closeLabel': closeLabel,
         'tip': tip,
@@ -115,6 +154,66 @@ class ChannelReminderOverlay implements ReminderOverlay {
       });
     } on MissingPluginException {
       // No overlay on this platform.
+    }
+  }
+
+  @override
+  Future<ReminderHealth?> health() async {
+    try {
+      final map = await _channel.invokeMapMethod<Object?, Object?>('health');
+      return map == null ? null : ReminderHealth.fromMap(map);
+    } on MissingPluginException {
+      return null;
+    } on PlatformException {
+      return null;
+    }
+  }
+
+  @override
+  Future<bool> openAppLaunchSettings() => _open('openAppLaunchSettings');
+
+  @override
+  Future<bool> openNotificationSettings() => _open('openNotificationSettings');
+
+  Future<bool> _open(String method) async {
+    try {
+      return await _channel.invokeMethod<bool>(method) ?? false;
+    } on MissingPluginException {
+      return false;
+    } on PlatformException {
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> requestNotificationPermission() async {
+    try {
+      return await _channel.invokeMethod<bool>(
+            'requestNotificationPermission',
+          ) ??
+          true;
+    } on MissingPluginException {
+      return true;
+    }
+  }
+
+  @override
+  Future<int?> takeOpenDhikr() async {
+    try {
+      return await _channel.invokeMethod<int>('takeOpenDhikr');
+    } on MissingPluginException {
+      return null;
+    }
+  }
+
+  @override
+  Future<DateTime?> nextReminderAt() async {
+    try {
+      final millis = await _channel.invokeMethod<int>('nextReminderAt');
+      if (millis == null || millis <= 0) return null;
+      return DateTime.fromMillisecondsSinceEpoch(millis);
+    } on MissingPluginException {
+      return null;
     }
   }
 

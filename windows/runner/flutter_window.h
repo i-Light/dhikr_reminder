@@ -6,7 +6,9 @@
 #include <flutter/method_channel.h>
 #include <flutter/encodable_value.h>
 
+#include <cstdint>
 #include <memory>
+#include <vector>
 
 #include "win32_window.h"
 
@@ -37,6 +39,10 @@ class FlutterWindow : public Win32Window {
   // "dhikr_reminder/window": the few window tweaks window_manager cannot do.
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>>
       window_channel_;
+
+  // The chime being played. PlaySound reads it from memory while it plays, so
+  // it has to stay alive until the next one replaces it.
+  std::vector<uint8_t> chime_;
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_

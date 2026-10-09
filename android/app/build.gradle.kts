@@ -12,11 +12,35 @@ plugins {
 //   storePassword=...
 //   keyAlias=upload
 //   keyPassword=...
-// Without it a release build still works, signed with the debug key, so
-// `flutter run --release` keeps working — but that build cannot go to a store.
+// Without it a release build FAILS, so a build that cannot go to a store is
+// never made by accident. To make one on purpose (a debug-signed release for a
+// test phone, or the unsigned APK the F-Droid style stores want), pass
+// the environment variable ALLOW_UNSIGNED=true (flutter build does not forward
+// -P flags), or allowUnsigned=true in ~/.gradle/gradle.properties. Our own
+// scripts never do.
 val keystoreProperties = Properties().apply {
     val file = rootProject.file("key.properties")
     if (file.exists()) file.inputStream().use { load(it) }
+}
+val hasReleaseKey = keystoreProperties.containsKey("storeFile")
+val allowUnsigned = providers.gradleProperty("allowUnsigned").orNull == "true" ||
+    System.getenv("ALLOW_UNSIGNED") == "true"
+
+gradle.taskGraph.whenReady {
+    val buildsRelease = allTasks.any { task ->
+        task.project == project &&
+            task.name.endsWith("Release") &&
+            (task.name.startsWith("assemble") || task.name.startsWith("bundle") ||
+                task.name.startsWith("package"))
+    }
+    if (buildsRelease && !hasReleaseKey && !allowUnsigned) {
+        throw GradleException(
+            "android/key.properties is missing, so this release build would be " +
+                "signed with the debug key and could not go to a store. Run " +
+                "scripts/create_upload_key.ps1, or set ALLOW_UNSIGNED=true " +
+                "if a debug-signed build is what you want.",
+        )
+    }
 }
 
 android {
@@ -27,8 +51,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-        // flutter_local_notifications needs java.time on older Androids.
-        isCoreLibraryDesugaringEnabled = true
     }
 
     defaultConfig {
@@ -49,7 +71,7 @@ android {
     }
 
     signingConfigs {
-        if (keystoreProperties.containsKey("storeFile")) {
+        if (hasReleaseKey) {
             create("release") {
                 storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
                 storePassword = keystoreProperties.getProperty("storePassword")
@@ -71,9 +93,10 @@ android {
 
     buildTypes {
         release {
-            signingConfig = if (keystoreProperties.containsKey("storeFile")) {
+            signingConfig = if (hasReleaseKey) {
                 signingConfigs.getByName("release")
             } else {
+                // Only reached with allowUnsigned (see the check above).
                 signingConfigs.getByName("debug")
             }
             isMinifyEnabled = true
@@ -93,8 +116,6 @@ kotlin {
 }
 
 dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
-
     // The reminder plan's arithmetic is tested on a plain JVM:
     //   cd android; .\gradlew :app:testDebugUnitTest
     testImplementation("junit:junit:4.13.2")

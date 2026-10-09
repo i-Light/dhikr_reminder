@@ -1,3 +1,4 @@
+import 'package:dhikr_reminder/core/features.dart';
 import 'package:dhikr_reminder/core/navigation/shell_tab.dart';
 import 'package:dhikr_reminder/core/widgets/collapsible_card.dart';
 import 'package:dhikr_reminder/features/library/application/library_controller.dart';
@@ -282,6 +283,23 @@ class _ReminderSettingsCardState extends ConsumerState<_ReminderSettingsCard> {
             value: settings.useChance,
             onChanged: settings.isLoaded ? notifier.updateUseChance : null,
           ),
+          // Off by default and folded away with the rest of the settings: the
+          // page shows nothing more until someone opens this card.
+          if (Features.politeReminders) ...[
+            const Divider(height: 24),
+            _QuietHoursRow(settings: settings),
+          ],
+          if (Features.sound) ...[
+            const Divider(height: 24),
+            _CompactSwitchRow(
+              rowKey: const ValueKey('sound-row'),
+              switchKey: const ValueKey('sound-switch'),
+              title: l10n.soundTitle,
+              subtitle: l10n.soundSubtitle,
+              value: settings.soundOn,
+              onChanged: settings.isLoaded ? notifier.updateSoundOn : null,
+            ),
+          ],
           // The same switch as the library's "Show Arabic", for the reminder
           // card (which has a button for it too). English only: it hides the
           // Arabic and leaves the transliteration, which exists only there.
@@ -306,6 +324,84 @@ class _ReminderSettingsCardState extends ConsumerState<_ReminderSettingsCard> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// "Quiet hours": a switch, and, once it is on, the window it keeps and a
+/// button to change it. Nothing else on the page changes.
+class _QuietHoursRow extends ConsumerWidget {
+  const _QuietHoursRow({required this.settings});
+
+  final DhikrSettings settings;
+
+  static String _format(BuildContext context, int minutes) =>
+      TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60).format(context);
+
+  Future<void> _change(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
+    final quiet = settings.quiet;
+    final start = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(
+        hour: quiet.startMinutes ~/ 60,
+        minute: quiet.startMinutes % 60,
+      ),
+      helpText: l10n.quietPickStart,
+    );
+    if (start == null || !context.mounted) return;
+    final end = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(
+        hour: quiet.endMinutes ~/ 60,
+        minute: quiet.endMinutes % 60,
+      ),
+      helpText: l10n.quietPickEnd,
+    );
+    if (end == null) return;
+    await ref.read(dhikrSettingsProvider.notifier).updateQuiet(
+          quiet.copyWith(
+            startMinutes: start.hour * 60 + start.minute,
+            endMinutes: end.hour * 60 + end.minute,
+          ),
+        );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final quiet = settings.quiet;
+    final notifier = ref.read(dhikrSettingsProvider.notifier);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _CompactSwitchRow(
+          rowKey: const ValueKey('quiet-row'),
+          switchKey: const ValueKey('quiet-switch'),
+          title: l10n.quietTitle,
+          subtitle: l10n.quietSubtitle,
+          value: quiet.enabled,
+          onChanged: settings.isLoaded
+              ? (on) => notifier.updateQuiet(quiet.copyWith(enabled: on))
+              : null,
+        ),
+        if (quiet.enabled)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              key: const ValueKey('quiet-change'),
+              onPressed: () => _change(context, ref),
+              icon: const Icon(Icons.bedtime_outlined, size: 18),
+              label: Text(
+                '${l10n.quietRange(_format(context, quiet.startMinutes), _format(context, quiet.endMinutes))}'
+                '  ${l10n.quietChange}',
+                style: theme.textTheme.bodyMedium,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

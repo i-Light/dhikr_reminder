@@ -85,42 +85,49 @@ void main() {
   });
 
   group('loading the saved list', () {
-    test('a fresh install seeds five dhikr, all linked to the library',
-        () async {
-      final container = await _loaded(const {});
-      final entries = container.read(dhikrSettingsProvider).entries;
+    test(
+      'a fresh install seeds five dhikr, all linked to the library',
+      () async {
+        final container = await _loaded(const {});
+        final entries = container.read(dhikrSettingsProvider).entries;
 
-      expect(entries, hasLength(5));
-      for (final entry in entries) {
-        expect(libraryItemById(entry.libraryId ?? ''), isNotNull,
-            reason: entry.name);
-        expect(entry.name, libraryItemById(entry.libraryId!)!.text);
-      }
-    });
+        expect(entries, hasLength(5));
+        for (final entry in entries) {
+          expect(
+            libraryItemById(entry.libraryId ?? ''),
+            isNotNull,
+            reason: entry.name,
+          );
+          expect(entry.name, libraryItemById(entry.libraryId!)!.text);
+        }
+      },
+    );
 
-    test('a list from before the library took over is linked and saved back',
-        () async {
-      final container = await _loaded({
-        _schemaKey: 2,
-        _entriesKey: jsonEncode([
-          {'id': 5, 'name': 'سُبْحَانَ اللَّهِ', 'amount': 3, 'chance': 10},
-          {'id': 6, 'name': 'ذكر كتبته بنفسي', 'amount': 4, 'chance': 7},
-        ]),
-      });
+    test(
+      'a list from before the library took over is linked and saved back',
+      () async {
+        final container = await _loaded({
+          _schemaKey: 2,
+          _entriesKey: jsonEncode([
+            {'id': 5, 'name': 'سُبْحَانَ اللَّهِ', 'amount': 3, 'chance': 10},
+            {'id': 6, 'name': 'ذكر كتبته بنفسي', 'amount': 4, 'chance': 7},
+          ]),
+        });
 
-      final entries = container.read(dhikrSettingsProvider).entries;
-      expect(entries[0].libraryId, libraryItemForText('سبحان الله')!.id);
-      expect(entries[0].amount, 3);
-      expect(entries[1].libraryId, isNull);
-      expect(entries[1].name, 'ذكر كتبته بنفسي');
-      expect(entries[1].amount, 4);
+        final entries = container.read(dhikrSettingsProvider).entries;
+        expect(entries[0].libraryId, libraryItemForText('سبحان الله')!.id);
+        expect(entries[0].amount, 3);
+        expect(entries[1].libraryId, isNull);
+        expect(entries[1].name, 'ذكر كتبته بنفسي');
+        expect(entries[1].amount, 4);
 
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getInt(_schemaKey), 3);
-      final saved = jsonDecode(prefs.getString(_entriesKey)!) as List;
-      expect((saved[0] as Map)['libraryId'], entries[0].libraryId);
-      expect((saved[1] as Map).containsKey('libraryId'), isFalse);
-    });
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getInt(_schemaKey), 3);
+        final saved = jsonDecode(prefs.getString(_entriesKey)!) as List;
+        expect((saved[0] as Map)['libraryId'], entries[0].libraryId);
+        expect((saved[1] as Map).containsKey('libraryId'), isFalse);
+      },
+    );
 
     test('a list that is already linked is not changed', () async {
       final item = _someItem();
@@ -259,6 +266,25 @@ void main() {
         const DhikrEntry(id: 1, name: 'نص').toJson().containsKey('libraryId'),
         isFalse,
       );
+    });
+  });
+
+  group('an id the library no longer knows', () {
+    test('is relinked by the saved words, so the reminder is not orphaned', () {
+      final item = _someItem();
+      final linked = linkEntriesToLibrary([
+        DhikrEntry(id: 1, name: item.text, libraryId: 'dgone-forever'),
+      ]);
+      expect(linked.single.libraryId, item.id);
+    });
+
+    test('with words that match nothing is left alone and keeps working', () {
+      const entry = DhikrEntry(
+        id: 1,
+        name: 'كلام ليس من الأذكار',
+        libraryId: 'x',
+      );
+      expect(linkEntriesToLibrary([entry]).single, entry);
     });
   });
 }

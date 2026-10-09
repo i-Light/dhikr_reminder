@@ -44,6 +44,12 @@
     Publish only: run the preflight checks and say what would be done, without
     changing anything.
 
+.PARAMETER ConfirmTag
+    Publish only: the tag to be released (for example v0.1.4), typed ahead of
+    time so the script does not ask. Without it the script shows the release
+    plan and waits for the tag to be typed. A release goes to every installed
+    copy, so it is never one key press away.
+
 .PARAMETER SkipAndroid
     Do not build the Android APKs. By default both modes also build them (one per
     CPU, next to the installer in the output folder) with scripts\build_android.ps1.
@@ -75,6 +81,8 @@ param(
     [switch] $SkipChecks,
 
     [switch] $DryRun,
+
+    [string] $ConfirmTag,
 
     [string] $OutDir,
 
@@ -304,6 +312,16 @@ if ($publish) {
     if ($DryRun) {
         Write-Host 'Dry run: nothing was changed.' -ForegroundColor Yellow
         return
+    }
+
+    # Everyone with the app installed gets this release. Typing the tag back is
+    # the pause that stops a stray key press from doing that.
+    $typed = $ConfirmTag
+    if (-not $typed) {
+        $typed = Read-Host "This publishes $tag to every installed copy. Type $tag to continue"
+    }
+    if ($typed.Trim() -ne $tag) {
+        throw "Not published: expected '$tag' but got '$typed'."
     }
 }
 elseif ($DryRun) {

@@ -222,8 +222,10 @@ class DynamicOrnateCard extends StatelessWidget {
                   l10n.dhikrReminderTouchEverywhereTip,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyLarge?.copyWith(
-                    // color: theme.textTheme.bodyLarge?.color!.withAlpha(90),
-                    color: goldColor.withValues(alpha: 0.5),
+                    // Brighter than the ornament beside it: at half strength
+                    // the words were about 2.5:1 against the card, too faint
+                    // to read for many people.
+                    color: goldColor.withValues(alpha: 0.78),
                   ),
                 ),
               ],

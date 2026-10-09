@@ -8,6 +8,11 @@ import 'package:hijri/hijri_calendar.dart';
 /// Computed from the device's own date, nothing is fetched. The package keeps
 /// its language in a static, so it is set and read back within this one
 /// synchronous call.
+///
+/// A date the package cannot convert (it throws outside the years it has
+/// tables for, which a wrong device clock can reach) gives an empty string
+/// instead of an error: this runs from `build` every minute, and a date line
+/// must never be what breaks the home page.
 String formatHijriDate(DateTime date, {required bool arabic}) {
   final previous = HijriCalendar.language;
   try {
@@ -22,6 +27,8 @@ String formatHijriDate(DateTime date, {required bool arabic}) {
     return arabic
         ? '${hijri.dayWeName} $day ${hijri.longMonthName} $year هـ'
         : '${hijri.dayWeName} $day ${hijri.longMonthName} $year AH';
+  } catch (_) {
+    return '';
   } finally {
     HijriCalendar.language = previous;
   }

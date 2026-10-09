@@ -1,19 +1,29 @@
 import 'dart:async';
 
 import 'package:dhikr_reminder/core/date/hijri_date.dart';
+import 'package:dhikr_reminder/core/features.dart';
 import 'package:dhikr_reminder/core/locale/locale_controller.dart';
+import 'package:dhikr_reminder/core/storage/backup_service.dart';
 import 'package:dhikr_reminder/core/window/app_logo.dart';
 import 'package:dhikr_reminder/core/window/tray_menu_panel.dart'
     show formatCountdown;
+import 'package:dhikr_reminder/features/about/about_screen.dart';
+import 'package:dhikr_reminder/features/history/history.dart';
+import 'package:dhikr_reminder/features/history/history_screen.dart';
+import 'package:dhikr_reminder/features/mobile_reminders/next_reminder.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/setup_requirement_cards.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
 import 'package:dhikr_reminder/features/settings/presentation/widgets/bug_report_card.dart';
 import 'package:dhikr_reminder/features/settings/presentation/widgets/update_card.dart';
+import 'package:dhikr_reminder/features/stats/dhikr_stats.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
 import 'package:dhikr_reminder/platform/app_platform.dart';
 import 'package:dhikr_reminder/platform/autostart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// Says once, in one line, that the settings were put back from a backup.
+bool _restoredNoticeShown = false;
 
 /// The home page: today's Hijri date, when the next reminder comes, the way to
 /// report a problem, and the app-level switches (language, start with Windows,
@@ -30,6 +40,15 @@ class HomeScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final isEnglish = ref.watch(localeProvider).languageCode == 'en';
+    if (ref.read(restoredFromBackupProvider) && !_restoredNoticeShown) {
+      _restoredNoticeShown = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.storageRestoredNotice)));
+      });
+    }
 
     return SafeArea(
       child: Center(
@@ -73,6 +92,10 @@ class HomeScreen extends ConsumerWidget {
                 const HijriDateCard(),
                 const SizedBox(height: 12),
                 const _NextReminderCard(),
+                if (Features.history) ...[
+                  const SizedBox(height: 12),
+                  const _HistoryRow(),
+                ],
                 // Near the top, where it is found, rather than at the bottom
                 // of everything.
                 const SizedBox(height: 12),
@@ -92,6 +115,20 @@ class HomeScreen extends ConsumerWidget {
                 ],
                 const SizedBox(height: 12),
                 const UpdateCard(),
+                const SizedBox(height: 4),
+                // One quiet link: sources, privacy, licences. Nothing here
+                // competes with the reminders.
+                Center(
+                  child: TextButton(
+                    key: const ValueKey('about-link'),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const AboutScreen(),
+                      ),
+                    ),
+                    child: Text(l10n.aboutLink),
+                  ),
+                ),
               ],
             ),
           ),
@@ -133,6 +170,10 @@ class _HijriDateCardState extends State<HijriDateCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final arabic = Localizations.localeOf(context).languageCode == 'ar';
+    final text = formatHijriDate(widget.clock(), arabic: arabic);
+    // A date the calendar cannot work out (a wrong device clock) shows nothing
+    // rather than an empty card.
+    if (text.isEmpty) return const SizedBox.shrink();
 
     return Card(
       margin: EdgeInsets.zero,
@@ -148,7 +189,7 @@ class _HijriDateCardState extends State<HijriDateCard> {
             ),
             Expanded(
               child: Text(
-                formatHijriDate(widget.clock(), arabic: arabic),
+                text,
                 key: const ValueKey('hijri-date'),
                 style: theme.textTheme.titleMedium?.copyWith(
                   color: theme.colorScheme.onPrimaryContainer,
@@ -156,6 +197,34 @@ class _HijriDateCardState extends State<HijriDateCard> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One quiet row: today's total, and a way to the History page. The page is
+/// only built (and the saved totals only read) once someone opens it or counts.
+class _HistoryRow extends ConsumerWidget {
+  const _HistoryRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final totals = ref.watch(historyProvider);
+    final today = ref.watch(dhikrStatsClockProvider)();
+    final count = totals[dayKeyBack(today, 0)] ?? 0;
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: ListTile(
+        key: const ValueKey('history-row'),
+        leading: const Icon(Icons.bar_chart_rounded),
+        title: Text(l10n.historyRowTitle),
+        subtitle: Text(l10n.historyRowToday(count)),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const HistoryScreen()),
         ),
       ),
     );
@@ -189,13 +258,34 @@ class _NextReminderCardState extends ConsumerState<_NextReminderCard> {
     super.dispose();
   }
 
+  DateTime? _lastRefresh;
+
+  void _refreshSoon() {
+    final now = DateTime.now();
+    final last = _lastRefresh;
+    if (last != null && now.difference(last) < const Duration(seconds: 5)) {
+      return;
+    }
+    _lastRefresh = now;
+    Future.microtask(() {
+      if (mounted) unawaited(ref.read(nextReminderProvider.notifier).refresh());
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final nextAt = ref.watch(dhikrReminderSchedulerProvider);
+    // A phone's reminders come from native alarms, so the countdown reads the
+    // alarm itself; the desktop one counts down its own in-process timer.
+    final onPhone = ref.watch(appPlatformProvider).usesNotifications;
+    final nextAt = onPhone
+        ? ref.watch(nextReminderProvider)
+        : ref.watch(dhikrReminderSchedulerProvider);
     final pausedUntil = ref.watch(reminderPauseProvider);
     final remaining = nextAt?.difference(DateTime.now());
+    // The alarm has gone off: ask which one is next, at most every few seconds.
+    if (onPhone && remaining != null && remaining.isNegative) _refreshSoon();
     final pause = ref.read(reminderPauseProvider.notifier);
 
     return Card(

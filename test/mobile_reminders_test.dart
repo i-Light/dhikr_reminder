@@ -2,7 +2,6 @@ import 'dart:math';
 
 import 'package:dhikr_reminder/features/mobile_reminders/mobile_reminder_host.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/mobile_reminder_screen.dart';
-import 'package:dhikr_reminder/features/mobile_reminders/notification_service.dart';
 import 'package:dhikr_reminder/features/mobile_reminders/reminder_planner.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
@@ -13,26 +12,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'helpers/fake_overlay.dart';
-
-class _FakeNotifications implements ReminderNotifications {
-  List<PlannedReminder>? lastPlan;
-  String? lastTitle;
-
-  @override
-  Future<void> init({required void Function(int entryId) onOpen}) async {}
-
-  @override
-  Future<bool> requestPermission() async => true;
-
-  @override
-  Future<void> replaceAll(
-    List<PlannedReminder> plan, {
-    required String title,
-  }) async {
-    lastPlan = plan;
-    lastTitle = title;
-  }
-}
 
 const _entries = [
   DhikrEntry(id: 1, name: 'one'),
@@ -119,47 +98,30 @@ void main() {
   });
 
   group('MobileReminderSyncer', () {
-    test('waits for the saved settings before scheduling anything', () async {
-      final fake = _FakeNotifications();
-
-      await MobileReminderSyncer(fake, FakeOverlay()).sync(
-        settings: const DhikrSettings.loading(),
-        locale: const Locale('en'),
-      );
-
-      expect(fake.lastPlan, isNull);
-    });
-
-    test('replaces the schedule with a localized title', () async {
-      final fake = _FakeNotifications();
-      const settings = DhikrSettings(
-        entries: _entries,
-        intervalMinutes: 30,
-        isLoaded: true,
-      );
-
-      await MobileReminderSyncer(fake, FakeOverlay(), random: Random(1))
-          .sync(settings: settings, locale: const Locale('en'));
-
-      expect(fake.lastPlan, hasLength(48));
-      expect(fake.lastTitle, 'Dhikr reminder');
-    });
-  });
-
-  group('MobileReminderSyncer with the overlay', () {
     const settings = DhikrSettings(
       entries: _entries,
       intervalMinutes: 30,
       isLoaded: true,
     );
 
-    test('schedules the overlay, not notifications, when it is allowed',
-        () async {
-      final notifications = _FakeNotifications();
+    test('waits for the saved settings before scheduling anything', () async {
       final overlay = FakeOverlay(allowed: true);
 
-      await MobileReminderSyncer(notifications, overlay, random: Random(1))
-          .sync(settings: settings, locale: const Locale('en'));
+      await MobileReminderSyncer(overlay).sync(
+        settings: const DhikrSettings.loading(),
+        locale: const Locale('en'),
+      );
+
+      expect(overlay.scheduled, isNull);
+    });
+
+    test('hands the native side the plan, with localized card texts', () async {
+      final overlay = FakeOverlay(allowed: true);
+
+      await MobileReminderSyncer(
+        overlay,
+        random: Random(1),
+      ).sync(settings: settings, locale: const Locale('en'));
 
       expect(overlay.scheduled, hasLength(48));
       // The native side keeps the schedule going on its own at this pace once
@@ -169,21 +131,54 @@ void main() {
       expect(overlay.closeLabel, 'Close');
       expect(overlay.tip, 'Touch anywhere to count');
       expect(overlay.dayLabel, "Today's dhikr");
-      // Notifications are cleared, so a reminder never shows twice.
-      expect(notifications.lastPlan, isEmpty);
+      expect(overlay.pausedUntil, isNull);
     });
 
-    test('falls back to notifications, and cancels the overlay, without it',
-        () async {
-      final notifications = _FakeNotifications();
+    test('schedules the same plan without the overlay permission', () async {
+      // The native alarm posts a notification where it cannot draw the card,
+      // so the plan is handed over whatever the permission says. It must never
+      // be cancelled for lack of the permission.
       final overlay = FakeOverlay(allowed: false);
 
-      await MobileReminderSyncer(notifications, overlay, random: Random(1))
-          .sync(settings: settings, locale: const Locale('en'));
+      await MobileReminderSyncer(
+        overlay,
+        random: Random(1),
+      ).sync(settings: settings, locale: const Locale('en'));
 
-      expect(notifications.lastPlan, hasLength(48));
-      expect(overlay.scheduled, isNull);
-      expect(overlay.cancels, 1);
+      expect(overlay.scheduled, hasLength(48));
+      expect(overlay.cancels, 0);
+    });
+
+    test('leaves a pause out of the plan and tells the native side', () async {
+      final overlay = FakeOverlay(allowed: true);
+      final now = DateTime(2026, 1, 1, 9);
+      final until = now.add(const Duration(minutes: 70));
+
+      await MobileReminderSyncer(overlay, random: Random(1)).sync(
+        settings: settings,
+        locale: const Locale('en'),
+        pausedUntil: until,
+        now: now,
+      );
+
+      expect(overlay.pausedUntil, until);
+      expect(overlay.scheduled!.every((r) => !r.at.isBefore(until)), isTrue);
+      expect(overlay.scheduled!.first.at, now.add(const Duration(minutes: 90)));
+    });
+
+    test('a pause that is over is no pause', () async {
+      final overlay = FakeOverlay(allowed: true);
+      final now = DateTime(2026, 1, 1, 9);
+
+      await MobileReminderSyncer(overlay, random: Random(1)).sync(
+        settings: settings,
+        locale: const Locale('en'),
+        pausedUntil: now.subtract(const Duration(minutes: 5)),
+        now: now,
+      );
+
+      expect(overlay.pausedUntil, isNull);
+      expect(overlay.scheduled, hasLength(48));
     });
 
     test('hands the native side everything it needs to show a reminder', () {
@@ -220,8 +215,9 @@ void main() {
     });
   });
 
-  testWidgets('the mobile counter counts taps and shows completion',
-      (tester) async {
+  testWidgets('the mobile counter counts taps and shows completion', (
+    tester,
+  ) async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
     container
@@ -254,10 +250,13 @@ void main() {
     await tester.pump();
     expect(find.byIcon(Icons.check_rounded), findsOneWidget);
     expect(container.read(activeDhikrReminderProvider)!.isComplete, isTrue);
+    // The idle timer of a card nobody closes would still be pending.
+    container.read(activeDhikrReminderProvider.notifier).dismiss();
   });
 
-  testWidgets('a dhikr with a daily goal shows its own today / goal',
-      (tester) async {
+  testWidgets('a dhikr with a daily goal shows its own today / goal', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues({});
     final container = ProviderContainer();
     addTearDown(container.dispose);
@@ -282,5 +281,6 @@ void main() {
     expect(find.text("Today's dhikr"), findsOneWidget);
     expect(find.text('1 / 100'), findsOneWidget);
     expect(find.text('Session'), findsNothing);
+    container.read(activeDhikrReminderProvider.notifier).dismiss();
   });
 }

@@ -19,14 +19,18 @@ object ReminderNotifier {
 
     fun post(context: Context, reminder: ReminderStore.Planned) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        // The same channel the Dart side's notifications use.
         manager.createNotificationChannel(
             NotificationChannel(CHANNEL_ID, "Dhikr reminders", NotificationManager.IMPORTANCE_HIGH),
         )
+        // One request code per reminder: extras do not tell two PendingIntents
+        // apart, so a shared code would make every notification open the last
+        // dhikr posted.
         val open = PendingIntent.getActivity(
             context,
-            0,
-            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            NOTIFICATION_BASE + reminder.id,
+            Intent(context, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                .putExtra(MainActivity.EXTRA_OPEN_DHIKR, reminder.dhikrId),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         val notification = Notification.Builder(context, CHANNEL_ID)

@@ -33,7 +33,10 @@ class FakeGateway implements RequestGateway {
   }) async {
     if (failures.isNotEmpty) throw failures.removeAt(0);
     submitted.add((token: installToken, text: text, source: source));
-    final request = RemoteRequest(id: 'srv${_next++}', status: RequestStatus.pending);
+    final request = RemoteRequest(
+      id: 'srv${_next++}',
+      status: RequestStatus.pending,
+    );
     remote = [...remote, request];
     return SubmitResult(request: request, duplicate: false);
   }
@@ -72,17 +75,23 @@ class _Clock {
   void advance(Duration d) => now = now.add(d);
 }
 
-Future<_Rig> _rig({Map<String, Object> prefs = const {}, FakeGateway? gateway}) async {
+Future<_Rig> _rig({
+  Map<String, Object> prefs = const {},
+  FakeGateway? gateway,
+}) async {
   SharedPreferences.setMockInitialValues(prefs);
   final fake = gateway ?? FakeGateway();
   final clock = _Clock();
-  final container = ProviderContainer(overrides: [
-    requestGatewayProvider.overrideWithValue(fake),
-    requestClockProvider.overrideWithValue(() => clock.now),
-    requestAppInfoProvider.overrideWithValue(
-      () async => const RequestAppInfo(platform: 'android', appVersion: '0.1.3'),
-    ),
-  ]);
+  final container = ProviderContainer(
+    overrides: [
+      requestGatewayProvider.overrideWithValue(fake),
+      requestClockProvider.overrideWithValue(() => clock.now),
+      requestAppInfoProvider.overrideWithValue(
+        () async =>
+            const RequestAppInfo(platform: 'android', appVersion: '0.1.3'),
+      ),
+    ],
+  );
   addTearDown(container.dispose);
   container.listen(dhikrRequestsProvider, (_, __) {});
   await container.read(dhikrRequestsProvider.notifier).loaded;
@@ -94,14 +103,17 @@ void main() {
     test('sends it and keeps it as pending', () async {
       final rig = await _rig();
 
-      final outcome = await rig.notifier.submit(text: _dhikrs[0], source: 'رواه مسلم');
+      final outcome = await rig.notifier.submit(
+        text: _dhikrs[0],
+        source: 'رواه مسلم',
+      );
 
       expect(outcome, isA<Submitted>());
       expect(rig.gateway.submitted.single.text, _dhikrs[0]);
       expect(rig.gateway.submitted.single.source, 'رواه مسلم');
       expect(rig.state.requests.single.status, RequestStatus.pending);
       expect(rig.state.requests.single.serverId, 'srv0');
-      expect(rig.state.openCount, 1);
+      expect(rig.state.openCountAt(rig.clock.now), 1);
     });
 
     test('cleans the text before sending it', () async {
@@ -110,27 +122,34 @@ void main() {
       expect(rig.gateway.submitted.single.text, _dhikrs[0]);
     });
 
-    test('uses one install token for every request, and it is well formed',
-        () async {
-      final rig = await _rig();
-      await rig.notifier.submit(text: _dhikrs[0]);
-      rig.clock.advance(const Duration(minutes: 1));
-      await rig.notifier.submit(text: _dhikrs[1]);
+    test(
+      'uses one install token for every request, and it is well formed',
+      () async {
+        final rig = await _rig();
+        await rig.notifier.submit(text: _dhikrs[0]);
+        rig.clock.advance(const Duration(minutes: 1));
+        await rig.notifier.submit(text: _dhikrs[1]);
 
-      final tokens = rig.gateway.submitted.map((s) => s.token).toSet();
-      expect(tokens, hasLength(1));
-      expect(tokens.single, matches(RegExp(r'^[A-Za-z0-9_-]{43}$')));
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('dhikr_reminder.requests.install'), tokens.single);
-    });
+        final tokens = rig.gateway.submitted.map((s) => s.token).toSet();
+        expect(tokens, hasLength(1));
+        expect(tokens.single, matches(RegExp(r'^[A-Za-z0-9_-]{43}$')));
+        final prefs = await SharedPreferences.getInstance();
+        expect(
+          prefs.getString('dhikr_reminder.requests.install'),
+          tokens.single,
+        );
+      },
+    );
 
     test('makes a different token on another install', () async {
       final a = await _rig();
       await a.notifier.submit(text: _dhikrs[0]);
       final b = await _rig();
       await b.notifier.submit(text: _dhikrs[0]);
-      expect(a.gateway.submitted.single.token,
-          isNot(b.gateway.submitted.single.token));
+      expect(
+        a.gateway.submitted.single.token,
+        isNot(b.gateway.submitted.single.token),
+      );
     });
 
     test('says why a text is not fit to send, without sending it', () async {
@@ -153,8 +172,10 @@ void main() {
 
     test('refuses a link in the source', () async {
       final rig = await _rig();
-      final outcome = await rig.notifier
-          .submit(text: _dhikrs[0], source: 'https://spam.example');
+      final outcome = await rig.notifier.submit(
+        text: _dhikrs[0],
+        source: 'https://spam.example',
+      );
       expect((outcome as Refused).problem, RequestProblem.hasLink);
     });
 
@@ -164,7 +185,8 @@ void main() {
       rig.clock.advance(const Duration(minutes: 1));
 
       final again = await rig.notifier.submit(
-        text: 'اللَّهُمَّ إِنِّي أَسْأَلُكَ عِلْمًا نَافِعًا وَرِزْقًا طَيِّبًا',
+        text:
+            'اللَّهُمَّ إِنِّي أَسْأَلُكَ عِلْمًا نَافِعًا وَرِزْقًا طَيِّبًا',
       );
 
       expect(again, isA<AlreadyRequested>());
@@ -211,26 +233,28 @@ void main() {
       expect(await rig.notifier.submit(text: _dhikrs[1]), isA<Submitted>());
     });
 
-    test('five requests in a day, then it says to come back tomorrow',
-        () async {
-      final rig = await _rig();
-      for (var i = 0; i < 5; i++) {
-        expect(await rig.notifier.submit(text: _dhikrs[i]), isA<Submitted>());
-        // Finish each one so the open limit is not what stops the next.
-        rig.gateway.remote = [
-          for (final r in rig.gateway.remote)
-            RemoteRequest(id: r.id, status: RequestStatus.done),
-        ];
-        await rig.notifier.refresh(force: true);
-        rig.clock.advance(const Duration(minutes: 30));
-      }
-      final sixth = await rig.notifier.submit(text: _dhikrs[5]);
-      expect((sixth as Refused).problem, RequestProblem.dailyLimit);
-      expect(sixth.seconds, greaterThan(0));
+    test(
+      'five requests in a day, then it says to come back tomorrow',
+      () async {
+        final rig = await _rig();
+        for (var i = 0; i < 5; i++) {
+          expect(await rig.notifier.submit(text: _dhikrs[i]), isA<Submitted>());
+          // Finish each one so the open limit is not what stops the next.
+          rig.gateway.remote = [
+            for (final r in rig.gateway.remote)
+              RemoteRequest(id: r.id, status: RequestStatus.done),
+          ];
+          await rig.notifier.refresh(force: true);
+          rig.clock.advance(const Duration(minutes: 30));
+        }
+        final sixth = await rig.notifier.submit(text: _dhikrs[5]);
+        expect((sixth as Refused).problem, RequestProblem.dailyLimit);
+        expect(sixth.seconds, greaterThan(0));
 
-      rig.clock.advance(const Duration(days: 1));
-      expect(await rig.notifier.submit(text: _dhikrs[5]), isA<Submitted>());
-    });
+        rig.clock.advance(const Duration(days: 1));
+        expect(await rig.notifier.submit(text: _dhikrs[5]), isA<Submitted>());
+      },
+    );
   });
 
   group('when the service answers badly', () {
@@ -242,7 +266,7 @@ void main() {
 
       expect(outcome, isA<Queued>());
       expect(rig.state.requests.single.status, RequestStatus.queued);
-      expect(rig.state.openCount, 1);
+      expect(rig.state.openCountAt(rig.clock.now), 1);
 
       await rig.notifier.refresh(force: true);
       expect(rig.state.requests.single.status, RequestStatus.pending);
@@ -260,7 +284,10 @@ void main() {
 
       await rig.notifier.refresh(force: true);
 
-      expect(rig.gateway.submitted.map((s) => s.text), [_dhikrs[0], _dhikrs[1]]);
+      expect(rig.gateway.submitted.map((s) => s.text), [
+        _dhikrs[0],
+        _dhikrs[1],
+      ]);
     });
 
     test('stays queued while the service is still away', () async {
@@ -275,38 +302,83 @@ void main() {
       expect(rig.state.requests.single.status, RequestStatus.queued);
     });
 
-    test('the service refusing the text drops the request with a reason',
-        () async {
+    test(
+      'the service refusing the text drops the request with a reason',
+      () async {
+        final rig = await _rig();
+        rig.gateway.failures.add(
+          const RequestRejected('invalid_text', 'not_arabic'),
+        );
+
+        final outcome = await rig.notifier.submit(text: _dhikrs[0]);
+
+        expect((outcome as Refused).problem, RequestProblem.notArabic);
+        expect(rig.state.requests, isEmpty);
+      },
+    );
+
+    test(
+      'the service asking for a pause keeps the request to send later',
+      () async {
+        final rig = await _rig();
+        rig.gateway.failures.add(const RequestRateLimited('rate_limited', 120));
+
+        final outcome = await rig.notifier.submit(text: _dhikrs[0]);
+
+        expect(outcome, isA<Queued>());
+        expect(rig.state.requests.single.status, RequestStatus.queued);
+
+        await rig.notifier.refresh(force: true);
+        expect(rig.state.requests.single.status, RequestStatus.pending);
+      },
+    );
+
+    test('a request that never got sent can be removed', () async {
       final rig = await _rig();
-      rig.gateway.failures.add(const RequestRejected('invalid_text', 'not_arabic'));
+      rig.gateway.failures.add(const RequestUnavailable('offline'));
+      await rig.notifier.submit(text: _dhikrs[0]);
+      expect(rig.state.requests.single.canRemove, isTrue);
 
-      final outcome = await rig.notifier.submit(text: _dhikrs[0]);
+      await rig.notifier.forget(rig.state.requests.single.localId);
 
-      expect((outcome as Refused).problem, RequestProblem.notArabic);
       expect(rig.state.requests, isEmpty);
     });
 
-    test('the service asking for a pause drops the request and says so',
-        () async {
+    test(
+      'a request that reached the service cannot be removed while open',
+      () async {
+        final rig = await _rig();
+        await rig.notifier.submit(text: _dhikrs[0]);
+        expect(rig.state.requests.single.canRemove, isFalse);
+
+        await rig.notifier.forget(rig.state.requests.single.localId);
+
+        expect(rig.state.requests, hasLength(1));
+      },
+    );
+
+    test('a request stuck unsent for days stops counting as open', () async {
       final rig = await _rig();
-      rig.gateway.failures.add(const RequestRateLimited('rate_limited', 120));
+      rig.gateway.failures.add(const RequestUnavailable('offline'));
+      await rig.notifier.submit(text: _dhikrs[0]);
+      expect(rig.state.openCountAt(rig.clock.now), 1);
 
-      final outcome = await rig.notifier.submit(text: _dhikrs[0]);
+      rig.clock.advance(requestStuckAfter);
 
-      expect((outcome as Refused).problem, RequestProblem.busy);
-      expect(outcome.seconds, 120);
-      expect(rig.state.requests, isEmpty);
+      expect(rig.state.openCountAt(rig.clock.now), 0);
     });
 
-    test('the service saying too many are open maps to the same message',
-        () async {
-      final rig = await _rig();
-      rig.gateway.failures.add(const RequestRateLimited('too_many_open'));
+    test(
+      'the service saying too many are open maps to the same message',
+      () async {
+        final rig = await _rig();
+        rig.gateway.failures.add(const RequestRateLimited('too_many_open'));
 
-      final outcome = await rig.notifier.submit(text: _dhikrs[0]);
+        final outcome = await rig.notifier.submit(text: _dhikrs[0]);
 
-      expect((outcome as Refused).problem, RequestProblem.tooManyOpen);
-    });
+        expect((outcome as Refused).problem, RequestProblem.tooManyOpen);
+      },
+    );
 
     test('without a service the feature just refuses', () async {
       SharedPreferences.setMockInitialValues({});
@@ -329,7 +401,11 @@ void main() {
       expect(rig.state.unseenCount, 0);
 
       rig.gateway.remote = [
-        const RemoteRequest(id: 'srv0', status: RequestStatus.inProgress, votes: 3),
+        const RemoteRequest(
+          id: 'srv0',
+          status: RequestStatus.inProgress,
+          votes: 3,
+        ),
       ];
       await rig.notifier.refresh(force: true);
       expect(rig.state.requests.single.status, RequestStatus.inProgress);
@@ -359,33 +435,39 @@ void main() {
       final rig = await _rig();
       await rig.notifier.submit(text: _dhikrs[0]);
       rig.gateway.remote = [
-        const RemoteRequest(id: 'srv0', status: RequestStatus.pending, votes: 9),
+        const RemoteRequest(
+          id: 'srv0',
+          status: RequestStatus.pending,
+          votes: 9,
+        ),
       ];
       await rig.notifier.refresh(force: true);
       expect(rig.state.requests.single.votes, 9);
       expect(rig.state.unseenCount, 0);
     });
 
-    test('a decline carries its reason, and a later answer clears it',
-        () async {
-      final rig = await _rig();
-      await rig.notifier.submit(text: _dhikrs[0]);
-      rig.gateway.remote = [
-        const RemoteRequest(
-          id: 'srv0',
-          status: RequestStatus.declined,
-          reason: DeclineReason.duplicate,
-        ),
-      ];
-      await rig.notifier.refresh(force: true);
-      expect(rig.state.requests.single.reason, DeclineReason.duplicate);
+    test(
+      'a decline carries its reason, and a later answer clears it',
+      () async {
+        final rig = await _rig();
+        await rig.notifier.submit(text: _dhikrs[0]);
+        rig.gateway.remote = [
+          const RemoteRequest(
+            id: 'srv0',
+            status: RequestStatus.declined,
+            reason: DeclineReason.duplicate,
+          ),
+        ];
+        await rig.notifier.refresh(force: true);
+        expect(rig.state.requests.single.reason, DeclineReason.duplicate);
 
-      rig.gateway.remote = [
-        const RemoteRequest(id: 'srv0', status: RequestStatus.done),
-      ];
-      await rig.notifier.refresh(force: true);
-      expect(rig.state.requests.single.reason, isNull);
-    });
+        rig.gateway.remote = [
+          const RemoteRequest(id: 'srv0', status: RequestStatus.done),
+        ];
+        await rig.notifier.refresh(force: true);
+        expect(rig.state.requests.single.reason, isNull);
+      },
+    );
 
     test('a request the dev team deleted disappears', () async {
       final rig = await _rig();
@@ -434,7 +516,9 @@ void main() {
       await rig.notifier.forget(id);
       expect(rig.state.requests, hasLength(1));
 
-      rig.gateway.remote = [const RemoteRequest(id: 'srv0', status: RequestStatus.done)];
+      rig.gateway.remote = [
+        const RemoteRequest(id: 'srv0', status: RequestStatus.done),
+      ];
       await rig.notifier.refresh(force: true);
       await rig.notifier.forget(id);
       expect(rig.state.requests, isEmpty);
@@ -449,9 +533,9 @@ void main() {
       await rig.notifier.refresh(force: true);
 
       final prefs = await SharedPreferences.getInstance();
-      final again = await _rig(prefs: {
-        for (final key in prefs.getKeys()) key: prefs.get(key)!,
-      });
+      final again = await _rig(
+        prefs: {for (final key in prefs.getKeys()) key: prefs.get(key)!},
+      );
 
       final request = again.state.requests.single;
       expect(request.text, _dhikrs[0]);
@@ -461,16 +545,20 @@ void main() {
     });
 
     test('a damaged saved list does not stop the app', () async {
-      final rig = await _rig(prefs: {
-        'dhikr_reminder.requests.list': jsonEncode([
-          {'localId': 'ok', 'text': 'نص', 'createdAt': 1, 'status': 'done'},
-          'rubbish',
-          {'nope': true},
-        ]),
-      });
+      final rig = await _rig(
+        prefs: {
+          'dhikr_reminder.requests.list': jsonEncode([
+            {'localId': 'ok', 'text': 'نص', 'createdAt': 1, 'status': 'done'},
+            'rubbish',
+            {'nope': true},
+          ]),
+        },
+      );
       expect(rig.state.requests.map((r) => r.localId), ['ok']);
 
-      final broken = await _rig(prefs: {'dhikr_reminder.requests.list': '{not json'});
+      final broken = await _rig(
+        prefs: {'dhikr_reminder.requests.list': '{not json'},
+      );
       expect(broken.state.requests, isEmpty);
       expect(broken.state.isLoaded, isTrue);
     });
@@ -486,9 +574,9 @@ void main() {
             status: RequestStatus.done,
           ).toJson(),
       ].reversed.toList();
-      final rig = await _rig(prefs: {
-        'dhikr_reminder.requests.list': jsonEncode(saved),
-      });
+      final rig = await _rig(
+        prefs: {'dhikr_reminder.requests.list': jsonEncode(saved)},
+      );
       rig.gateway.remote = [
         for (var i = 0; i < requestMaxKept + 5; i++)
           RemoteRequest(id: 'srv$i', status: RequestStatus.done),

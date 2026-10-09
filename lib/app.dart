@@ -2,7 +2,6 @@ import 'package:dhikr_reminder/core/locale/locale_controller.dart';
 import 'package:dhikr_reminder/core/navigation/main_shell.dart';
 import 'package:dhikr_reminder/core/theme/app_theme.dart';
 import 'package:dhikr_reminder/core/toast/dhikr_reminder_overlay.dart';
-import 'package:dhikr_reminder/core/toast/toast_overlay.dart';
 import 'package:dhikr_reminder/core/window/app_shell.dart';
 import 'package:dhikr_reminder/core/window/reminder_prewarm.dart';
 import 'package:dhikr_reminder/core/window/splash_surface.dart';
@@ -45,19 +44,11 @@ class DhikrReminderApp extends ConsumerWidget {
       // `NotifierProvider` with nothing listening to it is torn down. Mounting
       // it here — rather than inside a screen — means the timer outlives every
       // change of what the window is showing.
-      //
-      // `ToastOverlay` likewise needs one permanent home, since `AppToast.*`
-      // calls come from widgets (the settings card's Save) that can be built
-      // and thrown away at any time.
       builder: (context, child) => DhikrReminderHost(
         child: MobileReminderHost(
           child: ref.watch(appPlatformProvider).usesNotifications
-              ? _MobileShell(
-                  app: ToastOverlay(child: child ?? const SizedBox.shrink()),
-                )
-              : _ShellHost(
-                  app: ToastOverlay(child: child ?? const SizedBox.shrink()),
-                ),
+              ? _MobileShell(app: child ?? const SizedBox.shrink())
+              : _ShellHost(app: child ?? const SizedBox.shrink()),
         ),
       ),
     );
@@ -170,9 +161,7 @@ class _ShellHostState extends ConsumerState<_ShellHost> {
                 ],
               ShellMode.trayMenu => const [
                   Positioned.fill(
-                    key: ValueKey('menu'),
-                    child: TrayMenuPanel(),
-                  ),
+                      key: ValueKey('menu'), child: TrayMenuPanel()),
                 ],
             },
           ],

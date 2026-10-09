@@ -47,4 +47,21 @@ object PendingRules {
     /** Whether the lock-screen card started after it was asked for. */
     fun lockScreenStarted(requestedAtMillis: Long, shownAtMillis: Long): Boolean =
         requestedAtMillis > 0 && shownAtMillis >= requestedAtMillis
+
+    /** Whether reminders are paused at [nowMillis]; 0 or a past time means no pause. */
+    fun isPaused(nowMillis: Long, pausedUntilMillis: Long): Boolean =
+        pausedUntilMillis > nowMillis
+
+    /**
+     * Whether a floating card is welcome now: not during Do Not Disturb (any
+     * mode that silences the phone) and not during a call. [interruptionFilter]
+     * is `NotificationManager.currentInterruptionFilter` (1 all, 2 priority only,
+     * 3 none, 4 alarms only, 0 unknown), [audioMode] is `AudioManager.getMode()`
+     * (0 normal, 1 ringing, 2 in a call, 3 in a communication app call).
+     */
+    fun cardIsWelcome(interruptionFilter: Int, audioMode: Int): Boolean {
+        val silenced = interruptionFilter in 2..4
+        val inCall = audioMode in 1..3
+        return !silenced && !inCall
+    }
 }

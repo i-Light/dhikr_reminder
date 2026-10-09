@@ -74,4 +74,24 @@ class PendingRulesTest {
     fun theWaitForTheCardToStartIsShorterThanTheCardStaysUp() {
         assertTrue(PendingRules.LAUNCH_CHECK_MILLIS < PendingRules.LOCKSCREEN_MILLIS)
     }
+
+    @Test
+    fun aPauseHoldsUntilItsEndAndNoLonger() {
+        val now = 1_000_000L
+        assertTrue(PendingRules.isPaused(now, now + 1))
+        assertFalse(PendingRules.isPaused(now, now))
+        assertFalse(PendingRules.isPaused(now, 0))
+    }
+
+    @Test
+    fun theCardIsWelcomeOnlyOutsideDoNotDisturbAndCalls() {
+        assertTrue(PendingRules.cardIsWelcome(1, 0))
+        assertTrue(PendingRules.cardIsWelcome(0, 0))
+        assertFalse(PendingRules.cardIsWelcome(2, 0))
+        assertFalse(PendingRules.cardIsWelcome(3, 0))
+        assertFalse(PendingRules.cardIsWelcome(4, 0))
+        assertFalse(PendingRules.cardIsWelcome(1, 1))
+        assertFalse(PendingRules.cardIsWelcome(1, 2))
+        assertFalse(PendingRules.cardIsWelcome(1, 3))
+    }
 }

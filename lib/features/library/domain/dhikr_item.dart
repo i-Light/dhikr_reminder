@@ -87,10 +87,11 @@ class DhikrItem {
     this.tags = const <DhikrTag>[],
   });
 
-  /// Stable across edits of the dataset, so a reminder that points at this
-  /// entry keeps pointing at it after the list is reordered or added to. Made
-  /// from the words of the dhikr (see `tool/generate_library.dart`), never from
-  /// its position.
+  /// Stays the same when the list is reordered or added to, so a reminder that
+  /// points at this entry keeps pointing at it. Made from the words of the
+  /// dhikr (see `tool/library_builder.dart`), never from its position. If the
+  /// words are corrected the id changes, and the old one goes into
+  /// `dhikrIdAliases` so saved reminders follow it.
   final String id;
 
   /// The dhikr itself.

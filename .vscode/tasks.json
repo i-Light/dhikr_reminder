@@ -32,18 +32,37 @@
         "${workspaceFolder}\\scripts\\build_windows.ps1",
 
         // Builds only the installer (dist\dhikr_reminder-<ver>-setup.exe);
-        // needs Inno Setup 7. Keep exactly ONE of these two modes uncommented.
-        // Local: build as-is. The version is not bumped
-        //  "-Mode", "Local", "-InstallHere",
-        "-Mode", "Publish"//, "-Bump", "minor"//, "major"
-        // Publish: run analyze + tests, bump the version in pubspec.yaml,
-        // build, commit + tag + push, and publish the installer as a GitHub
-        // Release (installed copies update themselves from it). Needs a clean
-        // working tree and a GitHub sign-in or GH_TOKEN. Add "-Bump", "minor"
-        // (or "major") to raise something other than the patch number.
+        // needs Inno Setup 7. Local: build as-is, the version is not bumped,
+        // and the result is installed over the copy on this PC.
+        // Ctrl+Shift+B must never publish: that goes to every installed copy.
+        // Publishing is the separate "Release: publish" task below, which asks
+        // for the tag to be typed.
+        "-Mode", "Local", "-InstallHere"
       ],
       "options": { "cwd": "${workspaceFolder}" },
       "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      // Cuts a release: analyze + tests, version bump, build, commit + tag +
+      // push, and a GitHub Release (installed copies update themselves from
+      // it). Needs a clean working tree and a GitHub sign-in or GH_TOKEN. The
+      // script shows the plan and waits for the tag to be typed. Add "-Bump",
+      // "minor" (or "major") to raise something other than the patch number.
+      "label": "Release: publish",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\build_windows.ps1",
+        "-Mode", "Publish"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": "none",
+      "presentation": { "reveal": "always", "focus": true },
       "problemMatcher": []
     },
     // ---- Google Play (docs/publishing-guide.md) ----

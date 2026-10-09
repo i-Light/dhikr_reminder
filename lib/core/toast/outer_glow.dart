@@ -25,6 +25,16 @@ double glowSpritePadding({
 }) =>
     3 * blurRadius + spreadRadius;
 
+// Why the glow is a sprite and never an opacity layer over a blurred shadow
+// (the finding of the old Impeller investigation, 2026-10): on Impeller, an
+// OpacityLayer whose subtree resolves to exactly ONE entity that cannot accept
+// opacity folded into it (a blurred BoxShadow is such an entity) trips a
+// validation assert, once per repaint. The card repaints constantly, so it was
+// a firehose of errors in debug and a wasted layer in release. Giving the layer
+// a second entity avoids the assert but not the cost. The fix, kept here, is to
+// fold the alpha into the shadow colour (or into the sprite tint) and never to
+// wrap a lone blurred shadow in Opacity or FadeTransition.
+
 /// Pre-rendered falloff sprites for the reminder card's two outer-glow
 /// layers (the ambient backdrop glow and the tap pulse).
 ///

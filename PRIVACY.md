@@ -1,6 +1,6 @@
 # Privacy Policy for Dhikr Reminder (ذِكر)
 
-Last updated: 8 October 2026
+Last updated: 9 October 2026
 
 Dhikr Reminder ("the app") shows a dhikr every few minutes so you can count it
 and carry on. This page explains what the app does with your information. The
@@ -23,8 +23,14 @@ The app saves these on your own phone or PC so it can work:
 - how many times you said each dhikr today;
 - the requests you made, and how each one is going.
 
+On Windows the app also keeps up to three backup copies of this list on your own
+PC (in `%LOCALAPPDATA%\DhikrReminder`), so one damaged settings file cannot lose
+it. They are never sent anywhere.
+
 This data never leaves your device, except the requests as described below.
-Uninstalling the app deletes it.
+Uninstalling the app on Android deletes it; on Windows the installer leaves your
+list in place so a reinstall finds it, and you can delete the app's folders to
+remove it.
 
 ## Requesting a dhikr (optional)
 
@@ -44,10 +50,12 @@ What is sent:
 
 The service runs on Cloudflare, so Cloudflare sees the IP address of your
 connection, as any web host does. The service itself keeps only a scrambled
-(salted and hashed) form of that address for one day, to stop abuse, and a
-scrambled form of your random code. It cannot tell who you are.
+(salted and hashed) form of that address, cleared out about two days later, to stop abuse,
+and a scrambled form of your random code. It cannot tell who you are.
 
-Requests are kept so the team can add the dhikr and so you can see their status.
+A request is kept until the team deletes it, so they can add the dhikr and so you
+can see its status. There is no automatic deletion yet; it is planned, and this
+page will say so when it exists.
 A dhikr you request may be added to the library for everyone; your code and
 details are never shown with it. To have a request deleted, open an issue
 (below) quoting the text you sent.
@@ -77,7 +85,7 @@ internet permission carrying a request you chose to make.
   with any web request, GitHub can see your IP address. The app sends no other
   information to GitHub. "Request a dhikr" works as described above.
 - **Report a bug**: this opens your browser on a GitHub page, filled in with
-  what you wrote, the app version and your device model. Nothing is sent unless
+  what you wrote, the app version and your device model. On Android it also lists whether reminders are allowed and the times and path of the last few reminders (never the dhikr text). Nothing is sent unless
   you read it and press the button on that page yourself.
 
 ## Children
@@ -97,7 +105,7 @@ Open an issue at <https://github.com/i-Light/dhikr_reminder/issues>.
 
 # سياسة الخصوصية لتطبيق ذِكر
 
-آخر تحديث: 8 أكتوبر 2026
+آخر تحديث: 9 أكتوبر 2026
 
 التطبيق مش بيجمع أي بيانات عنك. مفيش حسابات ولا إعلانات ولا تتبّع. الاستثناء
 الوحيد هو ميزة "اطلب إضافة ذكر" الاختيارية، وبتبعت بس اللي انت قررت تبعته.
@@ -109,8 +117,8 @@ Open an issue at <https://github.com/i-Light/dhikr_reminder/issues>.
   بيتبعت هو: نص الذكر اللي كتبته ومصدره لو كتبته، وكود عشوائي التطبيق بيعمله
   لنفسه عشان تشوف طلباتك انت بس (مش مربوط بيك ولا بموبايلك)، ورقم النسخة
   والنظام (أندرويد أو ويندوز) ولغة التطبيق. الخدمة شغالة على Cloudflare فبتشوف
-  عنوان الاتصال زي أي موقع، وإحنا بنحتفظ بنسخة مشفّرة منه ليوم واحد بس لمنع
-  الإساءة. الذكر اللي بتطلبه ممكن يتضاف للموسوعة للكل، من غير اسمك ولا الكود.
+  عنوان الاتصال زي أي موقع، وإحنا بنحتفظ بنسخة مشفّرة منه لحوالي يومين
+  لمنع الإساءة. الذكر اللي بتطلبه ممكن يتضاف للموسوعة للكل، من غير اسمك ولا الكود.
   لو عايز طلبك يتمسح افتح Issue واكتب فيها نص الذكر اللي بعتّه.
 - تطبيق أندرويد بيطلب صلاحية الإنترنت عشان الميزة دي بس، ومبيتصلش بالنت لأي
   حاجة تانية.

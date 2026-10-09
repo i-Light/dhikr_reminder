@@ -68,7 +68,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 ; (flutter_assets, icudtl.dat) sitting beside it. recursesubdirs carries it.
 ;
 ; Nothing writable is installed here, deliberately: the dhikr list and the
-; reminder interval live in %APPDATA%\dhikr_reminder\shared_preferences.json,
+; reminder interval live in %APPDATA%\com.gratovo\dhikr_reminder\shared_preferences.json,
 ; so ignoreversion cannot reset them on an upgrade and an uninstall cannot
 ; take them with it.
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs

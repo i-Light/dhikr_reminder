@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:dhikr_reminder/core/quiet_hours.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
 import 'package:flutter/foundation.dart';
@@ -51,7 +52,9 @@ int reminderPlanLength(Duration interval) {
 /// A phone cannot run a timer while the app is closed, so unlike Windows the
 /// reminders are chosen now and scheduled with the OS. Picks use the same
 /// weighting as the desktop scheduler ([DhikrReminderScheduler.pickReminder]).
-/// Reminders that would land before [pausedUntil] are left out.
+/// Reminders that would land before [pausedUntil], or inside [quiet] hours, are
+/// left out. The same dhikr never comes twice in a row while there is another
+/// one to pick (the reminder after a skipped one counts as following it).
 List<PlannedReminder> planReminders({
   required DateTime now,
   required Duration interval,
@@ -61,18 +64,23 @@ List<PlannedReminder> planReminders({
   DateTime? pausedUntil,
   int? count,
   bool showTransliteration = false,
+  QuietHours quiet = const QuietHours(),
 }) {
   final total = count ?? reminderPlanLength(interval);
   final plan = <PlannedReminder>[];
+  DhikrEntry? previous;
   for (var step = 1; step <= total; step++) {
     final at = now.add(interval * step);
     if (pausedUntil != null && at.isBefore(pausedUntil)) continue;
+    if (quiet.contains(at)) continue;
     final entry = DhikrReminderScheduler.pickReminder(
       entries,
       random,
       useChance: useChance,
+      avoid: previous,
     );
     if (entry == null) return const [];
+    previous = entry;
     plan.add(PlannedReminder(
       id: step,
       at: at,

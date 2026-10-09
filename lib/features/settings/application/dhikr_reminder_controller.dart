@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:dhikr_reminder/core/features.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
+import 'package:dhikr_reminder/features/sound/chime_player.dart';
 import 'package:dhikr_reminder/features/stats/dhikr_stats.dart';
 import 'package:dhikr_reminder/platform/app_platform.dart';
+import 'package:dhikr_reminder/platform/windows/native_window.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -31,11 +34,31 @@ class ActiveDhikrReminder {
 /// `DhikrReminderScheduler` populates it on a timer; the reminder popup
 /// (`DhikrReminderSurface`) renders it and drives [increment]/[dismiss] from taps.
 class ActiveDhikrReminderNotifier extends Notifier<ActiveDhikrReminder?> {
+  /// How long a card nobody touches stays up before it closes by itself, so an
+  /// ignored one can never block the reminders after it. The same three minutes
+  /// the phone's card waits.
+  static const idleTimeout = Duration(minutes: 3);
+
+  Timer? _idle;
+
   @override
-  ActiveDhikrReminder? build() => null;
+  ActiveDhikrReminder? build() {
+    ref.onDispose(() => _idle?.cancel());
+    return null;
+  }
+
+  /// (Re)starts the idle countdown; every tap restarts it, so a person who is
+  /// counting is never cut off.
+  void _touch() {
+    _idle?.cancel();
+    _idle = Timer(idleTimeout, () {
+      if (state != null && !state!.isComplete) dismiss();
+    });
+  }
 
   void show(DhikrEntry entry) {
     state = ActiveDhikrReminder(entry: entry);
+    _touch();
     // No sound for now: the system beep this used to play is off on purpose.
     // The mute setting (`isMuted`) stays wired up for when each dhikr gets its
     // own optional custom sound — play it here, unless muted.
@@ -67,9 +90,20 @@ class ActiveDhikrReminderNotifier extends Notifier<ActiveDhikrReminder?> {
     if (current == null || current.isComplete) return;
     state = current.copyWith(count: current.count + 1);
     ref.read(dhikrStatsProvider.notifier).recordTap(current.entry.id);
+    _touch();
+    // The one moment a chime belongs: the last count of the dhikr. Nothing is
+    // looked up or built unless sound was switched on.
+    if (Features.sound &&
+        state!.isComplete &&
+        ref.read(dhikrSettingsProvider).soundOn) {
+      unawaited(ref.read(chimePlayerProvider).play());
+    }
   }
 
-  void dismiss() => state = null;
+  void dismiss() {
+    _idle?.cancel();
+    state = null;
+  }
 }
 
 final activeDhikrReminderProvider =
@@ -159,12 +193,39 @@ class DhikrReminderScheduler extends Notifier<DateTime?> {
     // Paused from the tray: the tick passes, the timer keeps its rhythm.
     if (ref.read(reminderPauseProvider) != null) return;
     final settings = ref.read(dhikrSettingsProvider);
+    // Quiet hours: the tick passes, nothing is saved up for later.
+    if (Features.politeReminders && settings.quiet.contains(DateTime.now())) {
+      return;
+    }
+    if (Features.politeReminders) {
+      unawaited(_showIfWelcome(settings));
+    } else {
+      _show(settings);
+    }
+  }
+
+  /// Asks Windows whether this is a bad moment (a full-screen app or game, a
+  /// presentation, Focus Assist, a locked or idle PC) and lets the tick pass if
+  /// so. Fails open: if Windows cannot say, the reminder comes.
+  Future<void> _showIfWelcome(DhikrSettings settings) async {
+    final user = await ref.read(nativeWindowProvider).userState();
+    if (user != null && user.shouldHoldReminder) return;
+    // Another card may have appeared while Windows was being asked.
+    if (ref.read(activeDhikrReminderProvider) != null) return;
+    _show(settings);
+  }
+
+  DhikrEntry? _last;
+
+  void _show(DhikrSettings settings) {
     final entry = pickReminder(
       settings.entries,
       _random,
       useChance: settings.useChance,
+      avoid: _last,
     );
     if (entry != null) {
+      _last = entry;
       ref.read(activeDhikrReminderProvider.notifier).show(entry);
     }
   }
@@ -173,14 +234,27 @@ class DhikrReminderScheduler extends Notifier<DateTime?> {
   /// including one whose chance is 0 — counts as being at [dhikrChanceMax];
   /// the chances stay on the entries themselves, unread, so switching the
   /// option back on picks up where it left off.
+  ///
+  /// [avoid] is the dhikr that was shown last: it is left out of the pick so the
+  /// same one never comes twice in a row, unless it is the only one there is.
   static DhikrEntry? pickReminder(
     List<DhikrEntry> entries,
     Random random, {
     required bool useChance,
+    DhikrEntry? avoid,
   }) {
-    if (useChance) return pickWeighted(entries, random);
-    if (entries.isEmpty) return null;
-    return entries[random.nextInt(entries.length)];
+    var pool = entries;
+    if (avoid != null) {
+      final others = entries.where((e) => e.id != avoid.id).toList();
+      // Only worth it if one of the others can actually be picked.
+      if (others.isNotEmpty &&
+          (!useChance || others.any((e) => e.chance > 0))) {
+        pool = others;
+      }
+    }
+    if (useChance) return pickWeighted(pool, random);
+    if (pool.isEmpty) return null;
+    return pool[random.nextInt(pool.length)];
   }
 
   /// Weighted random pick over `chance`: an entry's odds are its own chance

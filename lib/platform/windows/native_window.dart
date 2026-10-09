@@ -1,4 +1,5 @@
 import 'package:dhikr_reminder/platform/windows/window_placement.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -33,6 +34,32 @@ abstract class NativeWindow {
   /// Puts a popup of [size] beside the cursor (see [popupRectNearCursor]).
   /// Same return value as [centreOnCursorMonitor].
   Future<bool?> placeNearCursor(Size size, {double gap = kWindowGap});
+
+  /// What Windows says about whether a reminder is welcome right now, or null
+  /// when the runner cannot tell (an older runner, a failure).
+  Future<UserState?> userState();
+}
+
+/// Whether the person is in the middle of something a reminder should not
+/// interrupt, as Windows reports it.
+@immutable
+class UserState {
+  const UserState({required this.notificationState, required this.idleSeconds});
+
+  /// `QUERY_USER_NOTIFICATION_STATE`: 1 not present (locked, screen saver),
+  /// 2 a full-screen app, 3 a full-screen Direct3D game, 4 presentation mode,
+  /// 5 free, 6 Focus Assist quiet time, 7 a Store app.
+  final int notificationState;
+
+  /// Seconds since the last keyboard or mouse input.
+  final int idleSeconds;
+
+  /// Away this long and a card would only sit on an empty desk.
+  static const awayAfter = Duration(minutes: 15);
+
+  bool get shouldHoldReminder =>
+      const {1, 2, 3, 4, 6}.contains(notificationState) ||
+      idleSeconds >= awayAfter.inSeconds;
 }
 
 /// [NativeWindow] over the runner's method channel.
@@ -85,6 +112,22 @@ class ChannelNativeWindow implements NativeWindow {
   @override
   Future<bool?> placeNearCursor(Size size, {double gap = kWindowGap}) =>
       _place('placeNearCursor', size, gap);
+
+  @override
+  Future<UserState?> userState() async {
+    try {
+      final map = await _channel.invokeMapMethod<String, int>('userState');
+      if (map == null) return null;
+      return UserState(
+        notificationState: map['notificationState'] ?? 5,
+        idleSeconds: map['idleSeconds'] ?? 0,
+      );
+    } on MissingPluginException {
+      return null;
+    } on PlatformException {
+      return null;
+    }
+  }
 }
 
 /// The native window in use. Overridden in tests with a fake.

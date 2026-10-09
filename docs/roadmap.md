@@ -4,6 +4,34 @@ The app is a remembrance (dhikr) app only, for Windows and Android, in Arabic an
 
 This roadmap was re-sorted on 2026-10-09. The first version ordered work by calendar-style phases and gates. This one orders it by how much each thing matters to the people using the app and how quickly Claude can build it, and it puts the work only a person can do in its own lane so those clocks start early. Nothing was removed; every idea is still in `docs/research/ideas-pool.md`, which is the master list with the importance, effort and human columns for all 101 ideas.
 
+## Progress log
+
+### 2026-10-09: W0 to W5 built, waiting on the 1.0 checkpoint
+
+Built and tested (analyze clean, 510 Dart tests, 59 server tests, the Kotlin unit tests, Windows and Android debug builds compile; the Android parts were also run on the Samsung phone):
+
+- **W0:** `docs/human-lane/` holds the scholar review list (42 entries), the licence issue, the five user questions, the tester message and the Store note. Nothing was sent.
+- **W1:** the Android reminders no longer depend on `flutter_local_notifications` (removed, with the vendored Windows package, `timezone`, the proguard rule and desugaring); one native schedule delivers a card or, without the overlay permission, a notification that opens its dhikr. Pause reaches the native alarms, and `cancel` forgets the plan. Hijri guard, tolerant loading (a bad entry is skipped, the original kept aside), request dead-ends, autostart from startup, Ctrl+Shift+B no longer publishes (a typed tag is needed), a release build needs the key, CI (Flutter, server, Windows, Android and a merged-manifest check), Dependabot, doc drift.
+- **W2:** one global schema number and a rule that settings from a newer build are read, never rewritten; a rolling three-copy backup on Windows that restores a lost settings file; library id aliases and a text fallback so a reminder is never orphaned; "Report a mistake" (press and hold a dhikr); an About page; PRIVACY.md matches the code; the dead toast subsystem, the Impeller probe, `ios/` and the unused font are gone.
+- **W3 (the parts that need no emulator):** a native event log, a "reminders seem to have stopped" card and a "notifications are off" card that appear only when true, a 12-hour self-healing job, time and time-zone receivers, a health snapshot in bug reports, backup rules, brand-specific "start in background" screens as a fallback.
+- **W4:** quiet hours, do not disturb and phone calls turn the floating card into a quiet notification, full-screen apps, presentations, Focus Assist and a long idle hold a Windows card, an ignored Windows card closes after 3 minutes, the same dhikr never comes twice in a row.
+- **W5:** History with an optional "days in a row" line, an optional soft chime (generated in code, off by default), "Count now" in the library, Space, Enter and Escape on the Windows card, screen-reader text on the card, a more readable hint.
+
+Not done, on purpose, and why:
+
+- **The simplicity principle (above) cut the W5 list.** Favourites, "my wird", morning and evening sessions, cycles and sequences, haptic strength, volume keys, a global hotkey, a free counter, and an export file would each add controls for people who mostly want one thing. They are parked in `docs/research/ideas-pool.md` until the answers to the five user questions (H3) say people want them. The roadmap sections below still describe them in full.
+- **Needs you or a decision:** the Android 15 and 16 card path (needs the emulator download, which the roadmap says to ask about first), always-on mode (a Play foreground-service declaration), the code licence (D4), Hijri day adjustment, language from the phone's locale (Egyptians often use an English phone and want Arabic), a theme choice, pause options, jitter, per-dhikr hours.
+- **Not changed:** the version number. 1.0 is cut by you with the "Release: publish" task after the checkpoint below.
+
+To switch a feature off, flip its constant in `lib/core/features.dart` (and `Features.kt` for the native part).
+
+### The 1.0 checkpoint, what is left
+
+1. 14-day soak on a Windows PC and the phone (H12), reading the event log in a bug report.
+2. Android 15 and 16 on an emulator or a borrowed phone (see above).
+3. Your read of the new Arabic strings (H9): quiet hours, soft sound, About, "Your dhikr", the two warning cards, "Count now", the report dialog.
+4. Send the human-lane messages (H1, H3, H4, H13).
+
 ## How the order was decided
 
 **Importance**
@@ -92,6 +120,16 @@ After any wave the project is in a state where it is safe to stop, and W13 then 
 - **D4, W2: code licence** (MIT or similar). The content licence is decided by the dataset licences.
 - **D5, start of W12: other Android channels** (F-Droid, IzzyOnDroid, Galaxy Store). Each store signs differently from Play, so a person who installs from two stores cannot update across them. Recommended: IzzyOnDroid first (it serves our own signed GitHub APK), F-Droid only if you accept a second signing identity.
 - **D6, end of each wave: stop or continue.** You choose the last feature wave; W13 then follows.
+
+## Product principles (from the owner, 2026-10-09; they outrank every item below)
+
+The app is loved for being simple. Most people who download it are busy, or young people who struggle to focus, and they give up if they cannot do the one thing they came for or if many options show at once. The app can be capable without looking complex.
+
+1. **Few controls on screen.** One main action per screen. A new feature must not add a button, setting or line of information to the home page or the reminder card unless it replaces one. Prefer automatic behaviour with a good default over a new option. Anything optional lives one tap deeper (inside a folded card, the library, or a screen the person already opens).
+2. **Do not break what exists.** Existing screens, wording and flows keep their look and behaviour. A feature that needs a change to them is redesigned until it does not, or the change is shown to the owner first.
+3. **Fast and light.** Nothing new runs at startup unless it is needed to show the first screen. No timers, listeners or native services while a feature is unused. Data loads lazily (a library table, a history file) and never on the main path of a reminder. New native code must not add work to the alarm path beyond a few reads.
+4. **Removable with one switch.** Every feature has a compile-time flag in `lib/core/features.dart` (and a matching native flag in `Features.kt` where Kotlin is involved). With the flag off, its entry point disappears and nothing else breaks; tests for it are skipped on the same flag. The owner can turn off anything they do not like by flipping one constant. Defaults in that file say which features ship on.
+5. **Check before adding.** Each new control needs one sentence on why it cannot be automatic or hidden. The idea-intake test below applies on top.
 
 ## Ground rules for every release
 
