@@ -1,7 +1,7 @@
 name: dhikr_reminder
 description: "Dhikr Reminder: pops up a dhikr every few minutes, on Windows and Android, and lets you tap it out."
 publish_to: 'none'
-version: 0.2.0+5
+version: 1.0.0+6
 
 environment:
   # Kept low on purpose: the language version here also picks the style `dart
