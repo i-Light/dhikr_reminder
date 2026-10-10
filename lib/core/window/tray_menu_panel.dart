@@ -4,6 +4,7 @@ import 'package:dhikr_reminder/core/features.dart';
 import 'package:dhikr_reminder/core/toast/dhikr_reminder_overlay.dart';
 import 'package:dhikr_reminder/core/window/app_shell.dart';
 // import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart'; // for the sound toggle, see below
+import 'package:dhikr_reminder/features/library/application/transliteration_controller.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
 import 'package:dhikr_reminder/features/stats/dhikr_stats.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
@@ -191,8 +192,10 @@ class _TrayMenuItem extends StatelessWidget {
   }
 }
 
-/// "Count one": adds one to the dhikr last shown, without a card, and says what
-/// today's total is. The menu stays open so a few can be counted in a row.
+/// The count row: names the dhikr it adds to (the one last shown) and counts
+/// down how many of it are left. One tap adds one, without a card, and the
+/// menu stays open so a few can be counted in a row. Nothing shows while there
+/// is no dhikr to count.
 class _CountOneItem extends ConsumerWidget {
   const _CountOneItem({required this.accent});
 
@@ -201,14 +204,21 @@ class _CountOneItem extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final active = ref.read(activeDhikrReminderProvider.notifier);
+    final entry = active.countTarget();
+    if (entry == null) return const SizedBox.shrink();
     final stats = ref.watch(dhikrStatsProvider);
-    final total = stats.day == dhikrDayKey(DateTime.now()) ? stats.today : 0;
+    final today = stats.forToday(dhikrDayKey(DateTime.now()), entry.id);
+    // In English the dhikr is shown by how it sounds, as everywhere else.
+    final name = entry.shortName(
+      transliterated: ref.watch(showTransliterationProvider),
+    );
     return _TrayMenuItem(
       accent: accent,
       icon: Icons.add_circle_outline_rounded,
-      label: l10n.surfaceCountOne,
-      subtitle: l10n.trayTodayTotal(total),
-      onTap: () => ref.read(activeDhikrReminderProvider.notifier).countOne(),
+      label: name,
+      subtitle: l10n.trayLeft('${entry.left(today)}'),
+      onTap: active.countOne,
     );
   }
 }

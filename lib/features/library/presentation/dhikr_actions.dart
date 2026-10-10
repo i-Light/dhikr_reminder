@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dhikr_reminder/core/features.dart';
+import 'package:dhikr_reminder/features/library/application/favourites_controller.dart';
 import 'package:dhikr_reminder/features/library/domain/dhikr_item.dart';
 import 'package:dhikr_reminder/features/library/presentation/report_mistake.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
@@ -58,6 +59,8 @@ Future<void> showDhikrActions(
 ) async {
   final l10n = AppLocalizations.of(context);
   final onPhone = ref.read(appPlatformProvider).usesNotifications;
+  final starred =
+      Features.wird && ref.read(favouritesProvider).contains(item.id);
   unawaited(HapticFeedback.mediumImpact());
   final choice = await showModalBottomSheet<_DhikrAction>(
     context: context,
@@ -66,14 +69,27 @@ Future<void> showDhikrActions(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (onPhone)
+          // The first row: it is the one used most, and it is also how the
+          // person builds "my wird".
+          if (Features.wird)
+            ListTile(
+              key: const ValueKey('dhikr-favourite'),
+              leading: Icon(
+                starred ? Icons.star_rounded : Icons.star_outline_rounded,
+              ),
+              title: Text(
+                starred ? l10n.libraryUnfavourite : l10n.libraryFavourite,
+              ),
+              onTap: () => Navigator.of(context).pop(_DhikrAction.favourite),
+            ),
+          if (Features.shareText && onPhone)
             ListTile(
               key: const ValueKey('dhikr-share'),
               leading: const Icon(Icons.share_outlined),
               title: Text(l10n.libraryShare),
               onTap: () => Navigator.of(context).pop(_DhikrAction.share),
             )
-          else
+          else if (Features.shareText)
             ListTile(
               key: const ValueKey('dhikr-copy'),
               leading: const Icon(Icons.copy_rounded),
@@ -94,6 +110,8 @@ Future<void> showDhikrActions(
   if (choice == null || !context.mounted) return;
 
   switch (choice) {
+    case _DhikrAction.favourite:
+      await ref.read(favouritesProvider.notifier).toggle(item.id);
     case _DhikrAction.copy:
       await Clipboard.setData(ClipboardData(text: dhikrShareText(item)));
       if (!context.mounted) return;
@@ -112,4 +130,4 @@ Future<void> showDhikrActions(
   }
 }
 
-enum _DhikrAction { copy, share, report }
+enum _DhikrAction { favourite, copy, share, report }

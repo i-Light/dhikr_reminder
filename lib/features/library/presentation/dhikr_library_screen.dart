@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dhikr_reminder/core/features.dart';
 import 'package:dhikr_reminder/core/navigation/shell_tab.dart';
+import 'package:dhikr_reminder/features/library/application/favourites_controller.dart';
 import 'package:dhikr_reminder/features/library/application/library_controller.dart';
 import 'package:dhikr_reminder/features/library/application/transliteration_controller.dart';
 import 'package:dhikr_reminder/features/library/presentation/dhikr_actions.dart';
@@ -60,6 +61,9 @@ class _DhikrLibraryScreenState extends ConsumerState<DhikrLibraryScreen> {
     final view = ref.watch(dhikrLibraryProvider);
     final items = ref.watch(filteredDhikrProvider);
     final addedIds = ref.watch(addedLibraryIdsProvider);
+    final stars = Features.wird
+        ? ref.watch(favouritesProvider).toSet()
+        : const <String>{};
     final showTransliteration = ref.watch(showTransliterationProvider);
     final libraryNotifier = ref.read(dhikrLibraryProvider.notifier);
     final canRequest = ref.watch(requestsEnabledProvider);
@@ -117,11 +121,13 @@ class _DhikrLibraryScreenState extends ConsumerState<DhikrLibraryScreen> {
                               view: view,
                               showTransliteration: showTransliteration,
                               isAdded: addedIds.contains(items[index].id),
+                              isFavourite: stars.contains(items[index].id),
                               onToggleReminder: () => libraryNotifier
                                   .toggleExpanded(items[index].id),
-                              // Copy or share the text, or report a mistake in
-                              // it; with sharing off, straight to the report.
-                              onLongPress: Features.shareText
+                              // Star it, copy or share the text, or report a
+                              // mistake in it; with the first three off,
+                              // straight to the report.
+                              onLongPress: Features.shareText || Features.wird
                                   ? () => showDhikrActions(
                                         context,
                                         ref,
@@ -405,10 +411,12 @@ class _ResultSummary extends ConsumerWidget {
                   label: '+${view.selectedTags.length - _maxShownTags}',
                 ),
               if (view.hideAdded) _FilterPill(label: l10n.libraryHidingAdded),
+              if (view.favouritesOnly)
+                _FilterPill(label: l10n.libraryFavouritesFilter),
             ],
           ),
         ),
-        if (view.hasTagFilter)
+        if (view.hasTagFilter || view.favouritesOnly)
           TextButton.icon(
             onPressed: ref.read(dhikrLibraryProvider.notifier).clearTags,
             icon: const Icon(Icons.filter_alt_off_outlined, size: 18),

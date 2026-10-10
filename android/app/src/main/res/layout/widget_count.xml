@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The home-screen counter: the dhikr, today's total, one tap counts. -->
+<!-- The home-screen counter: the dhikr, how many are left, one tap counts. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"

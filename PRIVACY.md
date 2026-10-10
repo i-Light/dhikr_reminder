@@ -1,6 +1,6 @@
 # Privacy Policy for Dhikr Reminder (ذِكر)
 
-Last updated: 9 October 2026
+Last updated: 10 October 2026
 
 Dhikr Reminder ("the app") shows a dhikr every few minutes so you can count it
 and carry on. This page explains what the app does with your information. The
@@ -26,6 +26,11 @@ The app saves these on your own phone or PC so it can work:
 On Windows the app also keeps up to three backup copies of this list on your own
 PC (in `%LOCALAPPDATA%\DhikrReminder`), so one damaged settings file cannot lose
 it. They are never sent anywhere.
+
+The About page can also save all of this into one file that you choose the place
+for, and restore it from such a file. The app writes or reads that one file and
+nothing else; it is not sent anywhere unless you move it yourself. The dhikr you
+star in the library are kept the same way, on your device only.
 
 This data never leaves your device, except the requests as described below.
 Uninstalling the app on Android deletes it; on Windows the installer leaves your

@@ -6,6 +6,20 @@ This roadmap was re-sorted on 2026-10-09. The first version ordered work by cale
 
 ## Progress log
 
+### 2026-10-10: parked features switched on (sessions, favourites and wird, backup file)
+
+The three switches that had no code behind them are built, each behind its own flag in `lib/core/features.dart` (analyze clean, 555 Dart tests; the Android save screen and the Windows build compile, not yet run on a device):
+
+- **Favourites and "my wird" (`Features.wird`).** Press and hold a library entry: the first row of the sheet stars it or takes the star off. A starred card shows a small star in its corner and nothing else changes on it. The library filter gets a Favourites chip. While choosing what to add (the "Add dhikr" visit) the starred ones come first. "My wird" is simply the starred entries in the order they were starred, so there is no list to build and no name to type.
+- **Sessions (`Features.sessions`).** A button next to "Show a reminder now" inside the folded reminder settings card opens a screen with three rows, each with one Start button: morning azkar (the 31 countable entries tagged morning), evening azkar (30), and my wird (shown disabled with a one-line hint until something is starred). Starting one puts the dhikr on the usual reminder card one after another, with "3 of 31" where the card says its title. Morning and evening use the counts the sources give; my wird uses the person's own count for a dhikr they have in their reminders. Closing a card early ends the session, and the regular timer will not interrupt one. Counts go to today's total and History like any other.
+- **Backup file (`Features.backup`).** "Backup" at the bottom of the About page: "Save a copy" and "Restore from a file". Windows uses the save and open dialogs (`file_selector`); Android opens the system "save as" screen (new `saveFile` on the share channel in `MainActivity.kt`, no permission needed) and the system file picker. The file is JSON, versioned (`format` 1, `schema` 3, documented in `lib/core/storage/backup_file.dart`), holds the dhikr list, interval, quiet hours, sound, today's counts, History, stars and the library view options, and leaves out what belongs to the device (language, start with Windows, updater choices, the request service's id). Restoring asks first, refuses anything that is not a whole backup of this app or that comes from a newer version, and the app shows the restored values without a restart.
+
+Counters with no "x of y" now count down: the widget, the Count one tile, the shortcut toast, the tray row and the tray tooltip show how many are left of the dhikr being counted (`DhikrEntry.left` in Dart, `SurfaceRules.remaining` in Kotlin: what remains of its daily goal if it has one, else of the current round of its count, starting again when the round is said). The widget and tile take the target from the reminder plan, so an older widget shows no number until the next sync. History keeps its totals, since a total has nothing to count down to.
+
+Not built, on purpose: timed sessions at clock times (on Android they need a native alarm on the reminder alarm path, a second schedule beside the one that already works), a typed wird name, cycles and a free counter, haptic strength, volume keys and the global hotkey. They stay in `docs/research/ideas-pool.md`.
+
+Needs you: read the new Arabic strings ("ضيفه للمفضلة", "شيله من المفضلة", "المفضلة", "جلسات الأذكار", "أذكار الصباح", "أذكار المساء", "وردي", "ابدأ", "احفظ نسخة", "رجّع من ملف", "تستبدل اللي على الجهاز؟"), and try a session and a save and restore on the phone and on Windows.
+
 ### 2026-10-10: W6 (1.1) built, waiting on your look at it
 
 Android surfaces, all outside the app so no existing screen changed (analyze clean, 522 Dart tests, 12 new Kotlin tests; run on the Samsung phone: tile, widget, shortcut, notification buttons, library shortcut, share sheet):

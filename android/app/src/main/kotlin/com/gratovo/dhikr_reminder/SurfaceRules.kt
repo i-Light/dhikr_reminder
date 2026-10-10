@@ -13,8 +13,25 @@ object SurfaceRules {
     /** How long "later" on a notification waits before the same dhikr comes again. */
     const val SNOOZE_MILLIS = 10L * 60 * 1000
 
-    /** The dhikr that "count one" adds to, with the words to show for it. */
-    data class Focus(val dhikrId: Int, val text: String)
+    /**
+     * The dhikr that "count one" adds to, with the words to show for it and the
+     * target it is counted against: how many times it is said in one go
+     * ([amount]) and how many a day ([goal], 0 for none).
+     */
+    data class Focus(val dhikrId: Int, val text: String, val amount: Int = 0, val goal: Int = 0)
+
+    /**
+     * What the surfaces show instead of a bare total: how many are left. Against a
+     * daily [goal] it is what remains of the goal, down to 0. Without one it is
+     * what remains of the current round of [amount] (so 33 times counts 33, 32,
+     * ... 1, and starts a new round at 33 once it is said). Null when neither is
+     * known, which only an older saved focus can be.
+     */
+    fun remaining(amount: Int, goal: Int, doneToday: Int): Int? = when {
+        goal > 0 -> (goal - doneToday).coerceAtLeast(0)
+        amount > 0 -> amount - (doneToday % amount)
+        else -> null
+    }
 
     /**
      * The dhikr the widget and the tile count. It is whichever one the person was
@@ -28,9 +45,9 @@ object SurfaceRules {
         if (plan.isEmpty()) return current
         val same = plan.firstOrNull { it.dhikrId == current?.dhikrId }
         // Same dhikr, but the words may have changed with the app's language.
-        if (current != null && same != null) return Focus(current.dhikrId, same.text)
+        if (current != null && same != null) return Focus(current.dhikrId, same.text, same.amount, same.goal)
         val next = plan.filter { it.atMillis > nowMillis }.minByOrNull { it.atMillis } ?: plan.first()
-        return Focus(next.dhikrId, next.text)
+        return Focus(next.dhikrId, next.text, next.amount, next.goal)
     }
 
     /**

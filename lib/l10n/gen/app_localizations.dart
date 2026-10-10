@@ -1748,11 +1748,167 @@ abstract class AppLocalizations {
   /// **'Later'**
   String get surfaceLater;
 
-  /// No description provided for @trayTodayTotal.
+  /// No description provided for @trayLeft.
   ///
   /// In en, this message translates to:
-  /// **'Today: {count}'**
-  String trayTodayTotal(int count);
+  /// **'{count} left'**
+  String trayLeft(String count);
+
+  /// No description provided for @surfaceLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'left'**
+  String get surfaceLeft;
+
+  /// No description provided for @libraryFavourite.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to favourites'**
+  String get libraryFavourite;
+
+  /// No description provided for @libraryUnfavourite.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from favourites'**
+  String get libraryUnfavourite;
+
+  /// No description provided for @libraryFavouritesFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Favourites'**
+  String get libraryFavouritesFilter;
+
+  /// No description provided for @libraryFavouriteMark.
+  ///
+  /// In en, this message translates to:
+  /// **'In your favourites'**
+  String get libraryFavouriteMark;
+
+  /// No description provided for @sessionsLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Morning, evening and my wird'**
+  String get sessionsLink;
+
+  /// No description provided for @sessionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Azkar sessions'**
+  String get sessionsTitle;
+
+  /// No description provided for @sessionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick one and go through it, one dhikr after another.'**
+  String get sessionsSubtitle;
+
+  /// No description provided for @sessionMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Morning azkar'**
+  String get sessionMorning;
+
+  /// No description provided for @sessionEvening.
+  ///
+  /// In en, this message translates to:
+  /// **'Evening azkar'**
+  String get sessionEvening;
+
+  /// No description provided for @sessionWird.
+  ///
+  /// In en, this message translates to:
+  /// **'My wird'**
+  String get sessionWird;
+
+  /// No description provided for @sessionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 dhikr} other{{count} dhikr}}'**
+  String sessionCount(int count);
+
+  /// No description provided for @sessionStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get sessionStart;
+
+  /// No description provided for @sessionWirdEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Star any dhikr in the library and it joins your wird here.'**
+  String get sessionWirdEmpty;
+
+  /// No description provided for @sessionStep.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} of {total}'**
+  String sessionStep(int current, int total);
+
+  /// No description provided for @backupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup'**
+  String get backupTitle;
+
+  /// No description provided for @backupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep your dhikr list, counts and settings in one file, or bring them back from one.'**
+  String get backupSubtitle;
+
+  /// No description provided for @backupExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Save a copy'**
+  String get backupExport;
+
+  /// No description provided for @backupImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore from a file'**
+  String get backupImport;
+
+  /// No description provided for @backupSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy saved'**
+  String get backupSaved;
+
+  /// No description provided for @backupRestoreTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace what is on this device?'**
+  String get backupRestoreTitle;
+
+  /// No description provided for @backupRestoreBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your dhikr list, counts and settings will be replaced by the ones in the file.'**
+  String get backupRestoreBody;
+
+  /// No description provided for @backupRestoreConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get backupRestoreConfirm;
+
+  /// No description provided for @backupRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Restored from the file'**
+  String get backupRestored;
+
+  /// No description provided for @backupBadFile.
+  ///
+  /// In en, this message translates to:
+  /// **'That file is not a backup from this app.'**
+  String get backupBadFile;
+
+  /// No description provided for @backupNewerFile.
+  ///
+  /// In en, this message translates to:
+  /// **'That backup comes from a newer version of the app. Update the app first.'**
+  String get backupNewerFile;
 }
 
 class _AppLocalizationsDelegate

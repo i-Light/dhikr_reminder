@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dhikr_reminder/core/features.dart';
 import 'package:dhikr_reminder/core/theme/gradient_text.dart';
 import 'package:dhikr_reminder/features/library/application/library_controller.dart';
 import 'package:dhikr_reminder/features/library/application/transliteration_controller.dart';
@@ -267,13 +268,22 @@ class _TagFilterSection extends ConsumerWidget {
             FilterChip(
               avatar: const Icon(Icons.select_all, size: 18),
               label: Text(l10n.libraryFilterAll),
-              selected: selected.isEmpty,
+              selected: selected.isEmpty && !view.favouritesOnly,
               // The emoji/icon stays put when a chip is picked; the tinted
               // fill is what says "selected". Swapping in a checkmark would
               // hide the very thing that tells the buttons apart.
               showCheckmark: false,
               onSelected: (_) => notifier.clearTags(),
             ),
+            if (Features.wird)
+              FilterChip(
+                key: const ValueKey('favourites-filter'),
+                avatar: const Icon(Icons.star_rounded, size: 18),
+                label: Text(l10n.libraryFavouritesFilter),
+                selected: view.favouritesOnly,
+                showCheckmark: false,
+                onSelected: (_) => notifier.toggleFavouritesOnly(),
+              ),
             for (final tag in DhikrTag.values)
               FilterChip(
                 avatar: Text(tag.emoji),

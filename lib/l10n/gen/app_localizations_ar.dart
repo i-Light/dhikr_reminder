@@ -955,7 +955,101 @@ class AppLocalizationsAr extends AppLocalizations {
   String get surfaceLater => 'بعدين';
 
   @override
-  String trayTodayTotal(int count) {
-    return 'النهارده: $count';
+  String trayLeft(String count) {
+    return 'باقي $count';
   }
+
+  @override
+  String get surfaceLeft => 'باقي';
+
+  @override
+  String get libraryFavourite => 'ضيفه للمفضلة';
+
+  @override
+  String get libraryUnfavourite => 'شيله من المفضلة';
+
+  @override
+  String get libraryFavouritesFilter => 'المفضلة';
+
+  @override
+  String get libraryFavouriteMark => 'في مفضلتك';
+
+  @override
+  String get sessionsLink => 'الصباح والمساء ووردي';
+
+  @override
+  String get sessionsTitle => 'جلسات الأذكار';
+
+  @override
+  String get sessionsSubtitle => 'اختار جلسة وامشي فيها ذكر ورا ذكر.';
+
+  @override
+  String get sessionMorning => 'أذكار الصباح';
+
+  @override
+  String get sessionEvening => 'أذكار المساء';
+
+  @override
+  String get sessionWird => 'وردي';
+
+  @override
+  String sessionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ذكر',
+      few: '$count أذكار',
+      two: 'ذكرين',
+      one: 'ذكر واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sessionStart => 'ابدأ';
+
+  @override
+  String get sessionWirdEmpty =>
+      'حط نجمة على أي ذكر في الموسوعة وهيتضاف لوردك هنا.';
+
+  @override
+  String sessionStep(int current, int total) {
+    return '$current من $total';
+  }
+
+  @override
+  String get backupTitle => 'نسخة احتياطية';
+
+  @override
+  String get backupSubtitle =>
+      'احتفظ بقايمة أذكارك وعدّاتك وإعداداتك في ملف واحد، أو رجّعها من ملف.';
+
+  @override
+  String get backupExport => 'احفظ نسخة';
+
+  @override
+  String get backupImport => 'رجّع من ملف';
+
+  @override
+  String get backupSaved => 'النسخة اتحفظت';
+
+  @override
+  String get backupRestoreTitle => 'تستبدل اللي على الجهاز؟';
+
+  @override
+  String get backupRestoreBody =>
+      'قايمة الأذكار والعدّات والإعدادات هتتبدّل باللي في الملف.';
+
+  @override
+  String get backupRestoreConfirm => 'استبدل';
+
+  @override
+  String get backupRestored => 'اترجّع من الملف';
+
+  @override
+  String get backupBadFile => 'الملف ده مش نسخة احتياطية من التطبيق ده.';
+
+  @override
+  String get backupNewerFile =>
+      'النسخة دي من إصدار أحدث من التطبيق. حدّث التطبيق الأول.';
 }

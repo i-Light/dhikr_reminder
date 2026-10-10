@@ -8,9 +8,11 @@
     <string name="tile_resume">Resume reminders</string>
     <string name="paused_until">Paused until {time}</string>
     <string name="shortcut_library">Dhikr Library</string>
-    <string name="widget_description">Today\'s dhikr count. Tap to count one.</string>
+    <string name="widget_description">Counts down what is left of a dhikr. Tap to count one.</string>
     <string name="widget_open">Open app</string>
     <string name="widget_today">Today\'s dhikr</string>
+    <string name="widget_left">left</string>
+    <string name="left_count">{count} left</string>
     <string name="action_done">Done</string>
     <string name="action_later">Later</string>
 </resources>

@@ -50,6 +50,10 @@ dependencies:
   # The phone or PC model that goes into a bug report.
   device_info_plus: ^13.3.0
 
+  # The save and open dialogs for the backup file (the Flutter team's own
+  # package; nothing else in the app reads or writes a file the person picks).
+  file_selector: ^1.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

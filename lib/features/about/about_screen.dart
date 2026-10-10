@@ -1,4 +1,6 @@
+import 'package:dhikr_reminder/core/features.dart';
 import 'package:dhikr_reminder/core/window/app_logo.dart';
+import 'package:dhikr_reminder/features/about/backup_section.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -74,6 +76,10 @@ class AboutScreen extends StatelessWidget {
                     label: Text(l10n.aboutLicenses),
                   ),
                 ),
+                if (Features.backup) ...[
+                  const SizedBox(height: 28),
+                  const BackupSection(),
+                ],
               ],
             ),
           ),

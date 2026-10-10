@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:dhikr_reminder/core/features.dart';
 import 'package:dhikr_reminder/core/locale/locale_controller.dart';
 import 'package:dhikr_reminder/core/window/svg_icon.dart';
+import 'package:dhikr_reminder/features/library/application/transliteration_controller.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
 import 'package:dhikr_reminder/features/stats/dhikr_stats.dart';
@@ -193,6 +194,8 @@ class AppShellNotifier extends Notifier<ShellState>
   ShellState build() {
     ref.listen(activeDhikrReminderProvider, (previous, next) {
       if (!_initialised) return;
+      // A new card is a new dhikr for the tray to count.
+      if (Features.trayCount && next != null) _scheduleTooltip();
       if (previous == null && next != null) {
         _enqueue(_onReminderShown);
       } else if (previous != null && next == null) {
@@ -213,8 +216,9 @@ class AppShellNotifier extends Notifier<ShellState>
 
   Timer? _tooltipTimer;
 
-  /// Puts today's total under the app name in the tray tooltip. Counts come in
-  /// bursts, so it waits for them to stop; nothing happens before the tray exists.
+  /// Puts the dhikr the tray counts, and how many of it are left, under the app
+  /// name in the tray tooltip. Counts come in bursts, so it waits for them to
+  /// stop; nothing happens before the tray exists.
   void _scheduleTooltip() {
     if (!_initialised || _quitting) return;
     _tooltipTimer?.cancel();
@@ -225,15 +229,25 @@ class AppShellNotifier extends Notifier<ShellState>
 
   Future<void> _applyTooltip() async {
     if (_quitting) return;
-    final stats = ref.read(dhikrStatsProvider);
-    final total = stats.day == dhikrDayKey(DateTime.now()) ? stats.today : 0;
+    final entry = ref.read(activeDhikrReminderProvider.notifier).countTarget();
     final l10n = lookupAppLocalizations(ref.read(localeProvider));
+    String? line;
+    if (entry != null) {
+      final stats = ref.read(dhikrStatsProvider);
+      final today = stats.forToday(dhikrDayKey(DateTime.now()), entry.id);
+      // The dhikr's name, kept short (a tooltip is cut at about 128 characters),
+      // then how many of it are left.
+      var name = entry.shortName(
+        transliterated: ref.read(showTransliterationProvider),
+      );
+      if (name.length > 40) name = '${name.substring(0, 39).trimRight()}...';
+      line = '$name: ${l10n.trayLeft('${entry.left(today)}')}';
+    }
     try {
       await trayManager.setToolTip(
-        total > 0
-            ? '$_trayTooltip${String.fromCharCode(10)}'
-                '${l10n.trayTodayTotal(total)}'
-            : _trayTooltip,
+        line == null
+            ? _trayTooltip
+            : '$_trayTooltip${String.fromCharCode(10)}$line',
       );
     } catch (_) {
       // A tooltip that did not update is not worth a message.

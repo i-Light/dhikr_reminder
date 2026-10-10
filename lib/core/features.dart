@@ -20,13 +20,20 @@ abstract final class Features {
   /// Optional soft sounds on completion (off until the person turns it on).
   static const sound = true;
 
-  /// Morning and evening sessions that run a set of dhikr in order.
+  /// Morning, evening and "my wird" sessions: a screen with one Start button
+  /// each (one tap deeper than the folded reminder settings on the
+  /// Notifications page) that runs the dhikr in order on the reminder card with
+  /// "3 of 31" on it. Started by the person; there are no timed sessions.
   static const sessions = true;
 
-  /// Favourites and "my wird" (a named ordered list of library dhikr).
+  /// Favourites and "my wird": press and hold a library entry to star it; the
+  /// stars (in the order they were made) are the wird. Adds a small star on a
+  /// starred card, a Favourites chip in the library filter, favourites first
+  /// while choosing what to add, and the wird row in the sessions screen.
   static const wird = true;
 
-  /// Export and import of the saved data as one file.
+  /// Export and import of the saved data as one file ("Backup" at the bottom of
+  /// the About page).
   static const backup = true;
 
   /// Quiet hours, snooze and the other polite-reminder options.
@@ -45,7 +52,7 @@ abstract final class Features {
   /// text. Off, the press goes straight to "Report a mistake".
   static const shareText = true;
 
-  /// Windows: a "Count one" row in the tray menu and today's total in the tray
-  /// tooltip.
+  /// Windows: a row in the tray menu that names the dhikr last shown, adds one
+  /// to it and says how many of it today, and today's total in the tray tooltip.
   static const trayCount = true;
 }

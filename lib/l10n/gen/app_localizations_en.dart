@@ -957,7 +957,100 @@ class AppLocalizationsEn extends AppLocalizations {
   String get surfaceLater => 'Later';
 
   @override
-  String trayTodayTotal(int count) {
-    return 'Today: $count';
+  String trayLeft(String count) {
+    return '$count left';
   }
+
+  @override
+  String get surfaceLeft => 'left';
+
+  @override
+  String get libraryFavourite => 'Add to favourites';
+
+  @override
+  String get libraryUnfavourite => 'Remove from favourites';
+
+  @override
+  String get libraryFavouritesFilter => 'Favourites';
+
+  @override
+  String get libraryFavouriteMark => 'In your favourites';
+
+  @override
+  String get sessionsLink => 'Morning, evening and my wird';
+
+  @override
+  String get sessionsTitle => 'Azkar sessions';
+
+  @override
+  String get sessionsSubtitle =>
+      'Pick one and go through it, one dhikr after another.';
+
+  @override
+  String get sessionMorning => 'Morning azkar';
+
+  @override
+  String get sessionEvening => 'Evening azkar';
+
+  @override
+  String get sessionWird => 'My wird';
+
+  @override
+  String sessionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dhikr',
+      one: '1 dhikr',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sessionStart => 'Start';
+
+  @override
+  String get sessionWirdEmpty =>
+      'Star any dhikr in the library and it joins your wird here.';
+
+  @override
+  String sessionStep(int current, int total) {
+    return '$current of $total';
+  }
+
+  @override
+  String get backupTitle => 'Backup';
+
+  @override
+  String get backupSubtitle =>
+      'Keep your dhikr list, counts and settings in one file, or bring them back from one.';
+
+  @override
+  String get backupExport => 'Save a copy';
+
+  @override
+  String get backupImport => 'Restore from a file';
+
+  @override
+  String get backupSaved => 'Copy saved';
+
+  @override
+  String get backupRestoreTitle => 'Replace what is on this device?';
+
+  @override
+  String get backupRestoreBody =>
+      'Your dhikr list, counts and settings will be replaced by the ones in the file.';
+
+  @override
+  String get backupRestoreConfirm => 'Replace';
+
+  @override
+  String get backupRestored => 'Restored from the file';
+
+  @override
+  String get backupBadFile => 'That file is not a backup from this app.';
+
+  @override
+  String get backupNewerFile =>
+      'That backup comes from a newer version of the app. Update the app first.';
 }

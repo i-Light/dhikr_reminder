@@ -72,12 +72,16 @@ object Surfaces {
         ReminderStore.setSurfacesState(context, on)
     }
 
-    /** One more tap on the dhikr the person was last reminded of; the new total, or null if none is known yet. */
+    /**
+     * One more tap on the dhikr the person was last reminded of. Returns how many
+     * are left of it afterwards (0 when it has no target), or null if no dhikr is
+     * known yet.
+     */
     fun countOne(context: Context): Int? {
         val focus = ReminderStore.focus(context) ?: return null
         ReminderStore.addTap(context, focus.dhikrId)
         refresh(context)
-        return ReminderStore.todayTotal(context)
+        return ReminderStore.focusLeft(context) ?: 0
     }
 
     /** Pauses the reminders for an hour, or lifts the pause if one is on. Returns the end of the pause, or 0. */
@@ -100,7 +104,10 @@ object Surfaces {
 
     /** A reminder reached the person: that dhikr is the one the surfaces count now. */
     fun noteDelivered(context: Context, reminder: ReminderStore.Planned) {
-        ReminderStore.setFocus(context, SurfaceRules.Focus(reminder.dhikrId, reminder.text))
+        ReminderStore.setFocus(
+            context,
+            SurfaceRules.Focus(reminder.dhikrId, reminder.text, reminder.amount, reminder.goal),
+        )
         refresh(context)
     }
 
@@ -114,7 +121,7 @@ object Surfaces {
     /** Redraws the widget and asks the tiles to redraw, if what they show has changed. */
     fun refresh(context: Context) {
         if (!Features.SURFACES) return
-        val drawn = "${ReminderStore.todayTotal(context)}|${ReminderStore.focus(context)}|" +
+        val drawn = "${ReminderStore.focusLeft(context)}|${ReminderStore.focus(context)}|" +
             "${ReminderStore.pausedUntilMillis(context)}|${ReminderStore.surfaceLabels(context)}"
         if (drawn == lastDrawn) return
         lastDrawn = drawn

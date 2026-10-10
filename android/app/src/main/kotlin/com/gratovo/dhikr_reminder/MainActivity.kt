@@ -54,12 +54,62 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result -> handle(call, result) }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SHARE_CHANNEL)
             .setMethodCallHandler { call, result ->
-                if (call.method == "shareText") {
-                    result.success(shareText(call.argument<String>("text") ?: ""))
-                } else {
-                    result.notImplemented()
+                when (call.method) {
+                    "shareText" -> result.success(shareText(call.argument<String>("text") ?: ""))
+                    "saveFile" -> saveFile(
+                        call.argument<String>("name") ?: "backup.json",
+                        call.argument<String>("text") ?: "",
+                        result,
+                    )
+                    else -> result.notImplemented()
                 }
             }
+    }
+
+    /** The text of a backup waiting for the person to choose where it goes. */
+    private var pendingSave: Pair<String, MethodChannel.Result>? = null
+
+    /**
+     * Opens the system's "save as" screen and writes [text] where the person
+     * points. Answers true once written, false if they backed out or it failed.
+     */
+    private fun saveFile(name: String, text: String, result: MethodChannel.Result) {
+        if (pendingSave != null) {
+            result.success(false)
+            return
+        }
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+            .addCategory(Intent.CATEGORY_OPENABLE)
+            .setType("application/json")
+            .putExtra(Intent.EXTRA_TITLE, name)
+        pendingSave = text to result
+        try {
+            startActivityForResult(intent, REQUEST_SAVE_FILE)
+        } catch (e: Exception) {
+            pendingSave = null
+            result.success(false)
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != REQUEST_SAVE_FILE) return
+        val (text, result) = pendingSave ?: return
+        pendingSave = null
+        val uri = data?.data
+        if (resultCode != RESULT_OK || uri == null) {
+            result.success(false)
+            return
+        }
+        val written = try {
+            contentResolver.openOutputStream(uri, "wt")?.use {
+                it.write(text.toByteArray(Charsets.UTF_8))
+            } != null
+        } catch (e: Exception) {
+            false
+        }
+        result.success(written)
     }
 
     private fun handle(call: MethodCall, result: MethodChannel.Result) {
@@ -355,6 +405,7 @@ class MainActivity : FlutterActivity() {
         private const val CHANNEL = "dhikr_reminder/overlay"
         private const val SHARE_CHANNEL = "dhikr_reminder/share"
         private const val REQUEST_NOTIFICATIONS = 1001
+        private const val REQUEST_SAVE_FILE = 1002
 
         /** The dhikr id a reminder notification carries for the app to open. */
         const val EXTRA_OPEN_DHIKR = "open_dhikr"

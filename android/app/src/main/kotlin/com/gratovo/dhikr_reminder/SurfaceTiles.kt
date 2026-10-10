@@ -6,7 +6,7 @@ import android.service.quicksettings.TileService
 
 /**
  * Quick-settings tile "Count one": a tap adds one to the dhikr being counted
- * without opening anything, and the tile shows today's total. Greyed out until
+ * without opening anything, and the tile shows how many of it are left. Greyed out until
  * a first reminder has told it which dhikr that is.
  */
 class CountTile : TileService() {
@@ -23,7 +23,7 @@ class CountTile : TileService() {
         tile.label = Surfaces.label(this, "countOne", R.string.tile_count)
         tile.state = if (focus == null) Tile.STATE_UNAVAILABLE else Tile.STATE_INACTIVE
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            tile.subtitle = if (focus == null) null else ReminderStore.todayTotal(this).toString()
+            tile.subtitle = if (focus == null) null else ReminderStore.focusLeft(this)?.toString()
         }
         tile.updateTile()
     }

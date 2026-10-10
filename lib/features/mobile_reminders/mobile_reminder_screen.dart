@@ -78,7 +78,13 @@ class MobileReminderScreen extends ConsumerWidget {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            l10n.dhikrReminderTitle,
+                            // In a session: "3 of 31" instead of the title.
+                            reminder.inSession
+                                ? l10n.sessionStep(
+                                    reminder.step!,
+                                    reminder.steps!,
+                                  )
+                                : l10n.dhikrReminderTitle,
                             style: theme.textTheme.titleMedium
                                 ?.copyWith(color: palette.accent),
                           ),

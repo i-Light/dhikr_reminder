@@ -22,25 +22,25 @@ class SurfaceRulesTest {
     @Test
     fun theFirstPlanGivesTheNextDhikrDue() {
         val plan = listOf(planned(1, now - 5, 7), planned(2, now + 20, 8), planned(3, now + 10, 9))
-        assertEquals(Focus(9, "dhikr 9"), SurfaceRules.pickFocus(null, plan, now))
+        assertEquals(Focus(9, "dhikr 9", 33), SurfaceRules.pickFocus(null, plan, now))
     }
 
     @Test
     fun theDhikrStaysPutWhileItIsStillInThePlan() {
         val plan = listOf(planned(1, now + 10, 8), planned(2, now + 20, 9))
-        assertEquals(Focus(9, "dhikr 9"), SurfaceRules.pickFocus(Focus(9, "old words"), plan, now))
+        assertEquals(Focus(9, "dhikr 9", 33), SurfaceRules.pickFocus(Focus(9, "old words"), plan, now))
     }
 
     @Test
     fun theWordsFollowTheLanguageButTheDhikrDoesNot() {
         val plan = listOf(planned(1, now + 10, 8, "new words"))
-        assertEquals(Focus(8, "new words"), SurfaceRules.pickFocus(Focus(8, "old words"), plan, now))
+        assertEquals(Focus(8, "new words", 33), SurfaceRules.pickFocus(Focus(8, "old words"), plan, now))
     }
 
     @Test
     fun aDhikrThatLeftTheListIsReplaced() {
         val plan = listOf(planned(1, now + 10, 8))
-        assertEquals(Focus(8, "dhikr 8"), SurfaceRules.pickFocus(Focus(5, "gone"), plan, now))
+        assertEquals(Focus(8, "dhikr 8", 33), SurfaceRules.pickFocus(Focus(5, "gone"), plan, now))
     }
 
     @Test
@@ -51,7 +51,35 @@ class SurfaceRulesTest {
     @Test
     fun aPlanWhollyInThePastStillGivesADhikr() {
         val plan = listOf(planned(1, now - 20, 4), planned(2, now - 10, 6))
-        assertEquals(Focus(4, "dhikr 4"), SurfaceRules.pickFocus(null, plan, now))
+        assertEquals(Focus(4, "dhikr 4", 33), SurfaceRules.pickFocus(null, plan, now))
+    }
+
+    @Test
+    fun theTargetFollowsTheDhikrIntoTheFocus() {
+        val plan = listOf(ReminderStore.Planned(1, now + 10, 8, "d", 33, 500))
+        assertEquals(Focus(8, "d", 33, 500), SurfaceRules.pickFocus(null, plan, now))
+    }
+
+    @Test
+    fun aRoundCountsDownAndStartsAgain() {
+        assertEquals(33, SurfaceRules.remaining(33, 0, 0))
+        assertEquals(32, SurfaceRules.remaining(33, 0, 1))
+        assertEquals(1, SurfaceRules.remaining(33, 0, 32))
+        assertEquals(33, SurfaceRules.remaining(33, 0, 33))
+        assertEquals(30, SurfaceRules.remaining(33, 0, 36))
+    }
+
+    @Test
+    fun aDailyGoalCountsDownToZeroAndStaysThere() {
+        assertEquals(100, SurfaceRules.remaining(33, 100, 0))
+        assertEquals(58, SurfaceRules.remaining(33, 100, 42))
+        assertEquals(0, SurfaceRules.remaining(33, 100, 100))
+        assertEquals(0, SurfaceRules.remaining(33, 100, 140))
+    }
+
+    @Test
+    fun withNoTargetThereIsNothingToCountDown() {
+        assertNull(SurfaceRules.remaining(0, 0, 5))
     }
 
     @Test

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:dhikr_reminder/core/features.dart';
+import 'package:dhikr_reminder/features/sessions/session_runner.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
 import 'package:dhikr_reminder/features/sound/chime_player.dart';
 import 'package:dhikr_reminder/features/stats/dhikr_stats.dart';
@@ -15,10 +16,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// toward [DhikrEntry.amount] with every tap.
 @immutable
 class ActiveDhikrReminder {
-  const ActiveDhikrReminder({required this.entry, this.count = 0});
+  const ActiveDhikrReminder({
+    required this.entry,
+    this.count = 0,
+    this.step,
+    this.steps,
+  });
 
   final DhikrEntry entry;
   final int count;
+
+  /// While a session runs: this dhikr's place in it (from 1) and how many there
+  /// are. The card then says "3 of 31" where it usually says its title.
+  final int? step;
+  final int? steps;
+
+  /// The "3 of 31" pair, or null outside a session.
+  bool get inSession => step != null && steps != null;
 
   /// Nothing to count toward (amount left at 0) reads as "no target" rather
   /// than "already complete" — the clicker just counts up freely.
@@ -26,8 +40,12 @@ class ActiveDhikrReminder {
 
   bool get isComplete => hasTarget && count >= entry.amount;
 
-  ActiveDhikrReminder copyWith({int? count}) =>
-      ActiveDhikrReminder(entry: entry, count: count ?? this.count);
+  ActiveDhikrReminder copyWith({int? count}) => ActiveDhikrReminder(
+        entry: entry,
+        count: count ?? this.count,
+        step: step,
+        steps: steps,
+      );
 }
 
 /// Holds whichever dhikr reminder is currently floating on screen, if any.
@@ -56,12 +74,12 @@ class ActiveDhikrReminderNotifier extends Notifier<ActiveDhikrReminder?> {
     });
   }
 
-  /// The dhikr last put on screen: the one "Count one" in the tray adds to.
-  int? _lastShownId;
+  /// The dhikr last put on screen: the one the tray's count row adds to.
+  DhikrEntry? _lastShown;
 
-  void show(DhikrEntry entry) {
-    _lastShownId = entry.id;
-    state = ActiveDhikrReminder(entry: entry);
+  void show(DhikrEntry entry, {int? step, int? steps}) {
+    _lastShown = entry;
+    state = ActiveDhikrReminder(entry: entry, step: step, steps: steps);
     _touch();
     // No sound for now: the system beep this used to play is off on purpose.
     // The mute setting (`isMuted`) stays wired up for when each dhikr gets its
@@ -89,14 +107,25 @@ class ActiveDhikrReminderNotifier extends Notifier<ActiveDhikrReminder?> {
         .firstOrNull;
   }
 
-  /// One tap on the dhikr last shown (else the first eligible one), counted
-  /// without a card: the tray menu's "Count one". Returns false when the person
-  /// has no dhikr to count.
-  bool countOne() {
+  /// The dhikr the tray's count row adds to: the one last put on screen (a
+  /// reminder, or the current step of a session), else the first eligible one.
+  /// Null when the person has no dhikr to count.
+  DhikrEntry? countTarget() {
     final settings = ref.read(dhikrSettingsProvider);
-    final entry =
-        settings.entries.where((e) => e.id == _lastShownId).firstOrNull ??
-            testEntry();
+    final last = _lastShown;
+    // A session's stand-in has a negative id and is not in the list; a saved
+    // one that has since been deleted is no longer the target.
+    if (last != null &&
+        (last.id < 0 || settings.entries.any((e) => e.id == last.id))) {
+      return last;
+    }
+    return testEntry();
+  }
+
+  /// One tap on [countTarget], counted without a card: the tray menu's count
+  /// row. Returns false when the person has no dhikr to count.
+  bool countOne() {
+    final entry = countTarget();
     if (entry == null) return false;
     ref.read(dhikrStatsProvider.notifier).recordTap(entry.id);
     return true;
@@ -203,6 +232,8 @@ class DhikrReminderScheduler extends Notifier<DateTime?> {
     // Never interrupts a reminder already in progress — the person is still
     // working through the last one.
     if (ref.read(activeDhikrReminderProvider) != null) return;
+    // Nor a session: the person is partway through their azkar.
+    if (Features.sessions && ref.read(sessionRunProvider) != null) return;
     // On a phone the OS delivers the reminders as notifications (see
     // features/mobile_reminders); popping one up from this in-process timer
     // as well would double every dhikr while the app is open.

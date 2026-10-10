@@ -6,6 +6,7 @@ import 'package:dhikr_reminder/features/library/application/transliteration_cont
 import 'package:dhikr_reminder/features/mobile_reminders/setup_requirement_cards.dart';
 import 'package:dhikr_reminder/features/notifications/application/test_reminder.dart';
 import 'package:dhikr_reminder/features/notifications/presentation/dhikr_edit_dialog.dart';
+import 'package:dhikr_reminder/features/sessions/sessions_screen.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
 import 'package:dhikr_reminder/features/stats/dhikr_stats.dart';
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
@@ -316,11 +317,30 @@ class _ReminderSettingsCardState extends ConsumerState<_ReminderSettingsCard> {
             ),
           ],
           const Divider(height: 24),
-          OutlinedButton.icon(
-            key: const ValueKey('test-reminder-button'),
-            onPressed: () => showTestReminder(context, ref),
-            icon: const Icon(Icons.play_arrow_rounded),
-            label: Text(l10n.commonTestReminder),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                key: const ValueKey('test-reminder-button'),
+                onPressed: () => showTestReminder(context, ref),
+                icon: const Icon(Icons.play_arrow_rounded),
+                label: Text(l10n.commonTestReminder),
+              ),
+              // Morning, evening and "my wird": one tap deeper, in the folded
+              // card, so the page itself shows nothing more.
+              if (Features.sessions)
+                OutlinedButton.icon(
+                  key: const ValueKey('sessions-button'),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const SessionsScreen(),
+                    ),
+                  ),
+                  icon: const Icon(Icons.wb_twilight),
+                  label: Text(l10n.sessionsLink),
+                ),
+            ],
           ),
         ],
       ),

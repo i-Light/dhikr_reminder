@@ -258,6 +258,15 @@ object ReminderStore {
     @Synchronized
     fun todayTotal(context: Context): Int = DailyTally.total(readTally(context), today())
 
+    /**
+     * How many of the dhikr "count one" adds to are left (see
+     * [SurfaceRules.remaining]), or null when there is none or it has no target.
+     */
+    fun focusLeft(context: Context): Int? {
+        val focus = focus(context) ?: return null
+        return SurfaceRules.remaining(focus.amount, focus.goal, dailyCount(context, focus.dhikrId))
+    }
+
     /** The app's own totals for [day]; see [DailyTally.merge]. */
     @Synchronized
     fun setToday(context: Context, day: String, counts: Map<Int, Int>) {
@@ -415,7 +424,7 @@ object ReminderStore {
         val raw = prefs(context).getString(KEY_FOCUS, null) ?: return null
         return try {
             val o = JSONObject(raw)
-            SurfaceRules.Focus(o.getInt("id"), o.getString("text"))
+            SurfaceRules.Focus(o.getInt("id"), o.getString("text"), o.optInt("amount"), o.optInt("goal"))
         } catch (e: Exception) {
             null
         }
@@ -423,6 +432,7 @@ object ReminderStore {
 
     fun setFocus(context: Context, focus: SurfaceRules.Focus) {
         val json = JSONObject().put("id", focus.dhikrId).put("text", focus.text)
+            .put("amount", focus.amount).put("goal", focus.goal)
         prefs(context).edit().putString(KEY_FOCUS, json.toString()).apply()
     }
 

@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:dhikr_reminder/core/features.dart';
 import 'package:dhikr_reminder/core/storage/storage_guard.dart';
+import 'package:dhikr_reminder/features/library/application/favourites_controller.dart';
 import 'package:dhikr_reminder/features/library/application/transliteration_controller.dart';
 import 'package:dhikr_reminder/features/library/data/dhikr_library.dart';
 import 'package:dhikr_reminder/features/library/domain/dhikr_item.dart';
@@ -47,9 +49,14 @@ class DhikrLibraryView {
     this.hideAdded = false,
     this.showAddUi = false,
     this.addUiFromHint = false,
+    this.favouritesOnly = false,
   });
 
   final String query;
+
+  /// Show only the entries the person starred. Not remembered, like the tag
+  /// filter, for the same reason.
+  final bool favouritesOnly;
 
   /// An empty set means "no tag filter" — every entry shows. Otherwise an
   /// entry shows if it shares at least one tag with this set (see
@@ -94,9 +101,11 @@ class DhikrLibraryView {
 
   /// How many filters narrow the list: the groups picked, and the one that
   /// hides what is already added.
-  int get activeFilterCount => selectedTags.length + (hideAdded ? 1 : 0);
+  int get activeFilterCount =>
+      selectedTags.length + (hideAdded ? 1 : 0) + (favouritesOnly ? 1 : 0);
 
   DhikrLibraryView copyWith({
+    bool? favouritesOnly,
     String? query,
     Set<DhikrTag>? selectedTags,
     bool? showTashkeel,
@@ -120,6 +129,7 @@ class DhikrLibraryView {
       hideAdded: hideAdded ?? this.hideAdded,
       showAddUi: showAddUi ?? this.showAddUi,
       addUiFromHint: addUiFromHint ?? this.addUiFromHint,
+      favouritesOnly: favouritesOnly ?? this.favouritesOnly,
     );
   }
 }
@@ -216,6 +226,9 @@ class DhikrLibraryNotifier extends Notifier<DhikrLibraryView> {
     await _persist((prefs) => prefs.setBool(_hideAddedPrefsKey, next));
   }
 
+  void toggleFavouritesOnly() =>
+      state = state.copyWith(favouritesOnly: !state.favouritesOnly);
+
   void clearQuery() => state = state.copyWith(query: '');
 
   /// Adds [tag] to the selection, or removes it if it was already in.
@@ -226,7 +239,10 @@ class DhikrLibraryNotifier extends Notifier<DhikrLibraryView> {
   }
 
   /// Drops every tag filter, back to "show everything".
-  void clearTags() => state = state.copyWith(selectedTags: const <DhikrTag>{});
+  void clearTags() => state = state.copyWith(
+        selectedTags: const <DhikrTag>{},
+        favouritesOnly: false,
+      );
 
   Future<void> toggleTashkeel() async {
     final next = !state.showTashkeel;
@@ -290,13 +306,25 @@ final filteredDhikrProvider = Provider<List<DhikrItem>>((ref) {
   // In English the search also reads the transliterations and the English
   // wording, besides the Arabic it always reads.
   final english = ref.watch(isEnglishProvider);
-  return dhikrLibrary
+  // Stars are read only when they matter: for the filter, or to put them first
+  // while the person is choosing what to add.
+  final stars = Features.wird && (view.favouritesOnly || view.showAddHint)
+      ? ref.watch(favouritesProvider).toSet()
+      : const <String>{};
+  final shown = dhikrLibrary
       .where(
         (item) =>
             !added.contains(item.id) &&
+            (!view.favouritesOnly || stars.contains(item.id)) &&
             item.matchesTags(view.selectedTags) &&
             (item.matchesQuery(view.query) ||
                 (english && libraryMatchesEnglishQuery(item, view.query))),
       )
       .toList(growable: false);
+  if (stars.isEmpty || !view.showAddHint) return shown;
+  // Starred first, each group keeping the library's own order.
+  return [
+    ...shown.where((item) => stars.contains(item.id)),
+    ...shown.where((item) => !stars.contains(item.id)),
+  ];
 });

@@ -80,7 +80,9 @@ class MobileReminderSyncer {
         'done': l10n.surfaceDone,
         'later': l10n.surfaceLater,
         'openApp': l10n.trayOpenApp,
-        'today': l10n.statToday,
+        'left': l10n.surfaceLeft,
+        // The phone fills in the number, so the template is sent.
+        'leftCount': l10n.trayLeft('{count}'),
         // The phone fills in the time, so the template is sent.
         'pausedUntil': l10n.trayPausedUntil('{time}'),
       });

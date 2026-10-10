@@ -300,13 +300,21 @@ void main() {
       expect(container.read(dhikrStatsProvider).today, 2);
     });
 
-    testWidgets('has a row that adds one and shows the total', (tester) async {
+    testWidgets('has a row that names the dhikr, adds one and shows its count',
+        (tester) async {
       SharedPreferences.setMockInitialValues({});
       final container = ProviderContainer();
       container.read(dhikrSettingsProvider);
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 30)),
       );
+      await tester.runAsync(
+        () => container.read(dhikrSettingsProvider.notifier).updateEntries([
+          const DhikrEntry(id: 0, name: 'سبحان الله', amount: 3),
+          const DhikrEntry(id: 1, name: 'الحمد لله', amount: 33, dailyGoal: 5),
+        ]),
+      );
+      final entries = container.read(dhikrSettingsProvider).entries;
 
       await tester.pumpWidget(
         UncontrolledProviderScope(
@@ -319,11 +327,55 @@ void main() {
         tester.element(find.byType(TrayMenuPanel)),
       );
 
-      expect(find.text(l10n.surfaceCountOne), findsOneWidget);
-      expect(find.text(l10n.trayTodayTotal(0)), findsOneWidget);
-      await tester.tap(find.text(l10n.surfaceCountOne));
+      // It says which dhikr it counts, and counts down what is left of it.
+      expect(find.text(entries.first.name), findsOneWidget);
+      expect(find.text(l10n.trayLeft('3')), findsOneWidget);
+      await tester.tap(find.text(entries.first.name));
       await tester.pump();
-      expect(find.text(l10n.trayTodayTotal(1)), findsOneWidget);
+      expect(find.text(l10n.trayLeft('2')), findsOneWidget);
+      expect(container.read(dhikrStatsProvider).todayFor(entries.first.id), 1);
+      await tester.pumpWidget(const SizedBox());
+      container.dispose();
+    });
+
+    testWidgets('follows the dhikr last shown, and counts only that one',
+        (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final container = ProviderContainer();
+      container.read(dhikrSettingsProvider);
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 30)),
+      );
+      await tester.runAsync(
+        () => container.read(dhikrSettingsProvider.notifier).updateEntries([
+          const DhikrEntry(id: 0, name: 'سبحان الله', amount: 3),
+          const DhikrEntry(id: 1, name: 'الحمد لله', amount: 33, dailyGoal: 5),
+        ]),
+      );
+      final entries = container.read(dhikrSettingsProvider).entries;
+      final active = container.read(activeDhikrReminderProvider.notifier);
+      active.show(entries[1]);
+      active.dismiss();
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: _app(const Material(child: TrayMenuPanel())),
+        ),
+      );
+      await tester.pump();
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(TrayMenuPanel)),
+      );
+
+      // This one has a daily goal of 5, so it counts down from that.
+      expect(find.text(entries[1].name), findsOneWidget);
+      expect(find.text(entries.first.name), findsNothing);
+      expect(find.text(l10n.trayLeft('5')), findsOneWidget);
+      await tester.tap(find.text(entries[1].name));
+      await tester.pump();
+      expect(find.text(l10n.trayLeft('4')), findsOneWidget);
+      expect(container.read(dhikrStatsProvider).todayFor(entries.first.id), 0);
       await tester.pumpWidget(const SizedBox());
       container.dispose();
     });

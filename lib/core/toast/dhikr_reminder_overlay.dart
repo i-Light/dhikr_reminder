@@ -900,7 +900,13 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
                           children: [
                             AppLogo(size: _s(30), color: Colors.white),
                             Text(
-                              l10n.dhikrReminderTitle,
+                              // In a session: "3 of 31" instead of the title.
+                              reminder.inSession
+                                  ? l10n.sessionStep(
+                                      reminder.step!,
+                                      reminder.steps!,
+                                    )
+                                  : l10n.dhikrReminderTitle,
                               style: theme.textTheme.labelLarge?.copyWith(
                                 color: accent,
                                 fontSize: _s(16),

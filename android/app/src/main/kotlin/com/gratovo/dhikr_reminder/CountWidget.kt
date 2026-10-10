@@ -10,8 +10,8 @@ import android.view.View
 import android.widget.RemoteViews
 
 /**
- * The home-screen widget: today's total and the dhikr being counted. One tap
- * anywhere on it counts one. It is redrawn when something changes (a count, a
+ * The home-screen widget: the dhikr being counted and how many of it are left,
+ * counting down. One tap anywhere on it counts one. It is redrawn when something changes (a count, a
  * reminder, a pause), never on a timer, so it costs the battery nothing.
  */
 class CountWidget : AppWidgetProvider() {
@@ -52,10 +52,16 @@ class CountWidget : AppWidgetProvider() {
                 return views
             }
             views.setTextViewText(R.id.widget_dhikr, focus.text.take(MAX_CHARS))
-            views.setTextViewText(R.id.widget_total, ReminderStore.todayTotal(context).toString())
-            views.setTextViewText(R.id.widget_caption, Surfaces.label(context, "today", R.string.widget_today))
-            views.setViewVisibility(R.id.widget_total, View.VISIBLE)
-            views.setViewVisibility(R.id.widget_caption, View.VISIBLE)
+            val left = ReminderStore.focusLeft(context)
+            if (left == null) {
+                views.setViewVisibility(R.id.widget_total, View.GONE)
+                views.setViewVisibility(R.id.widget_caption, View.GONE)
+            } else {
+                views.setTextViewText(R.id.widget_total, left.toString())
+                views.setTextViewText(R.id.widget_caption, Surfaces.label(context, "left", R.string.widget_left))
+                views.setViewVisibility(R.id.widget_total, View.VISIBLE)
+                views.setViewVisibility(R.id.widget_caption, View.VISIBLE)
+            }
             views.setOnClickPendingIntent(
                 R.id.widget_root,
                 PendingIntent.getBroadcast(

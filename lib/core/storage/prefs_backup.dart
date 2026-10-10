@@ -115,6 +115,15 @@ class PrefsBackup {
     if (!lost) return false;
     final keys = newestGood();
     if (keys == null) return false;
+    await writeKeys(prefs, keys);
+    return true;
+  }
+
+  /// Writes each of [keys] into [prefs] as the kind of value it is.
+  static Future<void> writeKeys(
+    SharedPreferences prefs,
+    Map<String, Object> keys,
+  ) async {
     for (final entry in keys.entries) {
       final value = entry.value;
       if (value is String) {
@@ -132,6 +141,5 @@ class PrefsBackup {
         );
       }
     }
-    return true;
   }
 }

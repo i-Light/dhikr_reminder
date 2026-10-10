@@ -104,6 +104,23 @@ class DhikrEntry {
   /// everyone who added the dhikr; one typed in by hand has none.
   String? get transliteration => libraryTransliteration(libraryId);
 
+  /// How the dhikr is named in a menu or a tooltip: how it sounds when the app
+  /// shows transliterations (English) and it has one, its Arabic otherwise.
+  String shortName({required bool transliterated}) {
+    final sound = transliterated ? transliteration : null;
+    return sound == null ? name : sound.replaceAll('\n', ' ');
+  }
+
+  /// How many of this dhikr are left, given how many were said today. Against a
+  /// daily goal it is what remains of the goal (0 once it is met); without one it
+  /// is what remains of the current round of [amount], which starts again at
+  /// [amount] once the round is said. Counters with no "x of y" show this, so
+  /// they count down.
+  int left(int doneToday) {
+    if (dailyGoal > 0) return (dailyGoal - doneToday).clamp(0, dailyGoal);
+    return amount - (doneToday % amount);
+  }
+
   DhikrEntry copyWith({
     String? name,
     int? amount,
@@ -442,8 +459,9 @@ class DhikrSettingsNotifier extends Notifier<DhikrSettings> {
       soundOn = prefs.getBool(_soundOnPrefsKey) ?? false;
       quiet = QuietHours(
         enabled: prefs.getBool(_quietEnabledPrefsKey) ?? false,
-        startMinutes: (prefs.getInt(_quietStartPrefsKey) ?? QuietHours.defaultStart)
-            .clamp(0, 1439),
+        startMinutes:
+            (prefs.getInt(_quietStartPrefsKey) ?? QuietHours.defaultStart)
+                .clamp(0, 1439),
         endMinutes: (prefs.getInt(_quietEndPrefsKey) ?? QuietHours.defaultEnd)
             .clamp(0, 1439),
       );

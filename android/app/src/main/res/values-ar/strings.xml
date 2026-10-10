@@ -8,6 +8,8 @@
     <string name="widget_description">عدّاد ذكر النهارده. دوس عشان تعدّ مرة.</string>
     <string name="widget_open">افتح التطبيق</string>
     <string name="widget_today">ذكر النهارده</string>
+    <string name="widget_left">باقي</string>
+    <string name="left_count">باقي {count}</string>
     <string name="action_done">خلّصت</string>
     <string name="action_later">بعدين</string>
 </resources>

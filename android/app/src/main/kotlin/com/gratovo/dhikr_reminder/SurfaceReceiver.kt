@@ -104,12 +104,12 @@ class ShortcutActivity : Activity() {
         if (Features.SURFACES) {
             when (intent?.action) {
                 Surfaces.ACTION_COUNT -> {
-                    val total = Surfaces.countOne(this)
-                    if (total == null) {
+                    val left = Surfaces.countOne(this)
+                    if (left == null) {
                         // Nothing to count yet: open the app instead.
                         startActivity(Intent(this, MainActivity::class.java))
                     } else {
-                        say("${Surfaces.label(this, "today", R.string.widget_today)}: $total")
+                        say(Surfaces.label(this, "leftCount", R.string.left_count).replace("{count}", left.toString()))
                     }
                 }
 

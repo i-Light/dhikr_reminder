@@ -38,8 +38,21 @@ On Android the app can also be counted from outside: a home-screen widget (tap t
 count one), two quick-settings tiles (count one, pause for an hour), the launcher
 icon's long-press shortcuts, and "Done" / "Later" buttons on a reminder
 notification. None of them adds anything to the app's own screens. On Windows the
-tray menu has a "Count one" row and the tray tooltip shows today's total. Press
+tray menu has a row that names the dhikr last shown, adds one to it and shows its count for today, and the tray tooltip shows today's total. Those counters count down, not up: the widget, the tile, the shortcut toast and
+the tray show how many are left of the dhikr being counted (against its daily goal
+if it has one, else the current round of its count, which starts again at zero).
+Press
 and hold a dhikr in the library to share (phone) or copy (Windows) its text.
+
+Three more quiet extras, each behind its own switch in `features.dart`. Press and
+hold a library entry to star it (a small star shows on the card, there is a
+Favourites chip in the filter, and the starred ones come first while choosing what
+to add); the starred entries, in the order they were starred, are "my wird". The
+folded reminder settings on the Notifications page lead to a screen with morning
+azkar, evening azkar and my wird, each with a Start button, which runs the dhikr
+one after another on the usual card ("3 of 31"). The About page ends with Backup:
+save the dhikr list, counts and settings to one JSON file and restore them from
+one (format in `lib/core/storage/backup_file.dart`).
 
 Publishing the Android app: follow [docs/publishing-guide.md](docs/publishing-guide.md).
 A release build refuses to be made without `android/key.properties` (so a build
