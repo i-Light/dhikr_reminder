@@ -1,6 +1,10 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
+
 import 'package:dhikr_reminder/l10n/gen/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 enum CardCorner {
@@ -57,13 +61,13 @@ class DynamicOrnateCard extends StatelessWidget {
     final bool flipY = !_isCenter(targetCorner) &&
         (_isBottom(targetCorner) != _isBottom(sourceCorner));
 
-    Widget svg = SvgPicture.asset(
-      _isCenter(targetCorner)
+    Widget svg = BakedSvg(
+      asset: _isCenter(targetCorner)
           ? 'assets/images/mandala_background.svg'
           : cornerPath,
-      colorFilter:
-          colorize ? ColorFilter.mode(cornerColor, BlendMode.srcIn) : null,
-      fit: BoxFit.contain,
+      color: colorize ? cornerColor : null,
+      width: width,
+      height: height,
     );
 
     if (flipX || flipY) {
@@ -232,6 +236,117 @@ class DynamicOrnateCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// An SVG that is drawn as a picture of itself rather than as vector shapes.
+///
+/// The card's mandala is half a megabyte of gradient-filled paths, and painted
+/// through a colour filter (which flattens every one of those gradients into the
+/// one gold anyway) it costs a layer and hundreds of shapes on every frame the
+/// card repaints, which is every tap. So it is drawn live only until the first
+/// frame is on screen; then it is turned into an image once, at the size it is
+/// shown at, kept for the app's lifetime and drawn as one textured rectangle
+/// from there on. The reminder window is pre-warmed at startup (see
+/// `ReminderPrewarmSurface`), so the first real reminder already has it.
+class BakedSvg extends StatefulWidget {
+  const BakedSvg({
+    super.key,
+    required this.asset,
+    required this.width,
+    required this.height,
+    this.color,
+  });
+
+  final String asset;
+
+  /// Paints every shape of the SVG this one colour (keeping its shape and
+  /// transparency), or null to keep the SVG's own colours.
+  final Color? color;
+
+  final double width;
+  final double height;
+
+  /// Drops every baked image. For tests.
+  @visibleForTesting
+  static void clearCache() {
+    for (final image in _cache.values) {
+      image.dispose();
+    }
+    _cache.clear();
+  }
+
+  static final Map<String, ui.Image> _cache = {};
+
+  /// Longest side, in physical pixels, an image is baked at: more than a card
+  /// ornament can show, and bounded however large the screen is.
+  static const double _maxSide = 1024;
+
+  @override
+  State<BakedSvg> createState() => _BakedSvgState();
+}
+
+class _BakedSvgState extends State<BakedSvg> {
+  final GlobalKey _boundary = GlobalKey();
+  bool _baking = false;
+
+  double _pixelRatio = 1;
+
+  String get _key {
+    // Sizes within 8 logical pixels share an image: a window that is a pixel or
+    // two different must not bake it all over again.
+    final w = (widget.width / 8).round();
+    final h = (widget.height / 8).round();
+    return '${widget.asset}|${widget.color?.toARGB32()}|$w|$h|$_pixelRatio';
+  }
+
+  void _bake() {
+    if (_baking || BakedSvg._cache.containsKey(_key)) return;
+    _baking = true;
+    final key = _key;
+    SchedulerBinding.instance.addPostFrameCallback((_) async {
+      try {
+        final render = _boundary.currentContext?.findRenderObject();
+        if (render is! RenderRepaintBoundary || !render.hasSize) return;
+        final longest = math.max(render.size.width, render.size.height);
+        final ratio = math.min(_pixelRatio, BakedSvg._maxSide / longest);
+        final image = await render.toImage(pixelRatio: ratio);
+        if (BakedSvg._cache.containsKey(key)) {
+          image.dispose();
+        } else {
+          BakedSvg._cache[key] = image;
+        }
+        if (mounted) setState(() {});
+      } catch (_) {
+        // Stays live: it only costs the frames it always cost.
+      } finally {
+        _baking = false;
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    _pixelRatio = MediaQuery.devicePixelRatioOf(context);
+    final baked = BakedSvg._cache[_key];
+    if (baked != null) {
+      return RawImage(
+        image: baked,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.medium,
+      );
+    }
+    _bake();
+    final color = widget.color;
+    return RepaintBoundary(
+      key: _boundary,
+      child: SvgPicture.asset(
+        widget.asset,
+        colorFilter:
+            color == null ? null : ColorFilter.mode(color, BlendMode.srcIn),
+        fit: BoxFit.contain,
       ),
     );
   }

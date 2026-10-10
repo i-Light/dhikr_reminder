@@ -6,6 +6,12 @@ This roadmap was re-sorted on 2026-10-09. The first version ordered work by cale
 
 ## Progress log
 
+### 2026-10-10: lighter reminder card, back and forward in sessions, progress outside
+
+- **Frame cost of the card (Windows).** Found by reading the paint path, not by measuring (the built exe was not launched, see the single-instance note, and this PC's display reports 60 Hz, so frames are shown at 60 whatever the card costs; the aim was to leave the card far under the 4.2 ms an 240 Hz display allows). The 546 KB mandala (383 gradient shapes) and the corner ornaments were drawn through a colour filter, a layer plus hundreds of shapes, on every repaint, which is every tap: they are now rasterised once (`BakedSvg` in `border_frame.dart`, during the start-up pre-warm) and drawn as one image. The `Opacity` over the whole card gradient is folded into the gradient's own colours (`DhikrPalette.cardFillAt`), so a tap no longer opens a full-card layer. The dust draws its halos from one shared sprite in a single `drawRawAtlas` call with no per-frame allocation, and moves 30 times a second from a timer instead of asking for a frame on every display refresh (it drifts a few percent of the card height a second, so it looks the same). To measure it for real: `flutter run -d windows --profile` on a machine where the installed copy is not running, open DevTools, and read the raster and UI times on a tap.
+- **Back and forward in sessions.** A session's card has a round button on each side (start side back, the other forward; the chevrons swap in Arabic, and Left and Right keys press the left and right one) on Windows, and at the bottom of the phone screen. They are dim at the first and last dhikr, they never count, and going back starts that dhikr from nothing. Normal reminders have no such buttons.
+- **Progress shown outside the card.** The Sessions screen now remembers, for the day, which dhikr of each session were counted through (`session_progress.dart`, a small JSON in the saved settings). A session row shows "12 of 31 done" with a bar, its button says Continue (and carries on at the first dhikr not done), and a finished one shows a green check, "All done today" and Again. It starts empty every day.
+
 ### 2026-10-10: parked features switched on (sessions, favourites and wird, backup file)
 
 The three switches that had no code behind them are built, each behind its own flag in `lib/core/features.dart` (analyze clean, 555 Dart tests; the Android save screen and the Windows build compile, not yet run on a device):

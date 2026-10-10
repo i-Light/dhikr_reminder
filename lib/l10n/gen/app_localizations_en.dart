@@ -1010,6 +1010,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sessionStart => 'Start';
 
   @override
+  String get sessionContinue => 'Continue';
+
+  @override
+  String get sessionAgain => 'Again';
+
+  @override
+  String sessionDoneCount(int done, int total) {
+    return '$done of $total done';
+  }
+
+  @override
+  String get sessionAllDone => 'All done today';
+
+  @override
+  String get sessionPrevious => 'Previous dhikr';
+
+  @override
+  String get sessionNext => 'Next dhikr';
+
+  @override
   String get sessionWirdEmpty =>
       'Star any dhikr in the library and it joins your wird here.';
 

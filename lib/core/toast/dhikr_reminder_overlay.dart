@@ -8,6 +8,7 @@ import 'package:dhikr_reminder/core/toast/outer_glow.dart';
 import 'package:dhikr_reminder/core/window/app_logo.dart';
 import 'package:dhikr_reminder/features/library/application/transliteration_controller.dart';
 import 'package:dhikr_reminder/features/library/domain/dhikr_display.dart';
+import 'package:dhikr_reminder/features/sessions/session_runner.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
 import 'package:dhikr_reminder/features/stats/dhikr_stats.dart';
@@ -131,6 +132,48 @@ class DhikrPalette {
     stops: [0.0, 0.45, 0.65, 0.85, 1.0],
   );
   static const _normalOpacity = 0.9;
+
+  /// The card's background at [done] (0 in progress, 1 complete, between during
+  /// the ease), with the see-through of [cardOpacity] and the tap's breath
+  /// ([dim], 0 to 1, of [kDhikrCardDimDepth]) folded into the gradient's own
+  /// colours. The same pixels as an `Opacity` over an opaque gradient, without
+  /// the full-card layer that costs on every frame of a tap.
+  static LinearGradient cardFillAt(double done, {double dim = 0}) {
+    const normal = LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        Color.fromARGB(255, 118, 85, 38),
+        Color.fromARGB(255, 156, 115, 49),
+        Color.fromARGB(255, 123, 82, 33),
+        Color.fromARGB(255, 86, 57, 25),
+        Color.fromARGB(255, 45, 31, 15),
+      ],
+      stops: [0.0, 0.45, 0.65, 0.85, 1.0],
+    );
+    const complete = LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        Color.fromARGB(255, 40, 170, 124),
+        Color.fromARGB(255, 18, 134, 61),
+      ],
+    );
+    final blended = LinearGradient.lerp(normal, complete, done)!;
+    final opacity = (_normalOpacity +
+            (_doneOpacity - _normalOpacity) * done -
+            kDhikrCardDimDepth * dim)
+        .clamp(0.0, 1.0);
+    return LinearGradient(
+      begin: blended.begin,
+      end: blended.end,
+      stops: blended.stops,
+      colors: [
+        for (final color in blended.colors)
+          color.withValues(alpha: color.a * opacity),
+      ],
+    );
+  }
 
   // Not `of(context)`: nothing here reads the theme. The palette is a fixed
   // gold scheme that only changes shape between "in progress" and "done", so
@@ -286,6 +329,9 @@ class DhikrReminderProviderSurface extends ConsumerWidget {
     final showArabic = ref.watch(
       dhikrSettingsProvider.select((s) => s.overlayShowArabic),
     );
+    final navigation = sessionNavigation(ref);
+    final sessionPrevious = navigation.previous;
+    final sessionNext = navigation.next;
     return DhikrReminderSurface(
       reminder: reminder,
       showTransliteration: showTransliteration,
@@ -299,6 +345,8 @@ class DhikrReminderProviderSurface extends ConsumerWidget {
               .updateOverlayShowArabic(!showArabic)
           : null,
       stats: ref.watch(dhikrStatsProvider),
+      onPrevious: sessionPrevious,
+      onNext: sessionNext,
       onTap: () {
         HapticFeedback.lightImpact();
         notifier.increment();
@@ -328,9 +376,17 @@ class DhikrReminderSurface extends StatelessWidget {
     this.showTransliteration = false,
     this.showArabic = true,
     this.onToggleArabic,
+    this.onPrevious,
+    this.onNext,
   });
 
   final ActiveDhikrReminder? reminder;
+
+  /// In a session: back to the dhikr before this one, and on to the one after.
+  /// Null where there is none (the first and the last). The buttons only exist
+  /// on a card that is part of a session.
+  final VoidCallback? onPrevious;
+  final VoidCallback? onNext;
   final VoidCallback onTap;
   final VoidCallback onDismiss;
 
@@ -395,6 +451,8 @@ class DhikrReminderSurface extends StatelessWidget {
                     showTransliteration: showTransliteration,
                     showArabic: showArabic,
                     onToggleArabic: onToggleArabic,
+                    onPrevious: onPrevious,
+                    onNext: onNext,
                   ),
           ),
         ),
@@ -523,8 +581,12 @@ class _DhikrReminderCard extends StatefulWidget {
     required this.showTransliteration,
     required this.showArabic,
     required this.onToggleArabic,
+    required this.onPrevious,
+    required this.onNext,
   });
 
+  final VoidCallback? onPrevious;
+  final VoidCallback? onNext;
   final ActiveDhikrReminder reminder;
   final double maxWidth;
   final double maxHeight;
@@ -657,6 +719,17 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
         final key = event.logicalKey;
         if (key == LogicalKeyboardKey.escape) {
           widget.onDismiss();
+          return KeyEventResult.handled;
+        }
+        // Left and right are the card's two side buttons, whichever way the
+        // language reads.
+        if (reminder.inSession &&
+            (key == LogicalKeyboardKey.arrowLeft ||
+                key == LogicalKeyboardKey.arrowRight)) {
+          final leftIsPrevious =
+              Directionality.of(context) == TextDirection.ltr;
+          final left = key == LogicalKeyboardKey.arrowLeft;
+          (left == leftIsPrevious ? widget.onPrevious : widget.onNext)?.call();
           return KeyEventResult.handled;
         }
         final counts = key == LogicalKeyboardKey.space ||
@@ -864,27 +937,27 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
                 fit: StackFit.expand,
                 children: [
                   Positioned.fill(
-                    // Both the gradient and its opacity ease to the "done"
-                    // look, on the same clock as the card's own transitions,
-                    // instead of snapping.
+                    // The gradient and its see-through ease to the "done" look
+                    // on the same clock as the card's own transitions, and the
+                    // tap's breath rides on it, all as the gradient's own
+                    // colours: no layer over the card.
                     child: TweenAnimationBuilder<double>(
-                      tween: Tween(end: palette.cardOpacity),
+                      tween: Tween<double>(
+                        begin: reminder.isComplete ? 1.0 : 0.0,
+                        end: reminder.isComplete ? 1.0 : 0.0,
+                      ),
                       duration: DhikrTimers.layoutTransition,
                       curve: Curves.easeOutCubic,
-                      builder: (context, opacity, child) => AnimatedBuilder(
+                      builder: (context, done, _) => AnimatedBuilder(
                         animation: _cardDim,
-                        child: child,
-                        builder: (context, child) => Opacity(
-                          opacity:
-                              (opacity - kDhikrCardDimDepth * _cardDim.value)
-                                  .clamp(0.0, 1.0),
-                          child: child,
+                        builder: (context, _) => DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: DhikrPalette.cardFillAt(
+                              done,
+                              dim: _cardDim.value,
+                            ),
+                          ),
                         ),
-                      ),
-                      child: AnimatedContainer(
-                        duration: DhikrTimers.layoutTransition,
-                        curve: Curves.easeOutCubic,
-                        decoration: BoxDecoration(gradient: palette.cardFill),
                       ),
                     ),
                   ),
@@ -1125,10 +1198,103 @@ class _DhikrReminderCardState extends State<_DhikrReminderCard>
                       ],
                     ),
                   ),
+                  // In a session: back and forward between the dhikr, one on
+                  // each side of the card (the start side goes back, whichever
+                  // way the language reads).
+                  if (reminder.inSession) ...[
+                    PositionedDirectional(
+                      start: _s(4),
+                      top: 0,
+                      bottom: 0,
+                      child: Center(
+                        child: _SessionNavButton(
+                          icon: Icons.chevron_left_rounded,
+                          label: l10n.sessionPrevious,
+                          color: accent,
+                          size: _s(34),
+                          onPressed: widget.onPrevious,
+                        ),
+                      ),
+                    ),
+                    PositionedDirectional(
+                      end: _s(4),
+                      top: 0,
+                      bottom: 0,
+                      child: Center(
+                        child: _SessionNavButton(
+                          icon: Icons.chevron_right_rounded,
+                          label: l10n.sessionNext,
+                          color: accent,
+                          size: _s(34),
+                          onPressed: widget.onNext,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One of the two side buttons of a session's card: a round chevron in the
+/// card's accent. Dim and inert where there is nowhere to go (the first and the
+/// last dhikr). No Tooltip (the window has no Overlay above its Navigator); the
+/// label is for screen readers. The chevron mirrors with the language, so the
+/// start side always points back.
+class _SessionNavButton extends StatelessWidget {
+  const _SessionNavButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.size,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final double size;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onPressed != null;
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: label,
+      excludeSemantics: true,
+      child: Opacity(
+        opacity: enabled ? 1 : 0.3,
+        child: InkWell(
+          onTap: onPressed,
+          customBorder: const CircleBorder(),
+          child: Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.black.withValues(alpha: 0.28),
+              border: Border.all(color: color.withValues(alpha: 0.7)),
+            ),
+            // The icons are the left and right chevrons; in a right-to-left
+            // language the start side is the right, so they swap.
+            child: Icon(
+              rtl
+                  ? (icon == Icons.chevron_left_rounded
+                      ? Icons.chevron_right_rounded
+                      : Icons.chevron_left_rounded)
+                  : icon,
+              color: color,
+              size: size * 0.8,
+            ),
+          ),
         ),
       ),
     );

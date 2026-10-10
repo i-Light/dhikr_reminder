@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dhikr_reminder/core/toast/dhikr_reminder_overlay.dart';
 import 'package:dhikr_reminder/features/library/data/dhikr_library.dart';
 import 'package:dhikr_reminder/features/library/domain/dhikr_item.dart';
+import 'package:dhikr_reminder/features/sessions/session_progress.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
 import 'package:flutter/foundation.dart';
@@ -76,6 +77,7 @@ class SessionRun {
 
   DhikrEntry get current => steps[index];
   bool get isLast => index >= steps.length - 1;
+  bool get isFirst => index <= 0;
 
   SessionRun copyWith({int? index}) =>
       SessionRun(kind: kind, steps: steps, index: index ?? this.index);
@@ -98,11 +100,32 @@ class SessionRunner extends Notifier<SessionRun?> {
     return null;
   }
 
-  /// Begins a session over [steps]; does nothing when there are none.
-  void start(SessionKind kind, List<DhikrEntry> steps) {
+  /// Begins a session over [steps], at [startIndex] (to carry on where the
+  /// person left off); does nothing when there are none.
+  void start(SessionKind kind, List<DhikrEntry> steps, {int startIndex = 0}) {
     if (steps.isEmpty) return;
     _advance?.cancel();
-    state = SessionRun(kind: kind, steps: steps);
+    state = SessionRun(
+      kind: kind,
+      steps: steps,
+      index: startIndex.clamp(0, steps.length - 1),
+    );
+    _showCurrent();
+  }
+
+  /// The card's back button: the dhikr before this one. Nothing at the first.
+  void previous() => _goTo((state?.index ?? 0) - 1);
+
+  /// The card's forward button: the dhikr after this one, counted through or
+  /// not. Nothing at the last.
+  void skip() => _goTo((state?.index ?? 0) + 1);
+
+  void _goTo(int index) {
+    final run = state;
+    if (run == null || index < 0 || index >= run.steps.length) return;
+    _advance?.cancel();
+    // The new dhikr starts from nothing, so it can be said (again) in full.
+    state = run.copyWith(index: index);
     _showCurrent();
   }
 
@@ -129,9 +152,16 @@ class SessionRunner extends Notifier<SessionRun?> {
       state = null;
       return;
     }
-    state = run.copyWith(index: run.index + 1);
-    _showCurrent();
+    _goTo(run.index + 1);
   }
+
+  /// This dhikr was counted through: remember it for the day, so the Sessions
+  /// screen can say how far along the session is.
+  void _markDone(SessionRun run) => unawaited(
+        ref
+            .read(sessionProgressProvider.notifier)
+            .markDone(run.kind, run.current.libraryId),
+      );
 
   void _onCard(ActiveDhikrReminder? previous, ActiveDhikrReminder? next) {
     final run = state;
@@ -142,6 +172,7 @@ class SessionRunner extends Notifier<SessionRun?> {
         stop();
         return;
       }
+      if (next.isComplete) _markDone(run);
       if (next.isComplete && !run.isLast) {
         // Swapped for the next dhikr just before the card would have been
         // cleared, so the window stays up from one dhikr to the next instead of
@@ -171,3 +202,16 @@ class SessionRunner extends Notifier<SessionRun?> {
 final sessionRunProvider = NotifierProvider<SessionRunner, SessionRun?>(
   SessionRunner.new,
 );
+
+/// What the card's back and forward buttons do right now: each is null when
+/// there is no session, or nowhere to go (the first and the last dhikr).
+({VoidCallback? previous, VoidCallback? next}) sessionNavigation(
+    WidgetRef ref) {
+  final run = ref.watch(sessionRunProvider);
+  if (run == null) return (previous: null, next: null);
+  final runner = ref.read(sessionRunProvider.notifier);
+  return (
+    previous: run.isFirst ? null : runner.previous,
+    next: run.isLast ? null : runner.skip,
+  );
+}

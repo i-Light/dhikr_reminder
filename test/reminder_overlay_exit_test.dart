@@ -138,7 +138,7 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('HolyDustBackground animates its halos without a mask filter',
+  testWidgets('HolyDustBackground animates its halos from one sprite, about thirty times a second',
       (tester) async {
     await tester.pumpWidget(
       const MaterialApp(home: HolyDustBackground(particleCount: 15)),

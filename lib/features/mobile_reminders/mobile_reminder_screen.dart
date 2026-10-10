@@ -3,6 +3,7 @@ import 'package:dhikr_reminder/core/toast/dhikr_reminder_overlay.dart';
 import 'package:dhikr_reminder/core/window/app_logo.dart';
 import 'package:dhikr_reminder/features/library/application/transliteration_controller.dart';
 import 'package:dhikr_reminder/features/library/domain/dhikr_display.dart';
+import 'package:dhikr_reminder/features/sessions/session_runner.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_controller.dart';
 import 'package:dhikr_reminder/features/settings/application/dhikr_reminder_controller.dart';
 import 'package:dhikr_reminder/features/stats/dhikr_stats.dart';
@@ -29,6 +30,7 @@ class MobileReminderScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final notifier = ref.read(activeDhikrReminderProvider.notifier);
+    final navigation = sessionNavigation(ref);
     final palette = DhikrPalette.forState(isComplete: reminder.isComplete);
     final progress = reminder.hasTarget
         ? (reminder.count / reminder.entry.amount).clamp(0.0, 1.0)
@@ -168,6 +170,31 @@ class MobileReminderScreen extends ConsumerWidget {
                         color: textColor.withValues(alpha: 0.7),
                       ),
                     ),
+                    // In a session: back and forward between the dhikr, at the
+                    // bottom where a thumb is. The start side goes back,
+                    // whichever way the language reads.
+                    if (reminder.inSession) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _SessionButton(
+                            key: const ValueKey('session-previous'),
+                            forward: false,
+                            tooltip: l10n.sessionPrevious,
+                            color: palette.accent,
+                            onPressed: navigation.previous,
+                          ),
+                          _SessionButton(
+                            key: const ValueKey('session-next'),
+                            forward: true,
+                            tooltip: l10n.sessionNext,
+                            color: palette.accent,
+                            onPressed: navigation.next,
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -253,6 +280,40 @@ class _ReminderText extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// One of the two session buttons at the bottom of the phone's card: a round
+/// chevron, dim and inert where there is nowhere to go. The first of the two
+/// goes back and the second forward; the chevrons swap in a right-to-left
+/// language so each one points the way it goes.
+class _SessionButton extends StatelessWidget {
+  const _SessionButton({
+    super.key,
+    required this.forward,
+    required this.tooltip,
+    required this.color,
+    required this.onPressed,
+  });
+
+  final bool forward;
+  final String tooltip;
+  final Color color;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    final pointsRight = forward != rtl;
+    return IconButton.outlined(
+      onPressed: onPressed,
+      tooltip: tooltip,
+      iconSize: 32,
+      color: color,
+      icon: Icon(
+        pointsRight ? Icons.chevron_right_rounded : Icons.chevron_left_rounded,
+      ),
     );
   }
 }

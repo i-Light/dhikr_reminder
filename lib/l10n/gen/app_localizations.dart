@@ -1832,6 +1832,42 @@ abstract class AppLocalizations {
   /// **'Start'**
   String get sessionStart;
 
+  /// No description provided for @sessionContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get sessionContinue;
+
+  /// No description provided for @sessionAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Again'**
+  String get sessionAgain;
+
+  /// No description provided for @sessionDoneCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} done'**
+  String sessionDoneCount(int done, int total);
+
+  /// No description provided for @sessionAllDone.
+  ///
+  /// In en, this message translates to:
+  /// **'All done today'**
+  String get sessionAllDone;
+
+  /// No description provided for @sessionPrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous dhikr'**
+  String get sessionPrevious;
+
+  /// No description provided for @sessionNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next dhikr'**
+  String get sessionNext;
+
   /// No description provided for @sessionWirdEmpty.
   ///
   /// In en, this message translates to:

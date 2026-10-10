@@ -1009,6 +1009,26 @@ class AppLocalizationsAr extends AppLocalizations {
   String get sessionStart => 'ابدأ';
 
   @override
+  String get sessionContinue => 'كمّل';
+
+  @override
+  String get sessionAgain => 'ابدأ تاني';
+
+  @override
+  String sessionDoneCount(int done, int total) {
+    return 'خلّصت $done من $total';
+  }
+
+  @override
+  String get sessionAllDone => 'خلصت كلها النهارده';
+
+  @override
+  String get sessionPrevious => 'الذكر اللي قبله';
+
+  @override
+  String get sessionNext => 'الذكر اللي بعده';
+
+  @override
   String get sessionWirdEmpty =>
       'حط نجمة على أي ذكر في الموسوعة وهيتضاف لوردك هنا.';
 

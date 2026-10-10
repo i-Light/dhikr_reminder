@@ -50,7 +50,9 @@ Favourites chip in the filter, and the starred ones come first while choosing wh
 to add); the starred entries, in the order they were starred, are "my wird". The
 folded reminder settings on the Notifications page lead to a screen with morning
 azkar, evening azkar and my wird, each with a Start button, which runs the dhikr
-one after another on the usual card ("3 of 31"). The About page ends with Backup:
+one after another on the usual card ("3 of 31"), with a back and a forward button on
+each side of it (at the bottom on a phone), while the screen itself shows how far
+each session has got today and offers to continue it. The About page ends with Backup:
 save the dhikr list, counts and settings to one JSON file and restore them from
 one (format in `lib/core/storage/backup_file.dart`).
 

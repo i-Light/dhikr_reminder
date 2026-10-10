@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -64,28 +66,76 @@ class DustParticle {
   final Color color;
 }
 
+/// The side, in pixels, of the halo sprite: a white disc whose alpha falls off
+/// like the gaussian above. Every halo is this one image, scaled and tinted.
+const int _haloSide = 64;
+
+ui.Image? _haloSprite;
+
+/// The shared halo sprite, baked on first use (see [_glowFalloff]).
+ui.Image _halo() {
+  final existing = _haloSprite;
+  if (existing != null) return existing;
+  final recorder = ui.PictureRecorder();
+  final canvas = Canvas(recorder);
+  const half = _haloSide / 2;
+  canvas.drawCircle(
+    const Offset(half, half),
+    half,
+    Paint()
+      ..shader = ui.Gradient.radial(
+        const Offset(half, half),
+        half,
+        [
+          for (final falloff in _glowFalloff)
+            Color.fromRGBO(255, 255, 255, falloff),
+        ],
+        _glowStops,
+      ),
+  );
+  return _haloSprite =
+      recorder.endRecording().toImageSync(_haloSide, _haloSide);
+}
+
 class HolyDustPainter extends CustomPainter {
   HolyDustPainter({
-    required this.animation,
+    required Listenable animation,
     required this.particles,
     required this.stopwatch,
-  })  : _glowPaint = Paint()..style = PaintingStyle.fill,
-        _corePaint = Paint()..style = PaintingStyle.fill,
-        super(repaint: animation);
+  })  : _corePaint = Paint()..style = PaintingStyle.fill,
+        _glowPaint = Paint(),
+        _glowers = [
+          for (final p in particles)
+            if (p.hasGlow) p,
+        ],
+        super(repaint: animation) {
+    final n = _glowers.length;
+    _transforms = Float32List(n * 4);
+    _rects = Float32List(n * 4);
+    _colors = Int32List(n);
+    for (var i = 0; i < n; i++) {
+      _rects[i * 4 + 2] = _haloSide.toDouble();
+      _rects[i * 4 + 3] = _haloSide.toDouble();
+    }
+  }
 
-  final Animation<double> animation;
   final List<DustParticle> particles;
   final Stopwatch stopwatch;
 
-  // Reusable paint instances (avoids creating new objects every 16ms)
-  final Paint _glowPaint;
+  // Reused for every frame: nothing is allocated while the card is open.
   final Paint _corePaint;
+  final Paint _glowPaint;
+  final List<DustParticle> _glowers;
+  late final Float32List _transforms;
+  late final Float32List _rects;
+  late final Int32List _colors;
 
   @override
   void paint(Canvas canvas, Size size) {
     if (size.width <= 0 || size.height <= 0) return;
 
     final double t = stopwatch.elapsedMilliseconds / 1000.0;
+    var glow = 0;
 
     for (final p in particles) {
       // 1. Upward drift with wrap-around
@@ -99,45 +149,44 @@ class HolyDustPainter extends CustomPainter {
 
       final double px = x * size.width;
       final double py = y * size.height;
-      final offset = Offset(px, py);
 
       // 3. Twinkle alpha
       final double twinkle = 0.5 + 0.5 * math.sin(t * p.twinkleFreq + p.phase);
       final double currentAlpha =
           (p.baseOpacity * (0.4 + 0.6 * twinkle)).clamp(0.0, 1.0);
 
-      // 4. Draw halo. The old code painted a solid circle (radius
-      // `p.radius * 2.5`, alpha `currentAlpha * 0.35`) under
-      // `MaskFilter.blur(BlurStyle.normal, p.radius * 2.8)`, which costs a
-      // gaussian blur pass per glowing particle on every frame the dust
-      // ticker runs — the single biggest per-frame cost in the open-card
-      // baseline. A blurred disc is just a soft radial falloff, so the same
-      // shape is drawn directly as a radial gradient evaluated on the
-      // existing render target: no offscreen pass, no mask filter.
-      //
-      // The falloff samples that same gaussian. Extent = disc radius + 3σ
-      // = `(2.5 + 3 * 2.8) = 10.9` particle radii, and because that ratio
-      // to σ is fixed, the normalized shape (and the centre peak, see
-      // [_glowPeakFactor]) is identical for every particle — only the size
-      // and the twinkle alpha change per frame.
+      // 4. The halo: a blurred disc is just a soft radial falloff, drawn from
+      // the shared sprite (extent = disc radius + 3 sigma = 10.9 particle
+      // radii) and tinted with the particle's colour at its peak alpha (see
+      // [_glowPeakFactor]). All the halos go out in one draw call below.
       if (p.hasGlow) {
-        final double extent = p.radius * 10.9;
-        final double peak = currentAlpha * _glowPeakFactor;
-        _glowPaint.shader = ui.Gradient.radial(
-          offset,
-          extent,
-          [
-            for (final falloff in _glowFalloff)
-              p.color.withValues(alpha: peak * falloff),
-          ],
-          _glowStops,
-        );
-        canvas.drawCircle(offset, extent, _glowPaint);
+        final double scale = p.radius * 10.9 * 2 / _haloSide;
+        final i = glow * 4;
+        _transforms[i] = scale; // scos
+        _transforms[i + 1] = 0; // ssin
+        _transforms[i + 2] = px - _haloSide / 2 * scale;
+        _transforms[i + 3] = py - _haloSide / 2 * scale;
+        _colors[glow] = p.color
+            .withValues(alpha: currentAlpha * _glowPeakFactor)
+            .toARGB32();
+        glow++;
       }
 
       // 5. Draw core dot
       _corePaint.color = p.color.withValues(alpha: currentAlpha);
-      canvas.drawCircle(offset, p.radius, _corePaint);
+      canvas.drawCircle(Offset(px, py), p.radius, _corePaint);
+    }
+
+    if (glow > 0) {
+      canvas.drawRawAtlas(
+        _halo(),
+        _transforms,
+        _rects,
+        _colors,
+        BlendMode.modulate,
+        null,
+        _glowPaint,
+      );
     }
   }
 
@@ -166,11 +215,18 @@ class HolyDustBackground extends StatefulWidget {
   State<HolyDustBackground> createState() => _HolyDustBackgroundState();
 }
 
-class _HolyDustBackgroundState extends State<HolyDustBackground>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
+/// How often the dust moves. It drifts a few percent of the card's height per
+/// second and twinkles a few times a second, so thirty updates look the same as
+/// sixty or two hundred and forty, and the card is not asked for a frame on
+/// every refresh of the display just to move it. Frames that a tap (or anything
+/// else) asks for are drawn at the display's full rate regardless.
+const Duration _dustStep = Duration(milliseconds: 33);
+
+class _HolyDustBackgroundState extends State<HolyDustBackground> {
   late final Stopwatch _stopwatch;
   late final List<DustParticle> _particles;
+  final ValueNotifier<int> _frame = ValueNotifier<int>(0);
+  Timer? _timer;
 
   @override
   void initState() {
@@ -184,17 +240,14 @@ class _HolyDustBackgroundState extends State<HolyDustBackground>
       (_) => DustParticle.random(rand, widget.palette),
     );
 
-    // Continuous ticker driver
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 1),
-    )..repeat();
+    _timer = Timer.periodic(_dustStep, (_) => _frame.value++);
   }
 
   @override
   void dispose() {
+    _timer?.cancel();
     _stopwatch.stop();
-    _controller.dispose();
+    _frame.dispose();
     super.dispose();
   }
 
@@ -203,7 +256,7 @@ class _HolyDustBackgroundState extends State<HolyDustBackground>
     return RepaintBoundary(
       child: CustomPaint(
         painter: HolyDustPainter(
-          animation: _controller,
+          animation: _frame,
           particles: _particles,
           stopwatch: _stopwatch,
         ),

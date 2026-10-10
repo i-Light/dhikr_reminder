@@ -843,9 +843,16 @@ void main() {
     ) async {
       final entry = _linked(_tasbeehId);
       await pump(tester, entry: entry);
+      // The card's background is a five-colour gradient whose own alpha is how
+      // see-through the card is.
       double lowest() => tester
-          .widgetList<Opacity>(find.byType(Opacity))
-          .map((o) => o.opacity)
+          .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+          .map((box) => box.decoration)
+          .whereType<BoxDecoration>()
+          .map((decoration) => decoration.gradient)
+          .whereType<LinearGradient>()
+          .where((gradient) => gradient.colors.length == 5)
+          .map((gradient) => gradient.colors.first.a)
           .reduce(min);
       final resting = lowest();
 
