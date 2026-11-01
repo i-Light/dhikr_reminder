@@ -40,7 +40,7 @@ dependencies:
   # The auto-updater (lib/core/update/): the running app's own version, and the
   # SHA-256 the downloaded installer is checked against.
   package_info_plus: ^10.2.2
-  crypto: ^3.0.7
+  crypto: ^3.0.8
   hijri: ^3.0.1
 
   # Opens the bug report and the Play Store page in the browser (or the Play
