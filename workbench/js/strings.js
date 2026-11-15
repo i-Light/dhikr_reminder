@@ -1,0 +1,67 @@
+/* strings.js: every visible word, Egyptian Arabic first, English second. Each screen task adds its own keys to both. */
+(function () {
+"use strict";
+var STR = {
+  ar: {
+    "app.name": "ذِكر",
+    "tab.today": "النهارده",
+    "tab.adhkar": "أذكاري",
+    "tab.more": "المزيد",
+    "moment.waking": "أول ما تصحى",
+    "moment.morning": "الصبح",
+    "moment.evening": "المسا",
+    "moment.sleep": "قبل النوم",
+    "group.morning": "أذكار الصبح",
+    "group.evening": "أذكار المسا",
+    "group.sleep": "النوم والصحيان",
+    "group.afterprayer": "بعد الصلاة",
+    "group.tasabih": "تسابيح",
+    "group.duas": "أدعية",
+    "level.new": "لسه ببتدي",
+    "level.some": "بقول شوية",
+    "level.daily": "جزء من يومي",
+    "freq.few": "كام مرة في اليوم (كل 3 ساعات تقريبا)",
+    "freq.hour": "كل ساعة",
+    "freq.often": "كتير (كل 20 دقيقة تقريبا)",
+    "btn.start": "ابدأ",
+    "btn.continue": "كمّل",
+    "btn.later": "بعدين",
+    "btn.close": "اقفل",
+    "btn.add": "ضيف",
+    "btn.back": "رجوع",
+    "btn.undo": "تراجع",
+    "btn.chooseforme": "اختار انت"
+  },
+  en: {
+    "app.name": "Dhikr",
+    "tab.today": "Today",
+    "tab.adhkar": "My adhkar",
+    "tab.more": "More",
+    "moment.waking": "On waking",
+    "moment.morning": "Morning",
+    "moment.evening": "Evening",
+    "moment.sleep": "Before sleep",
+    "group.morning": "Morning adhkar",
+    "group.evening": "Evening adhkar",
+    "group.sleep": "Sleep and waking",
+    "group.afterprayer": "After prayer",
+    "group.tasabih": "Tasbih",
+    "group.duas": "Duas",
+    "level.new": "I'm just starting",
+    "level.some": "I do some",
+    "level.daily": "It's part of my day",
+    "freq.few": "A few times a day (about every 3 hours)",
+    "freq.hour": "Every hour",
+    "freq.often": "Often (about every 20 minutes)",
+    "btn.start": "Start",
+    "btn.continue": "Continue",
+    "btn.later": "Later",
+    "btn.close": "Close",
+    "btn.add": "Add",
+    "btn.back": "Back",
+    "btn.undo": "Undo",
+    "btn.chooseforme": "Choose for me"
+  }
+};
+if (typeof module === "object" && module.exports) module.exports = STR; else window.W.STR = STR;
+})();

@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join, dirname, resolve, extname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
+import vm from "node:vm";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const exts = new Set([".js", ".css", ".html", ".md", ".mjs"]);
@@ -17,6 +19,29 @@ function* walk(d) {
     else if (exts.has(extname(e.name))) yield p;
   }
 }
+
+test("every word exists in both languages and none is empty", () => {
+  const STR = createRequire(import.meta.url)("../js/strings.js");
+  const ar = Object.keys(STR.ar).sort(), en = Object.keys(STR.en).sort();
+  assert.deepEqual(ar, en);
+  for (const lang of ["ar", "en"]) for (const k of ar) {
+    assert.match(k, /^[a-z]+(\.[a-z0-9]+)+$/, k);
+    assert.ok(typeof STR[lang][k] === "string" && STR[lang][k].trim(), lang + " " + k);
+  }
+});
+
+test("W.t picks the language, fills names and marks a missing key", () => {
+  const window = { React: {}, htm: { bind: () => () => null } };
+  const ctx = vm.createContext({ window, URLSearchParams });
+  for (const f of ["core.js", "strings.js"]) vm.runInContext(readFileSync(join(root, "js", f), "utf8"), ctx);
+  const W = window.W;
+  W.STR.ar["test.hi"] = W.STR.en["test.hi"] = "{name} {n} {gone}";
+  assert.equal(W.t("tab.today"), W.STR.ar["tab.today"]);
+  W.U().lang = "en";
+  assert.equal(W.t("tab.today"), "Today");
+  assert.equal(W.t("test.hi", { name: "Ali", n: 0 }), "Ali 0 {gone}");
+  assert.equal(W.t("no.such"), "[no.such]");
+});
 
 test("no forbidden characters in workbench files", () => {
   const bad = [];

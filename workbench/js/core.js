@@ -106,6 +106,13 @@ W.undo = function () {
   W.emit();
   return true;
 };
+/* words: W.STR comes from strings.js; {name} is filled from vars; a missing key shows as [key] */
+W.t = function (key, vars) {
+  var ui = W.U(), table = W.STR && (W.STR[ui && ui.lang] || W.STR.ar);
+  var s = table && table[key];
+  if (s == null) return "[" + key + "]";
+  return vars ? s.replace(/\{(\w+)\}/g, function (m, k) { return vars[k] == null ? m : String(vars[k]); }) : s;
+};
 W.go = function (route) {
   S.state.ui.route = route;
   W.save();
