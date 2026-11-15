@@ -1,5 +1,6 @@
 /* data.js: example adhkar copied from the app library (lib/features/library/data/), read-only there.
-   sunnah is the library count (the library counts an entry once when it names no number).
+   sunnah is the library count (the library counts an entry once when it names no number),
+   except duas with no written count, which have none (null) and use the free ladder.
    en is the library English note for the entry, or null when it has none. starter 0 to 7 orders the first adhkar.
    SETS hold the four moments in the library order; GROUPS are the Add screen groups (waking adhkar sit in sleep). */
 (function () {
@@ -32,10 +33,10 @@
     {"id":"d2e72559401","ar":"الحمد لله الذي أحيانا بعد ما أماتنا وإليه النشور.","translit":"Alhamdu lillahil-ladhi ahyana ba'da ma amatana wa ilayhin-nushur.","en":null,"words":9,"sunnah":1,"source":null,"groups":["sleep"],"starter":null},
     {"id":"d2b475178db","ar":"الحمد لله الذي عافاني في جسدي ورد علي روحي وأذن لي بذكره.","translit":"Alhamdu lillahil-ladhi 'afani fi jasadi wa radda 'alayya ruhi wa adhina li bidhikrih.","en":null,"words":12,"sunnah":1,"source":null,"groups":["sleep"],"starter":null},
     {"id":"d1321d33fed","ar":"لا إله إلا الله وحده لا شريك له، له الملك وله الحمد، وهو على كل شيء قدير، سبحان الله، والحمد لله، ولا إله إلا الله والله أكبر، ولا حول ولا قوة إلا بالله العلي العظيم. رب اغفر لي.","translit":"La ilaha illallahu wahdahu la sharika lah, lahul-mulku wa lahul-hamd, wa huwa 'ala kulli shay'in qadir, subhanallah, wal-hamdu lillah, wa la ilaha illallahu wallahu akbar, wa la hawla wa la quwwata illa billahil-'Aliyyil-'Azim. Rabbighfir li.","en":null,"words":38,"sunnah":1,"source":null,"groups":["sleep"],"starter":null},
-    {"id":"df22dc44e67","ar":"اللهم إني أسألك الهدى والتقى والعفاف والغنى.","translit":"Allahumma inni as'alukal-huda wat-tuqa wal-'afafa wal-ghina.","en":"Narrated by Muslim (6904), from Ibn Mas'ud","words":7,"sunnah":1,"source":"رواه مسلم (6904) عن ابن مسعود","groups":["duas"],"starter":null},
-    {"id":"de17005f7f3","ar":"ربنا آتنا في الدنيا حسنة وفي الآخرة حسنة وقنا عذاب النار","translit":"Rabbana atina fid-dunya hasanatan wa fil-akhirati hasanatan wa qina 'adhaban-nar","en":"Surah Al-Baqarah, verse 201","words":11,"sunnah":1,"source":"البقرة - 201","groups":["duas"],"starter":null},
-    {"id":"dd1c86974a0","ar":"رب زدني علما","translit":"Rabbi zidni 'ilma","en":"Surah Ta-Ha, verse 114","words":3,"sunnah":1,"source":"طه - 114","groups":["duas"],"starter":null},
-    {"id":"ddff77ab3f8","ar":"لا إله إلا أنت سبحانك إني كنت من الظالمين","translit":"La ilaha illa anta subhanaka inni kuntu minaz-zalimin","en":"Surah Al-Anbiya, verse 87","words":9,"sunnah":1,"source":"الأنبياء - 87","groups":["duas"],"starter":null}
+    {"id":"df22dc44e67","ar":"اللهم إني أسألك الهدى والتقى والعفاف والغنى.","translit":"Allahumma inni as'alukal-huda wat-tuqa wal-'afafa wal-ghina.","en":"Narrated by Muslim (6904), from Ibn Mas'ud","words":7,"sunnah":null,"source":"رواه مسلم (6904) عن ابن مسعود","groups":["duas"],"starter":null},
+    {"id":"de17005f7f3","ar":"ربنا آتنا في الدنيا حسنة وفي الآخرة حسنة وقنا عذاب النار","translit":"Rabbana atina fid-dunya hasanatan wa fil-akhirati hasanatan wa qina 'adhaban-nar","en":"Surah Al-Baqarah, verse 201","words":11,"sunnah":null,"source":"البقرة - 201","groups":["duas"],"starter":null},
+    {"id":"dd1c86974a0","ar":"رب زدني علما","translit":"Rabbi zidni 'ilma","en":"Surah Ta-Ha, verse 114","words":3,"sunnah":null,"source":"طه - 114","groups":["duas"],"starter":null},
+    {"id":"ddff77ab3f8","ar":"لا إله إلا أنت سبحانك إني كنت من الظالمين","translit":"La ilaha illa anta subhanaka inni kuntu minaz-zalimin","en":"Surah Al-Anbiya, verse 87","words":9,"sunnah":null,"source":"الأنبياء - 87","groups":["duas"],"starter":null}
   ];
   var SETS = {
     waking: [{"id":"d2e72559401","count":1}, {"id":"d2b475178db","count":1}, {"id":"d1321d33fed","count":1}],

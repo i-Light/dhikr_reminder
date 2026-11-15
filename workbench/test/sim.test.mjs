@@ -36,6 +36,15 @@ test("example data", () => {
   assert.deepEqual(Object.keys(D.SETS), ["waking", "morning", "evening", "sleep"]);
 });
 
+test("a dua with no sunnah number uses the free ladder", () => {
+  const free = D.LIB.filter((x) => x.sunnah === null);
+  assert.ok(free.length >= 1);
+  free.forEach((x) => assert.ok(x.groups.includes("duas"), x.id));
+  const s = E.add(fresh(), free[0]);
+  assert.ok(E.ladder(null).includes(s.adhkar.find((a) => a.id === free[0].id).target));
+  assert.deepEqual(E.ladder(null), [10, 20, 33, 50, 70, 100]);
+});
+
 test("same inputs give the same log", () => {
   const s = fresh();
   assert.deepEqual(Sim.run(s, t0, t1, "responsive", 7).log, Sim.run(s, t0, t1, "responsive", 7).log);
