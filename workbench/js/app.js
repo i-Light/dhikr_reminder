@@ -48,6 +48,16 @@ if (ui.popup && ui.popup !== "moment") {
   if (!showing && !W.showReminder(ui.popup)) ui.popup = null;
 }
 
+/* test hook: open the simulator, run forward to simTo, and optionally drag backward to simBack */
+var simPerson = query.get("sim");
+if (simPerson) {
+  W.simOpen(simPerson);
+  if (query.get("simTo")) W.simSeekClock(query.get("simTo"));
+  if (query.get("simBack")) W.simSeekClock(query.get("simBack"));
+} else if (ui.panel === "sim" && W.S.state.eng && W.S.state.eng.prefs) {
+  W.simOpen();
+}
+
 /* test hook: one saved comment pinned to the part with this data-id, on the today screen of the current day */
 var seed = query.get("seedComment");
 if (seed) {
@@ -64,6 +74,7 @@ function Shell() {
     <div class="wb-stage" data-id="stage">${u.route === "gallery" ? html`<${W.Gallery} />`
       : u.frame === "windows" ? html`<${W.WindowsFrame}><${W.Screen} /><//>`
       : html`<${W.PhoneFrame}><${W.Screen} /><//>`}</div>
+    <${W.SimPanel} />
     <${W.CommentLayer} />
   </div>`;
 }

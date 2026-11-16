@@ -177,3 +177,13 @@ test("session", { skip }, () => assert.match(dumpDom("day=noon&route=session/mor
 test("moment card", { skip }, () => assert.match(dumpDom("day=noon&popup=moment"), /data-id="moment-start"/));
 
 test("more rows", { skip }, () => { const d = dumpDom("day=noon&route=more"); for (const r of ["freq","sleep","look","sound","lang","size","days"]) assert.match(d, new RegExp('data-id="more-row-' + r)); });
+
+test("simulator runs a day", { skip }, () => {
+  const d = dumpDom("day=noon&sim=responsive&simTo=21:00");
+  assert.match(d, /data-id="sim-log"/); assert.ok((d.match(/data-sim-line/g) || []).length >= 5);
+  assert.doesNotMatch(d, /data-error=/);
+});
+test("clock dragged backward does not break", { skip }, () => {
+  const d = dumpDom("day=noon&sim=responsive&simTo=21:00&simBack=10:00");
+  assert.match(d, /data-id="sim-log"/); assert.match(d, /10:00/); assert.doesNotMatch(d, /data-error=/);
+});

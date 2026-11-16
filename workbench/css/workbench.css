@@ -162,3 +162,16 @@ html.cmt-mode [data-cmt-ui] button { cursor: pointer !important; }
 .cmt-empty { display: flex; flex-direction: column; gap: 6px; padding: 14px 10px; }
 .cmt-side-foot { display: flex; flex-direction: column; gap: 8px; padding: 10px 14px; border-top: 1px solid #3a362d; }
 .wb-note { color: #f0c060; font-size: 13px; }
+
+/* ---------- the day simulator (chrome, English) ---------- */
+.sim-panel { width: min(370px, calc(100vw - 24px)); }
+.sim-controls { display: flex; flex-direction: column; gap: 10px; padding: 10px 14px; border-bottom: 1px solid #3a362d; }
+.sim-field { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sim-select { font: 500 13px/1 system-ui, "Segoe UI", Tahoma, sans-serif; color: #f4f1ea; background: #322f27; border: 1px solid #4a463b; border-radius: 6px; padding: 6px 10px; min-height: 30px; cursor: pointer; }
+.sim-select:focus-visible, .sim-range:focus-visible { outline: 2px solid #f0c060; outline-offset: 2px; }
+.sim-clock-box { display: flex; flex-direction: column; gap: 6px; }
+.sim-clock { font-size: 15px; font-variant-numeric: tabular-nums; color: #f0c060; }
+.sim-range { width: 100%; accent-color: #f0c060; cursor: pointer; margin: 0; }
+.sim-log { gap: 4px; padding: 8px; }
+.sim-line { display: flex; flex-direction: column; gap: 3px; padding: 8px 10px; border-radius: 8px; background: #26231d; border: 1px solid #353129; }
+.sim-dhikr { color: #d8d2c3; font-size: 12px; }
