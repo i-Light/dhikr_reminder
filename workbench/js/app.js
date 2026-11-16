@@ -25,11 +25,20 @@ var fromUrl = W.readUrl();
 Object.keys(fromUrl).forEach(function (k) { ui[k] = fromUrl[k]; });
 W.init(W.LS.get(W.KEYS.eng, {}), ui);
 
+/* the look, theme and text size live on <html> so tokens.css can answer them */
+function applyLook(u) {
+  root.dataset.look = u.look;
+  root.dataset.theme = u.theme;
+  root.dataset.size = String(u.size);
+}
+applyLook(ui);
+
 function Shell() {
-  W.useApp();
+  var u = W.useApp().ui;
+  applyLook(u);
   return html`<div class="wb-shell">
     <div class="wb-top" data-id="topbar" dir="ltr"><span class="wb-title" data-id="wb-title">Dhikr workbench</span></div>
-    <div class="wb-stage" data-id="stage"></div>
+    <div class="wb-stage" data-id="stage">${u.route === "gallery" ? html`<${W.Gallery} />` : null}</div>
   </div>`;
 }
 

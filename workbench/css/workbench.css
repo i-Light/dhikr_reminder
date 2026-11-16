@@ -5,3 +5,54 @@ body { font-family: system-ui, "Segoe UI", Tahoma, sans-serif; background: #f4f1
 .wb-top { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: #1d1b16; color: #f4f1ea; }
 .wb-title { font-size: 16px; font-weight: 600; }
 .wb-stage { flex: 1; display: flex; align-items: center; justify-content: center; padding: 16px; }
+
+/* ---------- gallery (workbench chrome, English) ---------- */
+.gal { flex: 1; width: 100%; max-width: 1120px; align-self: flex-start; padding: 28px 28px 64px; border-radius: 12px; font-size: 16px; }
+.gal-head { margin-block-end: 8px; }
+.gal-h1 { font-size: 30px; font-weight: var(--head-weight); line-height: 1.3; margin: 0 0 8px; }
+.gal-h2 { font-size: 22px; font-weight: var(--head-weight); line-height: 1.3; margin: 0 0 14px; }
+.gal-look { max-width: 72ch; margin: 0; color: var(--ink-2); }
+.gal-look strong { color: var(--ink); }
+.gal-note { color: var(--ink-2); margin: 0 0 14px; max-width: 80ch; }
+.gal-sec { margin-block-start: 40px; padding-block-start: 24px; border-block-start: 1px solid var(--line); }
+.gal-item { margin-block-end: 18px; }
+.gal-label { font-size: 14px; color: var(--ink-2); margin-block-end: 8px; font-family: var(--font-ui); }
+.gal code { font-family: Consolas, "Courier New", monospace; font-size: 13px; color: var(--ink); }
+.gal-sample { font-size: var(--text); }
+.gal-p { margin: 6px 0 0; }
+.gal-xl { font-size: var(--text-xl); font-weight: var(--label-weight); line-height: 1.3; margin: 0; }
+.gal-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px; }
+.gal-swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-block-end: 24px; }
+.gal-swatch { display: flex; flex-direction: column; gap: 4px; }
+.gal-chip { display: block; height: 52px; border-radius: 8px; box-shadow: inset 0 0 0 1px var(--line); }
+.gal-val { font-size: 13px; color: var(--ink-2); }
+.gal-panel { display: flex; flex-direction: column; gap: 12px; }
+.gal-shapes { display: flex; flex-wrap: wrap; gap: 24px; }
+.gal-shape { width: 120px; height: 80px; background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--line); }
+.gal-shadow { border-radius: var(--radius); box-shadow: var(--shadow); }
+.gal-tap { width: var(--tap); height: var(--tap); background: var(--accent-soft); box-shadow: inset 0 0 0 1.5px var(--accent); border-radius: 4px; }
+.gal-icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 12px; }
+.gal-icon { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 8px 10px; background: var(--surface); border-radius: 10px; color: var(--ink); }
+.gal-icon-art { display: flex; align-items: flex-end; gap: 14px; }
+.gal-btns { display: flex; flex-direction: column; gap: 14px; }
+.gal-btn-row { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.gal-rings { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; }
+.gal-orn-bare { display: flex; justify-content: center; margin-block-start: 16px; }
+.gal-stack { display: flex; flex-direction: column; gap: 12px; }
+.gal-phone { position: relative; height: 440px; max-width: 420px; overflow: hidden; border-radius: 16px; background: var(--bg); box-shadow: inset 0 0 0 1px var(--line); }
+.gal-phone-under { padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.gal-replay { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; margin-block-start: 10px; border: 0; border-radius: 8px; background: var(--surface-2); color: var(--ink); font: 600 15px/1 var(--font-ui); cursor: pointer; }
+.gal-replay:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.gal-motions { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
+.gal-motion { display: flex; flex-direction: column; background: var(--surface-2); border-radius: 12px; padding: 12px; margin: 0; }
+.gal-stage { flex: 1; min-height: 200px; display: flex; align-items: center; justify-content: center; padding: 12px; overflow: hidden; }
+.gal-motion-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.gal-line { color: var(--ink-2); font-size: 14px; margin-block-start: 2px; }
+.gal-count { font-size: 72px; font-weight: var(--label-weight); line-height: 1.1; color: var(--ink); }
+.gal-count-sm { font-size: var(--text-lg); font-weight: var(--label-weight); }
+.gal-card { width: 100%; padding: 18px 20px; }
+.gal-card .dhikr { font-size: var(--text-dhikr); }
+.gal-piece { display: flex; align-items: center; justify-content: center; gap: 16px; }
+.gal-day { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--accent); }
+.gal-day .m-day-mark { display: block; }
+.gal-mini { width: 100%; display: flex; flex-direction: column; gap: 10px; }

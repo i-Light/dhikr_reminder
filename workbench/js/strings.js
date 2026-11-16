@@ -30,7 +30,13 @@ var STR = {
     "btn.add": "ضيف",
     "btn.back": "رجوع",
     "btn.undo": "تراجع",
-    "btn.chooseforme": "اختار انت"
+    "btn.chooseforme": "اختار انت",
+    "step.less": "أقل",
+    "step.more": "أكتر",
+    "step.mark": "السُّنّة: {n}",
+    "step.aday": "في اليوم",
+    "count.left": "فاضل {n}",
+    "toast.later": "تمام، هنفكّرك تاني بعد 10 دقايق"
   },
   en: {
     "app.name": "Dhikr",
@@ -60,7 +66,13 @@ var STR = {
     "btn.add": "Add",
     "btn.back": "Back",
     "btn.undo": "Undo",
-    "btn.chooseforme": "Choose for me"
+    "btn.chooseforme": "Choose for me",
+    "step.less": "Less",
+    "step.more": "More",
+    "step.mark": "Sunnah: {n}",
+    "step.aday": "a day",
+    "count.left": "{n} left",
+    "toast.later": "OK, we will remind you again in 10 minutes"
   }
 };
 if (typeof module === "object" && module.exports) module.exports = STR; else window.W.STR = STR;

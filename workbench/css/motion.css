@@ -1,0 +1,73 @@
+/* motion.css: every motion has a job. Transform and opacity only. All of it is off under
+   prefers-reduced-motion and when <html data-motion="off">. A class that plays once is replayed by
+   mounting the element again (a new React key). */
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+/* m-count: the count landing. The new number rises into place on every tap: quick, small, never in the way. */
+.m-count { animation: m-count 180ms var(--ease-out) both; }
+@keyframes m-count {
+  from { opacity: 0.3; transform: translateY(22%) scale(0.94); }
+  to { opacity: 1; transform: none; }
+}
+
+/* m-piece-done: a piece completing. The card swells a little and settles, so the hand feels the piece is done. */
+.m-piece-done { animation: m-piece-done 380ms var(--ease-out) both; }
+@keyframes m-piece-done {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.035); }
+  100% { transform: scale(1); }
+}
+
+/* m-ring: a ring filling. Put it on the ring (or any parent); the arc turns to its new place. */
+.m-ring .ring-fill { transition: transform 450ms var(--ease-out); }
+
+/* m-day-done: the day completing. The one longer moment: the mark turns into place and the words follow. */
+.m-day-done { animation: m-rise 700ms var(--ease-out) both; }
+.m-day-done .m-day-mark { animation: m-bloom 1200ms var(--ease-out) both; }
+.m-day-done .m-day-text { animation: m-rise 600ms var(--ease-out) 450ms both; }
+@keyframes m-bloom {
+  0% { opacity: 0; transform: rotate(-90deg) scale(0.6); }
+  50% { opacity: 1; }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes m-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* m-enter: a card arriving. It rises a short way from where it will rest. */
+.m-enter { animation: m-enter 280ms var(--ease-out) both; }
+@keyframes m-enter {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+/* m-leave: a card leaving. It sinks back the way it came and fades. */
+.m-leave { animation: m-leave 220ms var(--ease-out) both; }
+@keyframes m-leave {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(12px) scale(0.98); }
+}
+
+/* m-screen: one screen handing over to the next. The new screen slides in a little from the reading direction. */
+.m-screen { animation: m-screen-ltr 260ms var(--ease-out) both; }
+.m-screen:dir(rtl) { animation-name: m-screen-rtl; }
+@keyframes m-screen-ltr {
+  from { opacity: 0; transform: translateX(28px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes m-screen-rtl {
+  from { opacity: 0; transform: translateX(-28px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---------- off ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+:root[data-motion="off"] *, :root[data-motion="off"] *::before, :root[data-motion="off"] *::after {
+  animation: none !important; transition: none !important;
+}
