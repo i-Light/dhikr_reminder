@@ -56,3 +56,67 @@ body { font-family: system-ui, "Segoe UI", Tahoma, sans-serif; background: #f4f1
 .gal-day { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--accent); }
 .gal-day .m-day-mark { display: block; }
 .gal-mini { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+
+/* ---------- the Workbench menu (chrome, English) ---------- */
+.wb-top { flex-wrap: wrap; row-gap: 8px; }
+.wb-menu { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 13px; }
+.wb-seg, .wb-pick { display: inline-flex; align-items: center; gap: 2px; }
+.wb-seg-label { color: #b9b3a4; margin-inline-end: 6px; }
+.wb-seg-btn, .wb-btn, .wb-pick select {
+  font: 500 13px/1 system-ui, "Segoe UI", Tahoma, sans-serif; color: #f4f1ea; background: #322f27;
+  border: 1px solid #4a463b; padding: 7px 10px; cursor: pointer; min-height: 30px;
+}
+.wb-seg-btn:first-of-type { border-radius: 6px 0 0 6px; }
+.wb-seg-btn:last-of-type { border-radius: 0 6px 6px 0; }
+.wb-seg-btn + .wb-seg-btn { border-inline-start: 0; }
+.wb-seg-btn.is-on { background: #f4f1ea; color: #1d1b16; border-color: #f4f1ea; }
+.wb-btn, .wb-pick select { border-radius: 6px; }
+.wb-btn:hover, .wb-seg-btn:hover:not(.is-on) { background: #45413a; }
+.wb-btn.is-on { background: #f4f1ea; color: #1d1b16; }
+.wb-seg-btn:focus-visible, .wb-btn:focus-visible, .wb-pick select:focus-visible { outline: 2px solid #f0c060; outline-offset: 2px; }
+.wb-tool { display: inline-flex; gap: 6px; }
+
+/* ---------- frames ---------- */
+.wb-stage { align-items: flex-start; }
+.fit { position: relative; flex: none; }
+.fit-in { position: absolute; inset-block-start: 0; left: 0; transform-origin: 0 0; }
+
+.phone {
+  position: relative; width: 390px; height: 844px; border: 10px solid #15140f; border-radius: 52px;
+  overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.45);
+}
+.phone-status { flex: none; height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; font-size: 15px; font-weight: 600; color: var(--ink); }
+.phone-cam { width: 84px; height: 24px; border-radius: 12px; background: #15140f; }
+.phone-batt { width: 26px; height: 12px; border-radius: 3px; box-shadow: inset 0 0 0 1.5px var(--ink-2); background: linear-gradient(90deg, var(--ink-2) 70%, transparent 70%); }
+.phone-app { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.phone-over { position: absolute; inset: 0; pointer-events: none; }
+.phone-over > * { pointer-events: auto; }
+.phone-bar { flex: none; height: 22px; display: flex; align-items: center; justify-content: center; }
+.phone-bar::after { content: ""; width: 128px; height: 5px; border-radius: 3px; background: var(--ink); opacity: 0.55; }
+
+.desktop {
+  position: relative; width: 1200px; height: 720px; border-radius: 10px; overflow: hidden;
+  background: linear-gradient(160deg, #6f8ea8 0%, #3f5a78 55%, #2a3a55 100%);
+  box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.45);
+}
+.desktop-window {
+  position: absolute; inset-block-start: 28px; inset-inline-start: 150px; width: 900px; height: 624px;
+  display: flex; flex-direction: column; border-radius: 10px; overflow: hidden;
+  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+.desktop-titlebar { flex: none; height: 38px; display: flex; align-items: center; justify-content: space-between; padding-inline: 14px 6px; background: var(--surface-2); font-size: 14px; }
+.desktop-winbtns { display: inline-flex; gap: 18px; padding-inline: 12px; }
+.desktop-winbtns i { width: 11px; height: 11px; box-shadow: inset 0 0 0 1.25px var(--ink-2); }
+.desktop-winbtns i:first-child { height: 1.5px; align-self: center; }
+.desktop-winbtns i:last-child { box-shadow: none; background: linear-gradient(45deg, transparent 44%, var(--ink-2) 44%, var(--ink-2) 56%, transparent 56%), linear-gradient(-45deg, transparent 44%, var(--ink-2) 44%, var(--ink-2) 56%, transparent 56%); }
+.desktop-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.desktop-corner { position: absolute; inset-block-end: 60px; inset-inline-end: 14px; width: 380px; background: transparent; pointer-events: none; }
+.desktop-corner > * { pointer-events: auto; }
+.desktop-taskbar {
+  position: absolute; inset-inline: 0; inset-block-end: 0; height: 48px; display: flex; align-items: center;
+  justify-content: space-between; padding-inline: 14px; background: rgba(20, 24, 34, 0.82); color: #eef1f6; font: 500 13px/1 "Segoe UI", system-ui, sans-serif;
+}
+.desktop-start { display: inline-flex; gap: 14px; }
+.desktop-start i { width: 20px; height: 20px; border-radius: 4px; background: rgba(255, 255, 255, 0.28); }
+.desktop-tray { display: inline-flex; align-items: center; gap: 12px; }
+.desktop-trayicon { width: 18px; height: 18px; border-radius: 50%; background: #9db67a; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2); }

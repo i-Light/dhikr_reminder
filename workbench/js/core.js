@@ -48,6 +48,10 @@ W.cleanUi = function (saved) {
   if (typeof saved.route === "string" && saved.route) ui.route = saved.route;
   if (typeof saved.commenting === "boolean") ui.commenting = saved.commenting;
   if (typeof saved.panel === "string") ui.panel = saved.panel;
+  if (typeof saved.now === "number" && isFinite(saved.now)) ui.now = saved.now;
+  if (typeof saved.backRoute === "string") ui.backRoute = saved.backRoute;
+  if (typeof saved.permissionMissing === "boolean") ui.permissionMissing = saved.permissionMissing;
+  if (plain(saved.answers)) ui.answers = saved.answers;
   return ui;
 };
 
@@ -113,6 +117,8 @@ W.t = function (key, vars) {
   if (s == null) return "[" + key + "]";
   return vars ? s.replace(/\{(\w+)\}/g, function (m, k) { return vars[k] == null ? m : String(vars[k]); }) : s;
 };
+/* the pretend time the prototype is showing; an example day sets it */
+W.now = function () { return S.state.ui.now || Date.now(); };
 W.go = function (route) {
   S.state.ui.route = route;
   W.save();

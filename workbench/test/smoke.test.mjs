@@ -37,3 +37,27 @@ test("junk in storage does not stop it", { skip }, () => {
   assert.match(dom, /data-ready="1"/);
   assert.doesNotMatch(dom, /data-error=/);
 });
+
+test("frame, language and look follow the URL", { skip }, () => {
+  const dom = dumpDom("day=noon&lang=en&frame=windows&look=b&theme=dark&size=3");
+  assert.match(dom, /data-id="desktop"[^>]*dir="ltr"/);
+  assert.match(dom, /data-id="desktop-window"/);
+  assert.match(dom, /data-look="b"/);
+  assert.match(dom, /data-theme="dark"/);
+  assert.match(dom, /data-size="3"/);
+  assert.doesNotMatch(dom, /data-error=/);
+});
+
+test("phone frame shows the route's screen in Arabic by default", { skip }, () => {
+  const dom = dumpDom("day=noon&route=today");
+  assert.match(dom, /data-id="phone"[^>]*dir="rtl"/);
+  assert.match(dom, /data-id="phone-app"/);
+  assert.match(dom, /data-id="phone-over"/);
+  assert.match(dom, /data-screen="today"/);
+  assert.match(dom, /data-id="wb-menu"[^>]*data-cmt-ui="1"/);
+  assert.doesNotMatch(dom, /data-error=/);
+});
+
+test("the first example day starts at onboarding", { skip }, () => {
+  assert.match(dumpDom("day=first"), /data-screen="onboarding\/1"/);
+});

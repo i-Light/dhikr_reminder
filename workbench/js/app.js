@@ -24,6 +24,10 @@ var ui = W.cleanUi(W.LS.get(W.KEYS.ui, null));
 var fromUrl = W.readUrl();
 Object.keys(fromUrl).forEach(function (k) { ui[k] = fromUrl[k]; });
 W.init(W.LS.get(W.KEYS.eng, {}), ui);
+/* a day named in the URL always loads fresh; otherwise the saved state carries on */
+if ("day" in fromUrl || !(W.S.state.eng.prefs && ui.now)) {
+  W.setDay(ui.day, { keepRoute: "route" in fromUrl || !("day" in fromUrl), keepPopup: true });
+}
 
 /* the look, theme and text size live on <html> so tokens.css can answer them */
 function applyLook(u) {
@@ -37,8 +41,10 @@ function Shell() {
   var u = W.useApp().ui;
   applyLook(u);
   return html`<div class="wb-shell">
-    <div class="wb-top" data-id="topbar" dir="ltr"><span class="wb-title" data-id="wb-title">Dhikr workbench</span></div>
-    <div class="wb-stage" data-id="stage">${u.route === "gallery" ? html`<${W.Gallery} />` : null}</div>
+    <div class="wb-top" data-id="topbar" dir="ltr" data-cmt-ui="1"><span class="wb-title" data-id="wb-title">Dhikr workbench</span><${W.WbMenu} /></div>
+    <div class="wb-stage" data-id="stage">${u.route === "gallery" ? html`<${W.Gallery} />`
+      : u.frame === "windows" ? html`<${W.WindowsFrame}><${W.Screen} /><//>`
+      : html`<${W.PhoneFrame}><${W.Screen} /><//>`}</div>
   </div>`;
 }
 
