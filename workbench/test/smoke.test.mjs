@@ -120,3 +120,36 @@ test("tapping the card counts, and a finished piece leaves by itself", { skip },
 test("the menu can show a reminder now", { skip }, () => {
   assert.match(dumpDom("day=noon"), /data-id="wb-remind"/);
 });
+
+for (let i = 1; i <= 6; i++) test("onboarding step " + i, { skip }, () => {
+  const dom = dumpDom("day=first&route=onboarding/" + i);
+  assert.match(dom, new RegExp('data-screen="onboarding/' + i + '"'));
+  assert.match(dom, /data-id="ob-question"/);
+  if (i < 6) assert.match(dom, /data-id="choose-for-me"/);
+  if (i > 1) assert.match(dom, /data-id="ob-back"/);
+  assert.doesNotMatch(dom, /data-error=/);
+  assert.doesNotMatch(dom, /\[[a-z]+\.[a-z.0-9]+\]/);
+});
+
+test("onboarding step 1 offers Arabic and English", { skip }, () => {
+  const dom = dumpDom("day=first");
+  assert.match(dom, /اللغة العربية/);
+  assert.match(dom, /English/);
+});
+
+test("Choose for me five times, then the permissions, lands on Today", { skip }, () => {
+  const five = Array(5).fill("choose-for-me").join(",");
+  const dom = dumpDom("day=first&autoClick=" + five + ",perm-allow,perm-notnow,perm-allow");
+  assert.match(dom, /data-screen="today"/);
+  assert.doesNotMatch(dom, /data-error=/);
+});
+
+test("on Windows onboarding has no permission step", { skip }, () => {
+  const five = Array(5).fill("choose-for-me").join(",");
+  assert.match(dumpDom("day=first&frame=windows&autoClick=" + five), /data-screen="today"/);
+});
+
+test("the try step offers the two sizes only after three taps", { skip }, () => {
+  assert.doesNotMatch(dumpDom("day=first&route=onboarding/5"), /data-id="ob-size"/);
+  assert.match(dumpDom("day=first&route=onboarding/5&autoClick=card,card,card"), /data-id="ob-size"/);
+});

@@ -108,3 +108,17 @@ W.ping().then(function (ok) { if (ok) W.commentsSync(); });
     for (var i = 0; i < times; i++) W.cardTap();
   }, 200);
 })();
+
+/* test hook: click parts one after another, by data-id: autoClick=a,b,c */
+(function () {
+  var q;
+  try { q = new URLSearchParams(window.location.search); } catch (e) { return; }
+  var list = (q.get("autoClick") || "").split(",").filter(Boolean);
+  function step(i) {
+    if (i >= list.length) return;
+    var el = document.querySelector('[data-id="' + list[i] + '"]');
+    if (el) el.click();
+    setTimeout(function () { step(i + 1); }, 300);
+  }
+  if (list.length) setTimeout(function () { step(0); }, 250);
+})();

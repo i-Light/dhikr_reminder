@@ -278,3 +278,27 @@ button.row:active { box-shadow: var(--shadow), inset 0 0 0 100vmax var(--press);
 .lock-clock { font-size: 78px; font-weight: 300; line-height: 1; font-family: var(--font-ui); }
 .lock-date { font-size: 18px; opacity: 0.85; margin-block-start: 8px; }
 .over-toast { position: absolute; inset-inline: 12px; inset-block-end: 112px; display: flex; justify-content: center; }
+
+/* ---------- onboarding: one question a screen ---------- */
+.ob { flex: 1; display: flex; flex-direction: column; gap: 12px; min-height: 100%; }
+.ob-top { display: flex; align-items: center; justify-content: space-between; min-height: var(--tap); margin-inline-start: -10px; }
+.ob-step { color: var(--ink-2); }
+.ob-dots { display: flex; gap: 6px; }
+.ob-dots i { flex: 1; height: 4px; border-radius: 2px; background: var(--line); transition: background-color 200ms var(--ease-out); }
+.ob-dots i.is-on { background: var(--accent); }
+.ob-q { font-size: var(--text-xl); line-height: 1.35; margin-block-start: 4px; }
+.ob-sub { margin: 0; color: var(--ink-2); }
+.ob-main { flex: 1; display: flex; flex-direction: column; gap: 14px; justify-content: center; padding-block: 6px; }
+.ob-foot { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.timestep { display: flex; flex-direction: column; gap: 8px; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px; }
+.timestep-label { color: var(--ink-2); }
+.timestep-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.timestep-value { font-size: var(--text-xl); font-weight: var(--label-weight); line-height: 1.2; display: inline-block; }
+.ob-sample { display: flex; flex-direction: column; }
+.ob-full { position: relative; height: 246px; overflow: hidden; border-radius: var(--radius); box-shadow: inset 0 0 0 1.5px var(--line); }
+.ob-full-in { position: absolute; inset-block-start: 0; left: 50%; width: 370px; height: 572px; display: flex; flex-direction: column; transform: translateX(-50%) scale(0.43); transform-origin: top center; pointer-events: none; }
+.ob-perm { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; }
+.ob-perm-icon { color: var(--accent); }
+.ob-perm-title { font-size: var(--text-lg); font-weight: var(--head-weight); margin: 0; }
+.ob-perm-sub { margin: 0; color: var(--ink-2); }
+.ob-perm-n { color: var(--ink-2); }
