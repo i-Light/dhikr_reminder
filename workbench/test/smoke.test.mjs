@@ -187,3 +187,22 @@ test("clock dragged backward does not break", { skip }, () => {
   const d = dumpDom("day=noon&sim=responsive&simTo=21:00&simBack=10:00");
   assert.match(d, /data-id="sim-log"/); assert.match(d, /10:00/); assert.doesNotMatch(d, /data-error=/);
 });
+
+test("windows small card", { skip }, () => {
+  const d = dumpDom("day=noon&frame=windows&popup=small");
+  assert.match(d, /data-id="desktop-corner"[\s\S]*data-id="card"/);
+  assert.doesNotMatch(d, /data-id="home"/);
+  assert.doesNotMatch(d, /data-error=/);
+});
+test("windows full card and tray menu", { skip }, () => {
+  const full = dumpDom("day=noon&frame=windows&popup=full");
+  assert.match(full, /data-id="desktop-full"[\s\S]*data-id="card"/);
+  const tray = dumpDom("day=noon&frame=windows&autoClick=tray-icon");
+  for (const k of ["tray-open", "tray-count", "tray-pause", "tray-close"]) assert.match(tray, new RegExp('data-id="' + k + '"'));
+  assert.doesNotMatch(tray, /data-error=/);
+});
+test("windows app window", { skip }, () => {
+  const d = dumpDom("day=noon&frame=windows&route=today");
+  assert.match(d, /data-id="desktop-window"[\s\S]*data-id="now-card"/);
+  assert.doesNotMatch(d, /data-error=/);
+});

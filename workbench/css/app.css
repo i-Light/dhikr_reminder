@@ -457,3 +457,77 @@ button.row:active { box-shadow: var(--shadow), inset 0 0 0 100vmax var(--press);
 .days-bar { width: 100%; max-width: 24px; border-radius: 6px 6px 2px 2px; background: var(--line); transition: height 280ms var(--ease-out); }
 .days-bar.is-lit { background: var(--accent); }
 .days-lbl { font-size: 14px; line-height: 1; }
+
+/* ---------- Windows frame: desktop window sidebar, corner card, full card, tray menu ---------- */
+.desktop .desktop-window { width: 980px; inset-inline-start: 110px; z-index: 10; }
+.desktop-title { font-weight: var(--label-weight); }
+.desktop .desktop-winbtns { gap: 2px; padding-inline: 4px; }
+.desktop-winbtn {
+  width: 38px; height: 32px; display: inline-grid; place-items: center; padding: 0;
+  border: 0; border-radius: 6px; background: transparent; cursor: pointer;
+}
+.desktop-winbtn:hover:not(:disabled) { background: var(--press); }
+.desktop-winbtn.is-close:hover { background: rgba(190, 50, 50, 0.18); }
+.desktop-winbtn:disabled { opacity: 0.45; cursor: default; }
+.desktop .desktop-winbtn i { display: block; width: 11px; height: 11px; background: none; box-shadow: inset 0 0 0 1.25px var(--ink-2); }
+.desktop .desktop-winbtn:first-child i { height: 1.5px; box-shadow: none; background: var(--ink-2); }
+.desktop .desktop-winbtn:last-child i {
+  box-shadow: none;
+  background: linear-gradient(45deg, transparent 44%, var(--ink-2) 44%, var(--ink-2) 56%, transparent 56%),
+    linear-gradient(-45deg, transparent 44%, var(--ink-2) 44%, var(--ink-2) 56%, transparent 56%);
+}
+
+.screen-wrap.is-desktop { flex-direction: row; }
+.screen-wrap.is-desktop > .tabbar {
+  width: 216px; flex-shrink: 0; flex-direction: column; justify-content: flex-start; align-items: stretch;
+  gap: 6px; padding: 16px 12px; border-block-start: 0; border-inline-end: 1px solid var(--line);
+}
+.screen-wrap.is-desktop > .tabbar .tab {
+  flex: none; flex-direction: row; justify-content: flex-start; gap: 12px;
+  min-height: var(--tap); padding: 10px 14px; text-align: start;
+}
+.screen-wrap.is-desktop > .tabbar .tab.is-on { background: var(--accent-soft); --icon-knock: var(--accent-soft); }
+.screen-wrap.is-desktop > .tabbar .tab.is-on::after,
+:root[data-look="b"] .screen-wrap.is-desktop > .tabbar .tab.is-on::after {
+  inset-inline-start: 0; inset-inline-end: auto; inset-block: 10px; width: 4px; height: auto; transform: none; border-radius: 2px;
+}
+.screen-wrap.is-desktop > .screen > * { width: 100%; max-width: 720px; margin-inline: auto; }
+
+.desktop .desktop-corner { z-index: 25; display: flex; flex-direction: column; gap: 10px; width: 396px; }
+.desktop-toast { pointer-events: auto; }
+.desktop-full {
+  position: absolute; inset-inline: 0; inset-block: 0 48px; z-index: 30;
+  background: rgba(10, 14, 22, 0.62); display: flex; align-items: center; justify-content: center; padding: 28px;
+}
+.desktop-full-box {
+  width: min(720px, 100%); height: min(560px, 100%); display: flex;
+  background: var(--bg); border-radius: var(--radius-lg); overflow: hidden;
+  box-shadow: 0 28px 70px -20px rgba(0, 0, 0, 0.65);
+}
+
+.desktop-taskbar { z-index: 40; }
+.desktop-start { align-items: center; }
+.desktop-taskapp, .desktop-traybtn {
+  display: inline-flex; align-items: center; gap: 8px; height: 34px; padding-inline: 10px;
+  border: 0; border-radius: 6px; background: rgba(255, 255, 255, 0.08); color: #eef1f6;
+  font: inherit; cursor: pointer;
+}
+.desktop-taskapp.is-on, .desktop-traybtn.is-on, .desktop-taskapp:hover, .desktop-traybtn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+.desktop-taskapp:focus-visible, .desktop-traybtn:focus-visible { outline: 2px solid #f0c060; outline-offset: 2px; }
+
+.tray-scrim { position: absolute; inset: 0 0 48px 0; z-index: 34; }
+.tray-menu {
+  position: absolute; inset-block-end: 56px; inset-inline-end: 14px; z-index: 35;
+  min-width: 248px; padding: 8px; display: flex; flex-direction: column; gap: 4px;
+  background: var(--surface); border-radius: var(--radius);
+  box-shadow: 0 20px 50px -16px rgba(0, 0, 0, 0.55), 0 0 0 1px var(--line);
+}
+.tray-item {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 8px 14px;
+  border: 0; border-radius: calc(var(--radius) * 0.75); background: transparent; color: var(--ink);
+  font-size: var(--text); font-weight: 500; text-align: start; cursor: pointer;
+}
+.tray-item:hover, .tray-item:focus-visible { background: var(--accent-soft); outline: none; }
+.tray-item .ic { color: var(--accent); }

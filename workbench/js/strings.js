@@ -190,7 +190,9 @@ var STR = {
     "more.updates.btn": "دوّر على تحديث",
     "more.updates.ok": "إنت على أحدث نسخة",
     "more.about.t": "عن التطبيق",
-    "more.about.p": "تطبيق ذكر معمول عشان الذكر يبقى سهل وهادي في يومك. كل حاجة محفوظة على جهازك بس ومفيش أي بيانات بتتبعت لأي حتة."
+    "more.about.p": "تطبيق ذكر معمول عشان الذكر يبقى سهل وهادي في يومك. كل حاجة محفوظة على جهازك بس ومفيش أي بيانات بتتبعت لأي حتة.",
+    "tray.open": "افتح",
+    "tray.count": "قول واحد"
   },
   en: {
     "app.name": "Dhikr",
@@ -380,7 +382,9 @@ var STR = {
     "more.updates.btn": "Check for updates",
     "more.updates.ok": "You are on the latest version",
     "more.about.t": "About",
-    "more.about.p": "Built to make daily dhikr calm and effortless. Everything stays on your device and nothing is sent anywhere."
+    "more.about.p": "Built to make daily dhikr calm and effortless. Everything stays on your device and nothing is sent anywhere.",
+    "tray.open": "Open",
+    "tray.count": "Count one"
   }
 };
 if (typeof module === "object" && module.exports) module.exports = STR; else window.W.STR = STR;
