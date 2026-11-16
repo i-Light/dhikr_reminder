@@ -47,6 +47,15 @@ function Seg(p) {
   </span>`;
 }
 
+/* one short line from the workbench itself, shown in the menu for a few seconds */
+var noteTimer = 0;
+W.wbNote = function (msg) {
+  W.U().wbNote = msg;
+  clearTimeout(noteTimer);
+  noteTimer = setTimeout(function () { W.U().wbNote = null; W.emit(); }, 5000);
+  W.emit();
+};
+
 /* extra buttons other tasks add to the menu: W.wbTools.push(function () { return html`...`; }) */
 W.wbTools = [];
 
@@ -68,6 +77,7 @@ W.WbMenu = function WbMenu() {
       if (inGallery) W.go(ui.backRoute || "today"); else { ui.backRoute = ui.route; W.go("gallery"); }
     }}>${inGallery ? "Back to the app" : "Icons and motion"}</button>
     <button type="button" class="wb-btn" data-id="wb-reset" onClick=${W.resetAll}>Reset example data</button>
+    ${ui.wbNote ? html`<span class="wb-note" data-id="wb-note" role="status">${ui.wbNote}</span>` : null}
   </div>`;
 };
 })();

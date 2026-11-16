@@ -85,3 +85,38 @@ test("clicking a part in comment mode saves a comment and pins it there", { skip
   assert.match(dom, /Comments \(1\)/);
   assert.doesNotMatch(dom, /data-error=/);
 });
+
+test("small reminder over the home screen", { skip }, () => {
+  const dom = dumpDom("day=noon&popup=small");
+  assert.match(dom, /data-id="home"/);
+  assert.match(dom, /data-id="card"[^>]*data-size="small"/);
+  assert.match(dom, /data-id="card-count"/);
+  assert.match(dom, /data-id="card-later"/);
+  assert.match(dom, /data-id="card-close"/);
+  assert.doesNotMatch(dom, /data-error=/);
+});
+
+test("full reminder", { skip }, () => {
+  const dom = dumpDom("day=noon&popup=full");
+  assert.match(dom, /data-id="card"[^>]*data-size="full"/);
+  assert.doesNotMatch(dom, /data-error=/);
+});
+
+test("lock screen", { skip }, () => {
+  const dom = dumpDom("day=noon&popup=lock");
+  assert.match(dom, /data-id="lock"/);
+  assert.match(dom, /data-id="card"/);
+});
+
+test("tapping the card counts, and a finished piece leaves by itself", { skip }, () => {
+  const one = dumpDom("day=noon&popup=small&autoTap=1");
+  assert.match(one, /data-id="card-count"[^>]*data-done="1"/);
+  const all = dumpDom("day=noon&popup=small&autoTap=all");
+  assert.doesNotMatch(all, /data-id="card"/);
+  assert.match(all, /data-screen="today"/);
+  assert.doesNotMatch(all, /data-error=/);
+});
+
+test("the menu can show a reminder now", { skip }, () => {
+  assert.match(dumpDom("day=noon"), /data-id="wb-remind"/);
+});

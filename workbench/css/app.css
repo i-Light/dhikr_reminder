@@ -222,3 +222,59 @@ button.row:active { box-shadow: var(--shadow), inset 0 0 0 100vmax var(--press);
 .screen-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--bg); }
 .screen { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: var(--space); padding: calc(var(--space) * 1.25) calc(var(--space) * 1.25) calc(var(--space) * 1.5); scrollbar-width: thin; }
 .screen-todo { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--ink-2); }
+
+/* ---------- the dhikr card: small (over other things), full (the whole screen), page (inside the app) ---------- */
+.card { display: flex; flex-direction: column; color: var(--ink); user-select: none; -webkit-tap-highlight-color: transparent; }
+.card[role="button"] { cursor: pointer; }
+.card.is-done { cursor: default; }
+.card:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+.card-text { display: flex; flex-direction: column; gap: 6px; }
+.card-translit { margin: 0; color: var(--ink-2); font-size: var(--text); line-height: 1.5; text-align: var(--dhikr-align); }
+.card-count { display: inline-flex; align-items: baseline; gap: 8px; }
+.card-count-n { display: inline-block; font-size: var(--text-xl); font-weight: var(--label-weight); line-height: 1; }
+.card-count-of { font-size: var(--text-lg); color: var(--ink-2); }
+.card-day, .card-hint { margin: 0; color: var(--ink-2); font-size: var(--text); line-height: 1.5; }
+.card.is-done .card-hint { color: var(--good); font-weight: var(--label-weight); }
+.card-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+.card-small {
+  background: var(--surface); border-radius: var(--radius-lg); padding: 22px 18px 10px; gap: 12px;
+  box-shadow: var(--shadow), 0 22px 44px -20px rgba(0, 0, 0, 0.55);
+  transition: transform 120ms var(--ease-out);
+}
+:root[data-look="b"] .card-small { border-block-start: 4px double var(--accent); }
+.card-small:active:not(.is-done) { transform: scale(0.985); }
+.card-small .dhikr { text-align: center; }
+.card-small .card-translit, .card-small .card-hint { text-align: center; }
+.card-meter { display: flex; align-items: center; gap: 14px; }
+.card-meter .card-day { margin-inline-start: auto; text-align: end; }
+
+.card-full, .card-page { flex: 1; min-height: 0; background: var(--bg); padding: 10px 20px 22px; gap: 10px; }
+.card-bar { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: var(--tap); }
+.card-title { color: var(--ink-2); font-weight: var(--label-weight); }
+.card-bar-gap { width: var(--tap); }
+.card-body { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; justify-content: center; gap: 18px; padding-block: 8px; scrollbar-width: thin; }
+.card-body > .card-text { margin-block: auto; }
+.card-foot { flex: none; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.card-foot .ring-num { font-size: calc(var(--ring) * 0.36); }
+.card-foot .card-count-n { font-size: var(--text-lg); }
+.card-nav { display: flex; justify-content: space-between; gap: 12px; width: 100%; margin-block-start: 8px; }
+.card-full:active:not(.is-done) .ring, .card-page:active:not(.is-done) .ring { transform: scale(0.97); }
+.card-foot .ring { transition: transform 120ms var(--ease-out); }
+
+/* ---------- what the card sits over on the phone ---------- */
+.over { position: absolute; inset: 0; display: flex; flex-direction: column; }
+.over-status { flex: none; height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; font-size: 15px; font-weight: 600; color: #fff; position: relative; z-index: 1; }
+.over-status .phone-batt { box-shadow: inset 0 0 0 1.5px #fff; background: linear-gradient(90deg, #fff 70%, transparent 70%); }
+.over-home { justify-content: space-between; background: linear-gradient(165deg, #6c8797 0%, #37505f 58%, #1e2b36 100%); padding-block-end: 22px; }
+.home-grid { position: absolute; inset: 78px 30px auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px 24px; }
+.home-grid i { aspect-ratio: 1; border-radius: 16px; background: rgba(255, 255, 255, 0.2); }
+.home-shade { position: absolute; inset: 0; background: rgba(8, 12, 16, 0.38); }
+.over-dock { position: relative; padding: 0 12px 10px; margin-block-start: auto; }
+.over-fill { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.over-full { inset-block: 44px 22px; background: var(--bg); }
+.over-lock { background: linear-gradient(170deg, #2b3a4a 0%, #18212c 60%, #0d1218 100%); color: #fff; padding-block-end: 22px; }
+.lock-top { flex: none; text-align: center; padding-block: 36px 20px; }
+.lock-clock { font-size: 78px; font-weight: 300; line-height: 1; font-family: var(--font-ui); }
+.lock-date { font-size: 18px; opacity: 0.85; margin-block-start: 8px; }
+.over-toast { position: absolute; inset-inline: 12px; inset-block-end: 112px; display: flex; justify-content: center; }

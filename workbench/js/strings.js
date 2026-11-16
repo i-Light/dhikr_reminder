@@ -36,7 +36,15 @@ var STR = {
     "step.mark": "السُّنّة: {n}",
     "step.aday": "في اليوم",
     "count.left": "فاضل {n}",
-    "toast.later": "تمام، هنفكّرك تاني بعد 10 دقايق"
+    "toast.later": "تمام، هنفكّرك تاني بعد 10 دقايق",
+    "card.of": "من {n}",
+    "card.day": "النهارده: {done} من {target}",
+    "card.extra": "زيادة النهارده: {n}",
+    "card.hint.small": "دوس على الكارت مع كل مرة تقولها",
+    "card.hint.full": "دوس في أي حتة مع كل مرة تقولها",
+    "card.done": "تقبّل الله",
+    "card.prev": "اللي قبله",
+    "card.next": "اللي بعده"
   },
   en: {
     "app.name": "Dhikr",
@@ -72,7 +80,15 @@ var STR = {
     "step.mark": "Sunnah: {n}",
     "step.aday": "a day",
     "count.left": "{n} left",
-    "toast.later": "OK, we will remind you again in 10 minutes"
+    "toast.later": "OK, we will remind you again in 10 minutes",
+    "card.of": "of {n}",
+    "card.day": "Today: {done} of {target}",
+    "card.extra": "Extra today: {n}",
+    "card.hint.small": "Tap the card each time you say it",
+    "card.hint.full": "Tap anywhere each time you say it",
+    "card.done": "May Allah accept it",
+    "card.prev": "Previous",
+    "card.next": "Next"
   }
 };
 if (typeof module === "object" && module.exports) module.exports = STR; else window.W.STR = STR;

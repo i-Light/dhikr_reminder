@@ -37,6 +37,12 @@ function applyLook(u) {
 }
 applyLook(ui);
 
+/* a popup named in the URL (or left open before a reload) needs its card: ask the engine for one */
+if (ui.popup && ui.popup !== "moment") {
+  var showing = W.S.state.eng.day && W.S.state.eng.day.showing;
+  if (!showing && !W.showReminder(ui.popup)) ui.popup = null;
+}
+
 /* test hook: one saved comment pinned to the part with this data-id, on the today screen of the current day */
 var seed = query.get("seedComment");
 if (seed) {
@@ -88,4 +94,17 @@ W.ping().then(function (ok) { if (ok) W.commentsSync(); });
       });
     });
   });
+})();
+
+/* test hook: tap the card on show, once or until its piece is finished */
+(function () {
+  var W = window.W, q;
+  try { q = new URLSearchParams(window.location.search); } catch (e) { return; }
+  var n = q.get("autoTap");
+  if (!n) return;
+  setTimeout(function () {
+    var card = W.S.state.eng.day && W.S.state.eng.day.showing;
+    var times = n === "all" ? (card ? card.piece - card.done : 0) : Number(n) || 0;
+    for (var i = 0; i < times; i++) W.cardTap();
+  }, 200);
 })();
