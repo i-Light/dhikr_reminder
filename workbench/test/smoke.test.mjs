@@ -240,3 +240,15 @@ test("long Arabic with tashkeel at size 3 opens full card without error", { skip
     assert.doesNotMatch(d, /data-error=/, frame);
   }
 });
+
+test("panel=sim in URL opens the simulator panel", { skip }, () => {
+  const d = dumpDom("day=noon&panel=sim");
+  assert.match(d, /data-id="sim"/);
+  assert.doesNotMatch(d, /data-error=/);
+});
+
+test("settings edited while simulator is open survive backward replay", { skip }, () => {
+  const d = dumpDom("day=noon&sim=responsive&simTo=23:00&route=more/freq&autoClick=more-freq-often,sim-play");
+  assert.match(d, /data-id="more-freq-often"[^>]*aria-checked="true"|aria-checked="true"[^>]*data-id="more-freq-often"/);
+  assert.doesNotMatch(d, /data-error=/);
+});

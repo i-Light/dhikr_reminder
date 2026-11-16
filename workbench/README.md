@@ -49,7 +49,7 @@ State can be opened directly by query string:
 
     ?day=first|noon|complete|missed|weekup|weekdown|weekheavy
     &lang=ar|en&frame=phone|windows&look=a|b&theme=light|dark&size=1|2|3
-    &route=<route>&popup=small|full|moment|lock&panel=comments
+    &route=<route>&popup=small|full|moment|lock&panel=comments|sim
 
 Routes: `onboarding/1` to `onboarding/6`, `today`, `adhkar`, `adhkar/<id>`, `add`, `add/<group>`, `moments`, `moments/<key>`, `session/<key>`, `count/<id>`, `weekly`, `more`, `more/<row>`, `days`, `gallery`.
 

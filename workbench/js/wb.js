@@ -103,6 +103,25 @@ function makeWakeSnap(eng, key) {
   return snap;
 }
 
+function freshWakeBase(liveEng) {
+  var base = clone(SIM.wakeSnap);
+  base.prefs = clone(liveEng.prefs);
+  base.words = clone(liveEng.words || {});
+  base.sunnah = clone(liveEng.sunnah || {});
+  var snapMap = {};
+  (base.adhkar || []).forEach(function (a) { snapMap[a.id] = a; });
+  base.adhkar = (liveEng.adhkar || []).map(function (cur) {
+    var old = snapMap[cur.id];
+    return {
+      id: cur.id, target: cur.target, auto: cur.auto, rung: cur.rung, resting: !!cur.resting,
+      factor: old ? old.factor : 1, closeRun: old ? old.closeRun : 0, finishRun: old ? old.finishRun : 0
+    };
+  });
+  base.day = emptyDay(SIM.dayKey);
+  base.pausedUntil = 0;
+  return base;
+}
+
 function ensureSimDay() {
   if (!(W.S.state.eng && W.S.state.eng.prefs)) W.setDay("noon");
   var eng = W.E.rollDay(W.S.state.eng, W.now());
@@ -114,6 +133,8 @@ function ensureSimDay() {
     SIM.wakeSnap = makeWakeSnap(eng, key);
     SIM.beforeShow = null;
     SIM.log = [];
+  } else {
+    SIM.wakeTs = atMin(key, W.E.min(eng.prefs.wake));
   }
 }
 
@@ -162,7 +183,7 @@ W.simSeek = function (toTs) {
     SIM.log = SIM.log.concat(r.log);
   } else {
     var target = Math.max(SIM.wakeTs, toTs);
-    var r2 = W.Sim.run(clone(SIM.wakeSnap), SIM.wakeTs, target, SIM.person, SIM.seed);
+    var r2 = W.Sim.run(freshWakeBase(s.eng), SIM.wakeTs, target, SIM.person, SIM.seed);
     s.eng = r2.state;
     s.ui.now = target;
     SIM.log = r2.log;
