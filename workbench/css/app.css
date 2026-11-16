@@ -302,3 +302,47 @@ button.row:active { box-shadow: var(--shadow), inset 0 0 0 100vmax var(--press);
 .ob-perm-title { font-size: var(--text-lg); font-weight: var(--head-weight); margin: 0; }
 .ob-perm-sub { margin: 0; color: var(--ink-2); }
 .ob-perm-n { color: var(--ink-2); }
+
+/* ---------- Today and page-size card ---------- */
+.screen[data-screen^="count/"], .screen[data-screen^="session/"] { padding: 0; }
+.today { display: flex; flex-direction: column; gap: calc(var(--space) * 1.15); }
+.today-welcome {
+  display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+  background: var(--accent-soft); color: var(--ink); border-radius: var(--radius);
+  font-weight: var(--label-weight);
+}
+.today-welcome .ic { color: var(--accent); }
+.now-card { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; }
+.now-text { margin: 0; }
+.now-dhikr {
+  margin: 0; text-align: center; font-size: var(--text-lg);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.now-sub { margin: 0; line-height: 1.45; }
+.now-done-mark { color: var(--good); }
+.today-hint { margin: 0; text-align: center; padding-inline: 8px; line-height: 1.5; }
+.today-sec { display: flex; flex-direction: column; gap: 10px; }
+.today-sec-title { margin: 0; font-size: var(--text); font-weight: var(--label-weight); }
+.today-rows { display: flex; flex-direction: column; gap: 10px; }
+.moments-strip { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.moment-chip {
+  display: flex; align-items: center; gap: 10px; min-height: var(--tap);
+  padding: 10px 12px; background: var(--surface); color: var(--ink);
+  border: 0; border-radius: var(--radius); box-shadow: var(--shadow);
+  text-align: start; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+:root[data-look="b"] .moment-chip { box-shadow: inset 0 0 0 1.5px var(--line); }
+.moment-chip:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.moment-chip:active { box-shadow: var(--shadow), inset 0 0 0 100vmax var(--press); }
+.moment-chip-ic { color: var(--accent); flex-shrink: 0; }
+.moment-chip-body { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.moment-chip-name { font-weight: var(--label-weight); line-height: 1.3; overflow-wrap: anywhere; }
+.moment-chip-state { font-size: var(--text); color: var(--ink-2); line-height: 1.25; }
+.moment-chip.is-waiting, .moment-chip.is-running {
+  background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent);
+}
+.moment-chip.is-done { background: transparent; box-shadow: inset 0 0 0 1px var(--line); --icon-knock: var(--bg); }
+.moment-chip.is-done .moment-chip-ic { color: var(--good); }
+.moment-chip.is-done .moment-chip-name { color: var(--ink-2); }
+.moment-chip.is-missed, .moment-chip.is-off { opacity: 0.65; background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
+.today-foot { display: flex; justify-content: center; padding-block-start: 4px; }

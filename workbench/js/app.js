@@ -29,6 +29,11 @@ if ("day" in fromUrl || !(W.S.state.eng.prefs && ui.now)) {
   W.setDay(ui.day, { keepRoute: "route" in fromUrl || !("day" in fromUrl), keepPopup: true });
 }
 
+/* test hook: rest every dhikr so Today opens in its empty state */
+if (query.get("restAll") === "1" && W.S.state.eng && W.S.state.eng.adhkar) {
+  W.S.state.eng.adhkar.forEach(function (a) { W.S.state.eng = W.E.rest(W.S.state.eng, a.id, true); });
+}
+
 /* the look, theme and text size live on <html> so tokens.css can answer them */
 function applyLook(u) {
   root.dataset.look = u.look;

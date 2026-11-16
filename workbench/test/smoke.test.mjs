@@ -153,3 +153,13 @@ test("the try step offers the two sizes only after three taps", { skip }, () => 
   assert.doesNotMatch(dumpDom("day=first&route=onboarding/5"), /data-id="ob-size"/);
   assert.match(dumpDom("day=first&route=onboarding/5&autoClick=card,card,card"), /data-id="ob-size"/);
 });
+
+const kind = q => (dumpDom(q).match(/data-id="now-card"[^>]*data-kind="(\w+)"/) || [])[1];
+test("noon asks to say one", { skip }, () => assert.equal(kind("day=noon&route=today"), "say"));
+test("complete day", { skip }, () => assert.equal(kind("day=complete&route=today"), "complete"));
+test("weekly card waits first", { skip }, () => assert.equal(kind("day=weekup&route=today"), "weekly"));
+test("back after a week away", { skip }, () => assert.match(dumpDom("day=missed&route=today"), /data-id="welcome-back"/));
+test("no adhkar shows the empty state", { skip }, () => {
+  const dom = dumpDom("day=noon&route=today&restAll=1");
+  assert.match(dom, /data-kind="empty"/); assert.doesNotMatch(dom, /data-error=/);
+});
