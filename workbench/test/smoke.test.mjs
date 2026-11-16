@@ -1,6 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { createRequire } from "node:module";
 import { browserPath, dumpDom } from "./helpers.mjs";
+
+const firstId = createRequire(import.meta.url)("../js/data.js").LIB.find(x => x.starter === 0).id;
 
 const skip = browserPath() ? false : "no Edge or Chrome found, browser tests skipped";
 
@@ -163,3 +166,7 @@ test("no adhkar shows the empty state", { skip }, () => {
   const dom = dumpDom("day=noon&route=today&restAll=1");
   assert.match(dom, /data-kind="empty"/); assert.doesNotMatch(dom, /data-error=/);
 });
+
+test("my adhkar", { skip }, () => { const d = dumpDom("day=noon&route=adhkar"); assert.match(d, /data-id="add-dhikr"/); assert.match(d, /data-id="adhkar-row-/); });
+test("add shows six suggestions", { skip }, () => { assert.equal((dumpDom("day=noon&route=add").match(/data-suggest="1"/g) || []).length, 6); });
+test("a dhikr page", { skip }, () => { assert.match(dumpDom("day=noon&route=adhkar/" + firstId), /data-id="stepper"/); });

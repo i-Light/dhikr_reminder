@@ -93,7 +93,7 @@ W.cardProps = function (eng, card) {
 var HOLD_MS = 900, leaveTimer = 0;
 
 function commit() { W.save(); W.emit(); }
-W.toast = function (text) { W.U().toast = { text: text, stamp: Date.now() }; commit(); };
+W.toast = function (text, undo) { W.U().toast = { text: text, undo: !!undo, stamp: Date.now() }; commit(); };
 
 /* asks the engine what to show now. size: "small" | "full" | "lock"; default is the person's own choice. */
 W.showReminder = function (size) {
@@ -145,6 +145,7 @@ function dateLine() {
 W.Popup = function Popup() {
   var st = W.useApp(), ui = st.ui, eng = st.eng, pop = ui.popup;
   var toast = ui.toast ? html`<div class="over-toast"><${W.Toast} id="app-toast" text=${ui.toast.text} stamp=${ui.toast.stamp}
+    onUndo=${ui.toast.undo ? function () { W.undo(); W.U().toast = null; commit(); } : null}
     onDone=${function () { W.U().toast = null; commit(); }} /></div>` : null;
   if (pop === "moment") return W.MomentCard ? html`<${W.R.Fragment}><${W.MomentCard} />${toast}<//>` : toast;
   var card = eng && eng.day && eng.day.showing;
