@@ -175,3 +175,5 @@ test("weekly up", { skip }, () => { const d = dumpDom("day=weekup&route=weekly")
 test("weekly heavy", { skip }, () => { const d = dumpDom("day=weekheavy&route=weekly"); for (const k of ["keep","lighter","rest"]) assert.match(d, new RegExp('data-id="heavy-' + k)); });
 test("session", { skip }, () => assert.match(dumpDom("day=noon&route=session/morning"), /data-id="session-progress"/));
 test("moment card", { skip }, () => assert.match(dumpDom("day=noon&popup=moment"), /data-id="moment-start"/));
+
+test("more rows", { skip }, () => { const d = dumpDom("day=noon&route=more"); for (const r of ["freq","sleep","look","sound","lang","size","days"]) assert.match(d, new RegExp('data-id="more-row-' + r)); });
