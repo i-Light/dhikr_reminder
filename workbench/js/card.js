@@ -99,6 +99,7 @@ W.toast = function (text, undo) { W.U().toast = { text: text, undo: !!undo, stam
 W.showReminder = function (size) {
   var s = W.S.state;
   if (!(s.eng && s.eng.prefs)) return false;
+  if (String(s.ui.route || "").indexOf("session/") === 0) return false;
   var r = E.show(E.rollDay(s.eng, W.now()), W.now());
   if (!r.card) return false;
   s.eng = r.state;

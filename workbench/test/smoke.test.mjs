@@ -170,3 +170,8 @@ test("no adhkar shows the empty state", { skip }, () => {
 test("my adhkar", { skip }, () => { const d = dumpDom("day=noon&route=adhkar"); assert.match(d, /data-id="add-dhikr"/); assert.match(d, /data-id="adhkar-row-/); });
 test("add shows six suggestions", { skip }, () => { assert.equal((dumpDom("day=noon&route=add").match(/data-suggest="1"/g) || []).length, 6); });
 test("a dhikr page", { skip }, () => { assert.match(dumpDom("day=noon&route=adhkar/" + firstId), /data-id="stepper"/); });
+
+test("weekly up", { skip }, () => { const d = dumpDom("day=weekup&route=weekly"); assert.match(d, /data-id="weekly-change-/); assert.match(d, /data-id="weekly-refuse-/); });
+test("weekly heavy", { skip }, () => { const d = dumpDom("day=weekheavy&route=weekly"); for (const k of ["keep","lighter","rest"]) assert.match(d, new RegExp('data-id="heavy-' + k)); });
+test("session", { skip }, () => assert.match(dumpDom("day=noon&route=session/morning"), /data-id="session-progress"/));
+test("moment card", { skip }, () => assert.match(dumpDom("day=noon&popup=moment"), /data-id="moment-start"/));
