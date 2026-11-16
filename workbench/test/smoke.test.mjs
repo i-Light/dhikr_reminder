@@ -61,3 +61,27 @@ test("phone frame shows the route's screen in Arabic by default", { skip }, () =
 test("the first example day starts at onboarding", { skip }, () => {
   assert.match(dumpDom("day=first"), /data-screen="onboarding\/1"/);
 });
+
+test("a saved comment shows its pin on the element it was pinned to", { skip }, () => {
+  const dom = dumpDom("day=noon&route=today&seedComment=tab-today");
+  assert.match(dom, /class="cmt-pin"/);
+  assert.doesNotMatch(dom, /cmt-pin approx/);
+  assert.doesNotMatch(dom, /data-error=/);
+});
+
+test("a comment whose element is gone sits dashed on its screen", { skip }, () => {
+  assert.match(dumpDom("day=noon&route=today&seedComment=no-such-part"), /class="cmt-pin approx"/);
+});
+
+test("a comment made on another route shows no pin here", { skip }, () => {
+  const dom = dumpDom("day=noon&route=more&seedComment=tab-today");
+  assert.doesNotMatch(dom, /cmt-pin/);
+  assert.match(dom, /data-id="wb-comments"/);
+});
+
+test("clicking a part in comment mode saves a comment and pins it there", { skip }, () => {
+  const dom = dumpDom("day=noon&route=today&autoComment=tab-adhkar");
+  assert.match(dom, /class="cmt-pin"/);
+  assert.match(dom, /Comments \(1\)/);
+  assert.doesNotMatch(dom, /data-error=/);
+});

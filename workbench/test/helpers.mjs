@@ -1,5 +1,5 @@
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
-import { execFileSync } from "node:child_process";
+import { execFileSync, execFile } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -37,7 +37,22 @@ function run(extra, query) {
 }
 
 export function dumpDom(query) {
-  return run(["--dump-dom"], query);
+  return run(["--dump-dom", "--window-size=1400,1000"], query);
+}
+
+/* same as dumpDom, but without blocking Node, so a server in this process can answer the page. base: the page URL */
+export function dumpDomAsync(query, base) {
+  const exe = browserPath();
+  if (!exe) throw new Error("no browser found");
+  const profile = mkdtempSync(join(tmpdir(), "wb-profile-"));
+  const args = ["--headless=new", "--disable-gpu", "--no-first-run", "--user-data-dir=" + profile,
+    "--virtual-time-budget=6000", "--dump-dom", "--window-size=1400,1000", base + (query ? "?" + query : "")];
+  return new Promise((ok, bad) => {
+    execFile(exe, args, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024, timeout: 60000 }, (err, stdout) => {
+      rmSync(profile, { recursive: true, force: true });
+      if (err) bad(err); else ok(stdout);
+    });
+  });
 }
 
 export function shot(query, outPath, width = 1280, height = 800) {

@@ -68,6 +68,7 @@ W.readUrl = function (search) {
   });
   var route = q.get("route");
   if (route) out.route = route;
+  if (q.get("panel") === "comments") out.panel = "comments";
   return out;
 };
 

@@ -37,6 +37,14 @@ function applyLook(u) {
 }
 applyLook(ui);
 
+/* test hook: one saved comment pinned to the part with this data-id, on the today screen of the current day */
+var seed = query.get("seedComment");
+if (seed) {
+  W.CM.list = [{ id: "cseed", at: 1, status: "open", doneAt: null, kind: "fix", text: "Seeded comment",
+    place: { frame: ui.frame, day: ui.day, lang: ui.lang, route: "today", popup: null },
+    anchor: { label: "Seeded", dataId: seed, own: true, tag: "div", path: null, text: "", fx: 0.5, fy: 0.5 } }];
+}
+
 function Shell() {
   var u = W.useApp().ui;
   applyLook(u);
@@ -45,10 +53,39 @@ function Shell() {
     <div class="wb-stage" data-id="stage">${u.route === "gallery" ? html`<${W.Gallery} />`
       : u.frame === "windows" ? html`<${W.WindowsFrame}><${W.Screen} /><//>`
       : html`<${W.PhoneFrame}><${W.Screen} /><//>`}</div>
+    <${W.CommentLayer} />
   </div>`;
 }
 
 window.ReactDOM.createRoot(document.getElementById("root")).render(html`<${Shell} />`);
 setTimeout(function () { root.dataset.ready = "1"; }, 0);
-W.ping();
+W.ping().then(function (ok) { if (ok) W.commentsSync(); });
+})();
+
+/* test hook: go through the real comment flow once (comment mode, click the part, type, save) */
+(function () {
+  var W = window.W, q;
+  try { q = new URLSearchParams(window.location.search); } catch (e) { return; }
+  var auto = q.get("autoComment");
+  if (!auto) return;
+  function later(ms, fn) { setTimeout(fn, ms); }
+  later(150, function () {
+    W.toggleCommentMode(true);
+    later(150, function () {
+      var el = document.querySelector('[data-id="' + auto + '"]');
+      if (!el) return;
+      var r = el.getBoundingClientRect();
+      el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }));
+      later(150, function () {
+        var ta = document.querySelector(".cmt-ta");
+        if (!ta) return;
+        Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set.call(ta, "auto");
+        ta.dispatchEvent(new Event("input", { bubbles: true }));
+        later(100, function () {
+          ta.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", ctrlKey: true, bubbles: true }));
+          later(100, function () { W.toggleCommentMode(false); });
+        });
+      });
+    });
+  });
 })();
