@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { browserPath, dumpDom } from "./helpers.mjs";
+import { browserPath, dumpDom, dumpDomAsync } from "./helpers.mjs";
 
 const firstId = createRequire(import.meta.url)("../js/data.js").LIB.find(x => x.starter === 0).id;
 
@@ -205,4 +205,38 @@ test("windows app window", { skip }, () => {
   const d = dumpDom("day=noon&frame=windows&route=today");
   assert.match(d, /data-id="desktop-window"[\s\S]*data-id="now-card"/);
   assert.doesNotMatch(d, /data-error=/);
+});
+
+test("sweep: every route in Arabic and English renders with no missing words", { skip }, async () => {
+  const base = new URL("../index.html", import.meta.url).href;
+  const routes = [
+    ["first", "onboarding/1"], ["first", "onboarding/2"], ["first", "onboarding/3"],
+    ["first", "onboarding/4"], ["first", "onboarding/5"], ["first", "onboarding/6"],
+    ["noon", "today"], ["noon", "adhkar"], ["noon", "adhkar/" + firstId],
+    ["noon", "add"], ["noon", "add/morning"], ["noon", "moments"], ["noon", "moments/morning"],
+    ["noon", "session/morning"], ["noon", "count/" + firstId], ["noon", "weekly"], ["weekup", "weekly"],
+    ["noon", "more"], ["noon", "more/freq"], ["noon", "more/sleep"], ["noon", "more/look"],
+    ["noon", "more/sound"], ["noon", "more/lang"], ["noon", "more/size"], ["noon", "days"], ["noon", "gallery"]
+  ];
+  const queries = [];
+  for (const [day, route] of routes) {
+    for (const lang of ["ar", "en"]) queries.push(`day=${day}&lang=${lang}&route=${route}`);
+  }
+  for (let i = 0; i < queries.length; i += 26) {
+    const batch = queries.slice(i, i + 6);
+    const doms = await Promise.all(batch.map((q) => dumpDomAsync(q, base)));
+    doms.forEach((d, j) => {
+      assert.match(d, /data-ready="1"/, batch[j]);
+      assert.doesNotMatch(d, /data-error=/, batch[j]);
+      assert.doesNotMatch(d, /\[[a-z]+\.[a-z0-9.]+\]/, batch[j]);
+    });
+  }
+});
+
+test("long Arabic with tashkeel at size 3 opens full card without error", { skip }, () => {
+  for (const frame of ["phone", "windows"]) {
+    const d = dumpDom(`day=noon&frame=${frame}&long=1&size=3&popup=small`);
+    assert.match(d, /data-id="card"[^>]*data-size="full"/, frame);
+    assert.doesNotMatch(d, /data-error=/, frame);
+  }
 });

@@ -34,6 +34,26 @@ if (query.get("restAll") === "1" && W.S.state.eng && W.S.state.eng.adhkar) {
   W.S.state.eng.adhkar.forEach(function (a) { W.S.state.eng = W.E.rest(W.S.state.eng, a.id, true); });
 }
 
+/* test hook: swap the first dhikr for the longest entry in W.LIB with tashkeel */
+if (query.get("long") === "1" && W.S.state.eng && W.S.state.eng.adhkar && W.S.state.eng.adhkar.length) {
+  var withMarks = W.LIB.filter(function (x) { return /[\u064B-\u065F\u0670\u06D6-\u06ED]/.test(x.ar); });
+  var pool = withMarks.length ? withMarks : W.LIB;
+  var longest = pool.slice().sort(function (a, b) { return b.words - a.words || b.ar.length - a.ar.length; })[0];
+  if (longest) {
+    var e0 = W.S.state.eng;
+    e0.adhkar = e0.adhkar.filter(function (a, idx) { return idx === 0 || a.id !== longest.id; });
+    e0.adhkar[0] = { id: longest.id, target: longest.sunnah || 10, auto: true, rung: 0, resting: false, factor: 1, closeRun: 0, finishRun: 0 };
+    e0.words = e0.words || {}; e0.words[longest.id] = longest.words;
+    e0.sunnah = e0.sunnah || {}; e0.sunnah[longest.id] = longest.sunnah == null ? null : longest.sunnah;
+    if (e0.day) {
+      e0.day.done[longest.id] = 0;
+      e0.day.carry = {};
+      e0.day.showing = null;
+      e0.day.lastShown = null;
+    }
+  }
+}
+
 /* the look, theme and text size live on <html> so tokens.css can answer them */
 function applyLook(u) {
   root.dataset.look = u.look;
