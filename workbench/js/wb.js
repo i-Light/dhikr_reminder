@@ -5,9 +5,10 @@
 var W = window.W, html = W.html;
 
 W.DAYS = [
-  ["first", "First open"], ["noon", "A normal day at noon"], ["complete", "Everything complete"],
-  ["missed", "Back after a missed week"], ["weekup", "Weekly card: going up"],
-  ["weekdown", "Weekly card: going down"], ["weekheavy", "Weekly card: one heavy dhikr"]
+  ["first", "First open"], ["noon", "A normal day at noon"], ["friday", "Friday (Jumu'ah)"],
+  ["complete", "Everything complete"], ["missed", "Back after a missed week"],
+  ["weekup", "Weekly card: going up"], ["weekdown", "Weekly card: going down"],
+  ["weekheavy", "Weekly card: one heavy dhikr"]
 ];
 
 var PEOPLE = [
@@ -70,7 +71,6 @@ W.setDay = function (key, opts) {
 W.setLang = function (v) { setUi("lang", v); };
 W.setTheme = function (v) { setUi("theme", v); };
 W.setSize = function (v) { setUi("size", v); };
-W.setLook = function (v) { setUi("look", v); };
 W.setFrame = function (v) { setUi("frame", v); };
 /* example data back to how the chosen day starts; comments are kept */
 W.resetAll = function () { W.setDay(W.U().day); };
@@ -409,8 +409,18 @@ W.WbMenu = function WbMenu() {
     <${Seg} id="wb-frame" label="Frame" value=${ui.frame} options=${[["phone", "Phone"], ["windows", "Windows"]]} onChange=${W.setFrame} />
     <${Seg} id="wb-lang" label="Language" value=${ui.lang} options=${[["ar", "Arabic"], ["en", "English"]]} onChange=${W.setLang} />
     <${Seg} id="wb-theme" label="Theme" value=${ui.theme} options=${[["light", "Light"], ["dark", "Dark"]]} onChange=${W.setTheme} />
-    <${Seg} id="wb-size" label="Text" value=${ui.size} options=${[[1, "A"], [2, "A+"], [3, "A++"]]} onChange=${W.setSize} />
-    <${Seg} id="wb-look" label="Look" value=${ui.look} options=${[["a", "A Olive"], ["b", "B Iznik"]]} onChange=${W.setLook} />
+    <span class="wb-seg" role="group" aria-label="Text" data-id="wb-size" data-cmt-ui="1">
+      <span class="wb-seg-label">Text</span>
+      <span class="wb-size-wrap">
+        <span class="wb-size-a-sm" aria-hidden="true">A</span>
+        <input type="range" class="wb-size-range" data-id="wb-size-slider" aria-label="Text size (1 to 7)"
+          min="1" max="7" step="1" value=${ui.size}
+          onInput=${function (e) { W.setSize(Number(e.target.value)); }}
+          onChange=${function (e) { W.setSize(Number(e.target.value)); }} />
+        <span class="wb-size-a-lg" aria-hidden="true">A</span>
+        <span class="wb-size-val">${ui.size}/7</span>
+      </span>
+    </span>
     ${W.wbTools.map(function (tool, i) { return html`<span key=${i} class="wb-tool">${tool()}</span>`; })}
     <button type="button" class="wb-btn" data-id="wb-gallery" onClick=${function () {
       if (inGallery) W.go(ui.backRoute || "today"); else { ui.backRoute = ui.route; W.go("gallery"); }

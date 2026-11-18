@@ -33,6 +33,26 @@ test("comments round trip", async () => {
   await put("/api/comments", [{ id: "c1", text: "x" }]);
   assert.deepEqual(await getJson("/api/comments"), [{ id: "c1", text: "x" }]);
 });
+test("text edits round trip", async () => {
+  const payload = { ar: { "today.say.btn": "قول ذكر" }, en: {}, lib: {}, dom: {} };
+  await put("/api/edits", payload);
+  assert.deepEqual(await getJson("/api/edits"), payload);
+});
+test("pasted comment image saves to comment-images and serves back", async () => {
+  const onePxPng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+  const res = await fetch(base + "/api/comment-image", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ id: "img_test_1", dataUrl: onePxPng })
+  });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.ok, true);
+  assert.equal(body.path, "workbench/comment-images/img_test_1.png");
+  const imgRes = await fetch(base + body.url);
+  assert.equal(imgRes.status, 200);
+  assert.equal(imgRes.headers.get("content-type"), "image/png");
+});
 test("a full comment keeps its place and anchor", async () => {
   const c = { id: "c2", at: 5, status: "done", doneAt: 9, kind: "idea", text: "كبّر الخط",
     place: { frame: "phone", day: "noon", lang: "ar", route: "adhkar/d1", popup: null },

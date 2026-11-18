@@ -1,4 +1,4 @@
-/* moments.js: the four daily moments (list, per-moment page with time), the moment popup card, and session/<key>. */
+/* moments.js: the four daily moments (list, per-moment page with compact settings summary + popup), moment card, and session/<key>. */
 (function () {
 "use strict";
 var W = window.W, html = W.html, E = W.E;
@@ -31,49 +31,95 @@ function SwitchBtn(p) {
 
 function MomentsList() {
   var eng = E.rollDay(W.useApp().eng, W.now());
+  var editSt = W.useState(null), editKey = editSt[0], setEditKey = editSt[1];
   var mt = E.momentTimes(eng.prefs);
   var mp = (eng.prefs && eng.prefs.moments) || {};
 
-  return html`<div class="moments-page" data-id="moments-page">
-    <div class="sub-bar">
-      <${W.Btn} kind="text" icon="back" label=${W.t("btn.back")} id="moments-back"
-        onClick=${function () { W.go("adhkar"); }} />
-      <h1 class="title">${W.t("adhkar.moments.title")}</h1>
-      <span class="sub-bar-gap"></span>
-    </div>
+  var activeKey = editKey && KEYS.indexOf(editKey) >= 0 ? editKey : null;
+  var activeMp = activeKey ? (mp[activeKey] || { on: true, at: null }) : null;
+  var activeOn = activeMp ? activeMp.on !== false : true;
+  var activeHhmm = activeKey ? minToHhmm(mt[activeKey].start) : "06:00";
 
+  function setActiveTime(v) {
+    if (!activeKey) return;
+    var m = E.min(v);
+    if (m < E.dayStartMin(eng.prefs)) m += 1440;
+    W.act("moment-time", function (s) { s.eng = E.setMoment(s.eng, activeKey, { at: m }); });
+  }
+
+  return html`<div class="moments-page" data-id="moments-page">
     <div class="adhkar-rows">
       ${KEYS.map(function (k) {
         var on = !(mp[k] && mp[k].on === false);
         var items = W.SETS[k] || [];
         var timeStr = W.timeLabel(minToHhmm(mt[k].start));
-        return html`<div key=${k} class=${W.cx("row", "moment-row", !on && "is-done")} data-id=${"moments-row-" + k}>
-          <button type="button" class="moment-row-open" data-id=${"moments-open-" + k}
-            onClick=${function () { W.go("moments/" + k); }}>
-            <span class="row-icon">${W.Icon({ name: M_ICONS[k], size: 28 })}</span>
-            <span class="row-main">
-              <span class="row-title">${W.t("moment." + k)}</span>
-              <span class="row-sub num">${W.t("moments.sub", { time: timeStr, n: items.length })}</span>
+        var mins = estMinutes(k);
+        var minLine = mins === 1 ? W.t("moments.min.one") : W.t("moments.min.many", { n: mins });
+        return html`<button type="button" key=${k} class=${W.cx("moment-compact-btn", !on && "is-off")}
+          data-id=${"moments-row-" + k} onClick=${function () { setEditKey(k); }}>
+          <span class="moment-compact-ic">${W.Icon({ name: M_ICONS[k], size: 20 })}</span>
+          <span class="moment-compact-meta">
+            <span class="moment-compact-top">
+              <span class="moment-compact-name">${W.t("moment." + k)}</span>
+              <span class="moment-compact-chips num">
+                <span class=${W.cx("mc-chip", on && "is-on")}>
+                  ${W.Icon({ name: on ? "bell" : "pause", size: 13 })}
+                  <span>${W.t(on ? "moments.on" : "moments.off")}</span>
+                </span>
+                <span class="mc-chip">
+                  ${W.Icon({ name: "later", size: 13 })}
+                  <span>${timeStr}</span>
+                </span>
+                <span class="mc-chip">
+                  ${W.Icon({ name: "adhkar", size: 13 })}
+                  <span>${items.length}</span>
+                </span>
+              </span>
             </span>
-          </button>
-          <span class="row-end">
-            <${SwitchBtn} id=${"moment-switch-" + k} on=${on}
-              onClick=${function () { W.act("moment", function (s) { s.eng = E.setMoment(s.eng, k, { on: !on }); }); }} />
+            <span class="moment-compact-sub quiet num">${minLine}</span>
           </span>
-        </div>`;
+          <span class="moment-compact-edit" aria-hidden="true">${W.Icon({ name: "wrench", size: 15 })}</span>
+        </button>`;
       })}
     </div>
+    <${W.Sheet} id="moment-list-sheet" popup=${true} open=${!!activeKey}
+      title=${activeKey ? W.t("adhkar.moment.sheet", { name: W.t("moment." + activeKey) }) : ""}
+      onClose=${function () { setEditKey(null); }}
+      footer=${activeKey ? html`<div class="dhikr-actions">
+        <${W.Btn} kind="soft" icon="adhkar" label=${W.t("moments.contents")} id="moment-open-detail"
+          onClick=${function () { var k = activeKey; setEditKey(null); W.go("moments/" + k); }} />
+        <${W.Btn} kind="main" icon="check" label=${W.t("btn.done")} id="moment-sheet-done"
+          onClick=${function () { setEditKey(null); }} />
+      </div>` : null}>
+      ${activeKey ? html`<div class="moment-sheet-body">
+        <div class="adhkar-moment-head">
+          <span class="title">${W.t("moment." + activeKey)}</span>
+          <${SwitchBtn} id=${"moment-switch-" + activeKey} on=${activeOn}
+            onClick=${function () { W.act("moment", function (s) { s.eng = E.setMoment(s.eng, activeKey, { on: !activeOn }); }); }} />
+        </div>
+        <${W.TimeStep} id="moment-inline-time" label=${W.t("moments.time")} value=${activeHhmm} onChange=${setActiveTime} />
+        ${activeMp && activeMp.at != null ? html`<div class="moment-reset-wrap">
+          <${W.Btn} kind="text" icon="undo" label=${W.t("moments.reset")} id="moment-inline-reset"
+            onClick=${function () { W.act("moment-reset", function (s) { s.eng = E.setMoment(s.eng, activeKey, { at: null }); }); }} />
+        </div>` : null}
+      </div>` : null}
+    <//>
   </div>`;
 }
 
 function MomentDetail(p) {
   var key = KEYS.indexOf(p.mkey) >= 0 ? p.mkey : "morning";
   var st = W.useApp(), eng = E.rollDay(st.eng, W.now()), en = st.ui.lang === "en";
+  var popSt = W.useState(false), popOpen = popSt[0], setPopOpen = popSt[1];
   var mt = E.momentTimes(eng.prefs);
   var mp = (eng.prefs && eng.prefs.moments && eng.prefs.moments[key]) || { on: true, at: null };
   var on = mp.on !== false;
   var hhmm = minToHhmm(mt[key].start);
+  var timeStr = W.timeLabel(hhmm);
   var items = W.SETS[key] || [];
+  var mins = estMinutes(key);
+  var minLine = mins === 1 ? W.t("moments.min.one") : W.t("moments.min.many", { n: mins });
+  var mName = W.t("moment." + key);
 
   function setTime(v) {
     var m = E.min(v);
@@ -82,19 +128,33 @@ function MomentDetail(p) {
   }
 
   return html`<div class="moments-page" data-id="moment-detail">
-    <div class="sub-bar">
-      <${W.Btn} kind="text" icon="back" label=${W.t("btn.back")} id="moments-back"
-        onClick=${function () { W.go("moments"); }} />
-      <h1 class="title">${W.t("moment." + key)}</h1>
-      <${SwitchBtn} id=${"moment-switch-" + key} on=${on}
-        onClick=${function () { W.act("moment", function (s) { s.eng = E.setMoment(s.eng, key, { on: !on }); }); }} />
-    </div>
-
-    <${W.TimeStep} id="moment-time" label=${W.t("moments.time")} value=${hhmm} onChange=${setTime} />
-    ${mp.at != null ? html`<div class="moment-reset-wrap">
-      <${W.Btn} kind="text" icon="undo" label=${W.t("moments.reset")} id="moment-reset"
-        onClick=${function () { W.act("moment-reset", function (s) { s.eng = E.setMoment(s.eng, key, { at: null }); }); }} />
-    </div>` : null}
+    <button type="button" class=${W.cx("moment-compact-btn", !on && "is-off")}
+      data-id="moment-compact-open" onClick=${function () { setPopOpen(true); }}>
+      <span class="moment-compact-ic">${W.Icon({ name: M_ICONS[key] || "sun", size: 20 })}</span>
+      <span class="moment-compact-meta">
+        <span class="moment-compact-top">
+          <span class="moment-compact-name">${mName}</span>
+          <span class="moment-compact-chips num">
+            <span class=${W.cx("mc-chip", on && "is-on")}>
+              ${W.Icon({ name: on ? "bell" : "pause", size: 13 })}
+              <span>${W.t(on ? "moments.on" : "moments.off")}</span>
+            </span>
+            <span class="mc-chip">
+              ${W.Icon({ name: "later", size: 13 })}
+              <span>${timeStr}</span>
+            </span>
+            <span class="mc-chip">
+              ${W.Icon({ name: "adhkar", size: 13 })}
+              <span>${items.length}</span>
+            </span>
+          </span>
+        </span>
+        <span class="moment-compact-sub quiet num">${minLine}</span>
+      </span>
+      <span class="moment-compact-edit" aria-hidden="true">
+        ${W.Icon({ name: "wrench", size: 15 })}
+      </span>
+    </button>
 
     <${W.Btn} kind="main" wide=${true} icon="play" label=${W.t("btn.start")} id="moment-page-start"
       onClick=${function () { W.U().backRoute = "moments/" + key; W.go("session/" + key); }} />
@@ -105,16 +165,32 @@ function MomentDetail(p) {
         ${items.map(function (entry) {
           var it = W.lib(entry.id);
           var sub = entry.count === 1 ? W.t("add.once") : W.t("moments.item.count", { n: entry.count });
-          return html`<div key=${entry.id} class="row" data-id=${"set-item-" + entry.id}>
-            <span class="row-main">
-              <span class="row-title is-dhikr" dir="rtl" lang="ar">${it ? it.ar : entry.id}</span>
-              ${en && it && it.translit ? html`<span class="row-sub" dir="ltr" lang="en">${it.translit}</span>` : null}
-              <span class="row-sub num">${sub}</span>
-            </span>
-          </div>`;
+          return html`<${W.Row} key=${entry.id} id=${"set-item-" + entry.id} dhikr=${true}
+            title=${it ? it.ar : entry.id}
+            sub=${en && it && it.translit ? it.translit + " . " + sub : sub}
+            onClick=${function () { W.U().backRoute = "moments/" + key; W.go("adhkar/" + entry.id); }} />`;
         })}
       </div>
     </section>
+
+    <${W.Sheet} id="moment-settings-sheet" popup=${true} open=${popOpen}
+      title=${W.t("adhkar.moment.sheet", { name: mName })}
+      onClose=${function () { setPopOpen(false); }}
+      footer=${html`<${W.Btn} kind="main" wide=${true} icon="check" label=${W.t("btn.done")} id="moment-sheet-done"
+        onClick=${function () { setPopOpen(false); }} />`}>
+      <div class="moment-sheet-body">
+        <div class="adhkar-moment-head">
+          <span class="title">${mName}</span>
+          <${SwitchBtn} id=${"moment-switch-" + key} on=${on}
+            onClick=${function () { W.act("moment", function (s) { s.eng = E.setMoment(s.eng, key, { on: !on }); }); }} />
+        </div>
+        <${W.TimeStep} id="moment-time" label=${W.t("moments.time")} value=${hhmm} onChange=${setTime} />
+        ${mp.at != null ? html`<div class="moment-reset-wrap">
+          <${W.Btn} kind="text" icon="undo" label=${W.t("moments.reset")} id="moment-reset"
+            onClick=${function () { W.act("moment-reset", function (s) { s.eng = E.setMoment(s.eng, key, { at: null }); }); }} />
+        </div>` : null}
+      </div>
+    <//>
   </div>`;
 }
 
@@ -171,10 +247,18 @@ W.MomentCard = function MomentCard() {
   </div>`;
 };
 
+W.activeSetItems = function (eng, key) {
+  var raw = key === "jumuah" ? (W.JUMUAH_SET || []) : ((W.SETS && W.SETS[key]) || []);
+  var sk = eng && eng.prefs && eng.prefs.momentSkip && eng.prefs.momentSkip[key];
+  if (!sk) return raw;
+  var filtered = raw.filter(function (x) { return !sk[x.id]; });
+  return filtered.length ? filtered : raw;
+};
+
 function SessionScreen(p) {
-  var key = KEYS.indexOf(p.arg) >= 0 ? p.arg : "morning";
+  var key = p.arg === "jumuah" ? "jumuah" : (KEYS.indexOf(p.arg) >= 0 ? p.arg : "morning");
   var st = W.useApp(), eng = E.rollDay(st.eng, W.now());
-  var items = W.SETS[key] || [];
+  var items = W.activeSetItems(eng, key);
   if (!items.length) return null;
   var pos = (eng.day && eng.day.moments && eng.day.moments[key]) || { i: 0, n: 0, done: false };
   var idx = W.clamp(pos.i || 0, 0, items.length - 1);
@@ -197,29 +281,22 @@ function SessionScreen(p) {
     ? function () { W.act("session-next", function (s) { s.eng = E.sessionMove(E.rollDay(s.eng, W.now()), key, 1, items); }); }
     : null;
 
-  var titleNode = html`<span class="session-head">
-    <span class="session-name">${W.t("moment." + key)}</span>
-    <span class="session-sep"> . </span>
-    <span data-id="session-progress">${W.t("session.progress", { n: idx + 1, total: items.length })}</span>
-  </span>`;
+  var onAgain = pos.done ? function () {
+    W.act("session-reset", function (s) {
+      s.eng = E.rollDay(s.eng, W.now());
+      s.eng.day.moments[key] = { i: 0, n: 0, done: false };
+    });
+  } : null;
 
   return html`<div class="session-wrap" data-id="session">
     <${W.Card} size="page" id=${cur.id} piece=${cur.count} done=${doneCount}
       dayDone=${a ? ((eng.day.done && eng.day.done[cur.id]) || 0) : 0}
       dayTarget=${a ? a.target : 0}
-      title=${titleNode}
+      inSession=${true}
       onTap=${onTap} onClose=${onClose}
+      onAgain=${onAgain}
       onBack=${onBack}
       onForward=${items.length > 1 && !onForward && !onBack ? null : onForward} />
-    ${pos.done ? html`<div class="session-again">
-      <${W.Btn} kind="text" icon="undo" label=${W.t("session.again")} id="session-again"
-        onClick=${function () {
-          W.act("session-reset", function (s) {
-            s.eng = E.rollDay(s.eng, W.now());
-            s.eng.day.moments[key] = { i: 0, n: 0, done: false };
-          });
-        }} />
-    </div>` : null}
   </div>`;
 }
 

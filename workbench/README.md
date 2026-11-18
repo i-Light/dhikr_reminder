@@ -6,16 +6,17 @@ A clickable web prototype of the dhikr reminder app, built as plain HTML, CSS an
 
 Double-click `workbench/index.html` in Chrome or Edge. Everything works directly from `file://`.
 
-## Comment on anything
+## Comment on anything and edit text live
 
 - Press `C` (or click `Comment (C)` in the top bar), point at any button, row, card, icon or word, and click. Hold `Alt` to target the whole screen.
-- Pick `Fix`, `Idea` or `Question`, write your note, and press `Ctrl+Enter` or `Save`.
-- Open `Comments (n)` in the top bar to filter open or done notes, jump back to the exact screen, language, frame and example day where a note was pinned, or click `Copy open for Claude`.
+- Pick `Fix`, `Idea` or `Question`, write your note, paste screenshots directly with `Ctrl+V` (or click `+ Image`), and press `Ctrl+Enter` or `Save` (or click `Edit text directly` inside the popup to rewrite that element's text on the spot).
+- Press `E` (or click `Edit text (E)` in the top bar) to click any visible word, button, heading or dhikr and rewrite its Arabic and English text directly on screen with live preview.
+- Open `Comments (n)` in the top bar to filter open or done notes, review or reset live text edits, jump back to the exact screen, language, frame and example day where a note was pinned, or click `Copy open for Claude`.
 - Optional shared file mode (requires Node 20 or newer):
 
       node workbench/serve.mjs
 
-  Open `http://127.0.0.1:4173/` (set `PORT` to change the port). Comments then sync automatically with `workbench/comments.json`.
+  Open `http://127.0.0.1:4173/` (set `PORT` to change the port). Comments sync automatically with `workbench/comments.json` and live text changes sync with `workbench/text-edits.json`.
 
 ## The Workbench menu
 
@@ -26,8 +27,7 @@ All controls in the dark top bar sit outside the app frames and are ignored by t
 - **Frame**: `Phone` (390x844 with home-screen and lock-screen overlays) or `Windows` (desktop window with a labelled side navigation rail, 720 px max content width, bottom-corner card, dimmed full-screen card, tray menu, and keyboard `Space` / `Enter` to count and `Escape` to close).
 - **Language**: Egyptian Arabic (`ar`, RTL, primary) or English (`en`, LTR, adds transliteration under dhikr text).
 - **Theme**: `Light` or `Dark`.
-- **Text**: `A` (18 px body / 30 px dhikr), `A+` (21 px / 36 px), `A++` (24 px / 42 px).
-- **Look**: `A Olive` (olive wood and lime plaster, IBM Plex Sans Arabic UI, centred Amiri Regular dhikr, eight-point star ornament) or `B Iznik` (porcelain tile and cobalt ink, Noto Sans Arabic UI, start-aligned Amiri Bold dhikr, pointed arch ornament).
+- **Text**: 7-stage slider from `1/7` (compact 13 px body / 21 px dhikr) through `3/7` (16 px / 27 px default) up to `7/7` (24.5 px / 43 px parent mode).
 - **Reminder now**: `Small`, `Full` or `Lock screen`.
 - **Moment card**: previews the timed moment arrival card (`On waking`, `Morning`, `Evening`, `Before sleep`).
 - **Icons and motion**: opens the token, icon, component and animation gallery (`?route=gallery`).
@@ -37,6 +37,7 @@ All controls in the dark top bar sit outside the app frames and are ignored by t
 
 - `first`: first open, starting at onboarding step 1.
 - `noon`: a normal day at 12:10 with morning moments done and adhkar in progress.
+- `friday`: Friday (Jumu'ah) at 12:10 showing the Friday sunnah trackers card (Surah Al-Kahf, Salawat counter, and Jumu'ah 0/6 adhkar).
 - `complete`: 22:10 with every active target reached and extras available.
 - `missed`: back after 8 days away, showing the gentle welcome-back state and stepped-down targets.
 - `weekup`: 7 days of steady completion, waiting with a weekly card that steps targets up one rung.
@@ -47,11 +48,11 @@ All controls in the dark top bar sit outside the app frames and are ignored by t
 
 State can be opened directly by query string:
 
-    ?day=first|noon|complete|missed|weekup|weekdown|weekheavy
-    &lang=ar|en&frame=phone|windows&look=a|b&theme=light|dark&size=1|2|3
+    ?day=first|noon|friday|complete|missed|weekup|weekdown|weekheavy
+    &lang=ar|en&frame=phone|windows&theme=light|dark&size=1..7
     &route=<route>&popup=small|full|moment|lock&panel=comments|sim
 
-Routes: `onboarding/1` to `onboarding/6`, `today`, `adhkar`, `adhkar/<id>`, `add`, `add/<group>`, `moments`, `moments/<key>`, `session/<key>`, `count/<id>`, `weekly`, `more`, `more/<row>`, `days`, `gallery`.
+Routes: `onboarding/1` to `onboarding/7`, `today`, `adhkar`, `adhkar/<id>`, `add`, `add/<group>`, `moments`, `moments/<key>`, `session/<key>`, `count/<id>`, `weekly`, `more`, `more/<row>`, `days`, `gallery`.
 
 Test hooks (read by `js/app.js` for automated tests): `junk=1`, `seedComment=<data-id>`, `autoComment=<data-id>`, `autoTap=<n|all>`, `autoClick=a,b,c`, `restAll=1`, `long=1`, `sim=<person>`, `simTo=HH:MM`, `simBack=HH:MM`.
 
@@ -65,16 +66,26 @@ Covers `engine.test.mjs` (ladder, comfort, piece sizing, carry, weekly review, i
 
 All fonts are local files in `workbench/fonts/`, loaded via `@font-face` in `css/tokens.css`:
 
-- **IBM Plex Sans Arabic** (`IBMPlexSansArabic-Regular.ttf`, `Medium.ttf`, `SemiBold.ttf`): SIL Open Font License 1.1, copied from the app's `assets/fonts/`. UI font for Look A (Olive).
-- **Noto Sans Arabic** (`NotoSansArabic-Variable.ttf`): SIL Open Font License 1.1, copied from the app's `assets/fonts/`. UI font for Look B (Iznik).
-- **Amiri** (`Amiri-Regular.ttf`, `Amiri-Bold.ttf`): SIL Open Font License 1.1 (`fonts/Amiri-OFL.txt`), from the official `google/fonts` repository (`ofl/amiri/`). Classical Naskh face used for dhikr text in both looks.
+- **IBM Plex Sans Arabic** (`IBMPlexSansArabic-Regular.ttf`, `Medium.ttf`, `SemiBold.ttf`): SIL Open Font License 1.1, copied from the app's `assets/fonts/`. Primary UI font.
+- **Noto Sans Arabic** (`NotoSansArabic-Variable.ttf`): SIL Open Font License 1.1, copied from the app's `assets/fonts/`. Fallback UI font.
+- **Amiri** (`Amiri-Regular.ttf`, `Amiri-Bold.ttf`): SIL Open Font License 1.1 (`fonts/Amiri-OFL.txt`), from the official `google/fonts` repository (`ofl/amiri/`). Classical Naskh face used for dhikr text.
 
 ## What is pretend in this prototype
 
 - **Phone permissions** (onboarding step 6 and the `Fix it` banner when a permission is skipped) simulate Android overlay, notification and background permissions in browser state.
 - **Phone home/lock overlays and the Windows desktop/taskbar/tray** are HTML frames around the app so reminders and tray actions can be tried and commented on in one browser tab.
-- **Sound and vibration** store your choice in UI state without playing audio or vibrating the device.
+- **Sound and vibration** use Web Audio wooden-bead synthesis and `navigator.vibrate` (when supported by the browser/device) with landmark double-pulses on every 10th and 33rd bead, and respect the `Soft` / `Silent` setting.
 - **Backup, Request a dhikr, Report a problem and Updates** under `More > Other` confirm the action with a local toast; nothing leaves the browser.
+
+## Implementation rules
+
+- **Today companion hub**: `Today` acts as a zero-decision companion hub rather than duplicating `My adhkar`. It renders:
+  - A single unified `now-card` showing the primary due moment or `Say one now` button, stacked missed or secondary due moments underneath, a compact upcoming-moment countdown line, and the `Pause for an hour` button at the bottom.
+  - Today's calm progress bar alongside unbreakable lifetime seeds (cumulative counts that never reset on missed days).
+  - **Emotional doorways** (`How is your heart right now?`) opening curated prophetic adhkar for anxious, overwhelmed, grateful, seeking-relief, and restless states.
+  - Rotating prophetic hadith and motivation cards with one-tap counting, quick access links (including the **30-second Set up for my parent** preset), and a collapsible gentle guide.
+- **Compact moment settings popup**: Inside `My adhkar` (and `moments/<key>`), each timed moment shows a single compact clickable summary card with On/Off, clock time, item count, and duration; clicking it opens a bottom sheet to toggle or adjust the time.
+- **Pocket Misbaha SVG and Variable Fadl Unlocks**: Full-screen and page counters display an interactive 33-bead (or exact-piece) SVG prayer-bead strand with Imam head-bead, swaying tassel, and divider beads at 11 and 22, unlocking rotating authentic Fadl, Tadabbur reflections, and cumulative seed milestones upon completion.
 
 ## Words to check
 
@@ -174,7 +185,7 @@ Every visible Arabic string (`js/strings.js`), written in natural Egyptian Arabi
 - `today.saymore`: قول زيادة / Say more
 - `today.hint`: التذكير بييجي لوحده طول اليوم، وتقدر تدوس على أي ذكر تحت في أي وقت / Reminders come on their own through the day, or tap any dhikr below whenever you like
 - `today.list`: أذكار النهارده / Today's adhkar
-- `today.moments`: أوقات الذكر / Daily moments
+- `today.moments`: التعديل على أوقات الذكر / Edit daily moments
 - `today.row.left`: فاضل {left} من {target} / {left} left of {target}
 - `today.row.done`: خلصت {target} / Done ({target})
 - `today.row.extra`: خلصت {target} وزيادة {extra} / Done ({target}) +{extra} extra

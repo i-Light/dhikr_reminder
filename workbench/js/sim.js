@@ -37,12 +37,13 @@
   }
 
   // Moment starts the person keeps and every ordinary slot of one day, as [ts, kind, key].
-  function dayEvents(state, key, person) {
+  function dayEvents(state, key, person, opts) {
     var p = key.split("-"), pr = state.prefs, w = E.min(pr.wake), s = E.min(pr.sleep), step = E.CFG.intervals[pr.freq];
     if (s <= w) s += 1440;
     var at = function (m) { return new Date(+p[0], +p[1] - 1, +p[2], 0, m).getTime(); };
     var times = E.momentTimes(pr), out = [];
     MOMENTS[person].forEach(function (k) {
+      if (opts && opts.part && k === "sleep") return;
       if (!pr.moments || !pr.moments[k] || pr.moments[k].on !== false) out.push([at(times[k].start), 0, k]);
     });
     for (var t = w + step; t < s; t += step) out.push([at(t), 1, t - w]);
@@ -75,7 +76,7 @@
     var rnd = mulberry32(seed >>> 0), log = [];
     var key = E.dayKey(fromTs, state.prefs), last = E.dayKey(toTs, state.prefs);
     for (; key <= last; key = nextKey(key)) {
-      dayEvents(state, key, person).forEach(function (ev) {
+      dayEvents(state, key, person, opts).forEach(function (ev) {
         var ts = ev[0];
         if (ts < fromTs || ts >= toTs) return;
         if (ev[1] === 0) { state = session(state, ts, ev[2]); return; }
@@ -96,6 +97,7 @@
   // [person, days after Monday 2026-11-09, hour, minute, opts]
   var DAYS = {
     noon: ["responsive", 3, 12, 10],
+    friday: ["responsive", 4, 12, 10],
     complete: ["responsive", 2, 22, 10],
     missed: ["away", 8, 9, 0],
     weekup: ["responsive", 7, 7, 30],

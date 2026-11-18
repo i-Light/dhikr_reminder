@@ -93,10 +93,19 @@
     var w = min(prefs.wake), s = sleepMin(prefs), mp = momentPrefs(prefs);
     var start = function (k, def) { return mp[k].at == null ? def : mp[k].at; };
     var sb = start("sleep", s - CFG.sleepBefore), wk = start("waking", w);
+    var defMorn = w + CFG.morningAfterWake, mornEnd = CFG.morningEnd;
+    var defEve = CFG.eveningStart, eveEnd = sb;
+    if (w >= 720) {
+      defEve = w <= 1200 ? Math.max(CFG.eveningStart, w + 15) : Math.min(sb - 60, w + 15);
+      eveEnd = Math.max(defEve + 180, Math.min(sb, 1440));
+      var fajrNext = 300 + 1440;
+      defMorn = (fajrNext > w && fajrNext < sb) ? fajrNext : Math.max(w + 60, sb - 120);
+      mornEnd = Math.max(defMorn + 180, sb);
+    }
     var out = {
       waking: { start: wk, end: wk + CFG.wakingWindow },
-      morning: { start: start("morning", w + CFG.morningAfterWake), end: CFG.morningEnd },
-      evening: { start: start("evening", CFG.eveningStart), end: sb },
+      morning: { start: start("morning", defMorn), end: mornEnd },
+      evening: { start: start("evening", defEve), end: eveEnd },
       sleep: { start: sb, end: s + CFG.sleepAfter }
     };
     // A start edited to its end or past it still gets a window.
@@ -137,11 +146,11 @@
     var words = {}, sunnah = {};
     library.forEach(function (x) { words[x.id] = x.words; sunnah[x.id] = x.sunnah == null ? null : x.sunnah; });
     return {
-      prefs: { level: answers.level, freq: answers.freq, wake: answers.wake, sleep: answers.sleep, cardSize: answers.cardSize,
-        moments: momentPrefs({}) },
+      prefs: Object.assign({ level: answers.level, freq: answers.freq, wake: answers.wake, sleep: answers.sleep, cardSize: answers.cardSize,
+        recite: answers.recite !== false, moments: momentPrefs({}) }, answers.goal ? { goal: answers.goal } : null),
       adhkar: adhkar, comfort: comfort, hours: hours, words: words, sunnah: sunnah,
       day: emptyDay(null),
-      week: { start: null, days: [] }, review: null, pausedUntil: 0
+      week: { start: null, days: [] }, history: {}, lifetime: 0, review: null, pausedUntil: 0
     };
   }
 
@@ -188,10 +197,39 @@
     return { key: day.key, finished: finished, shows: day.shows || {}, skips: day.skips || {} };
   }
 
+  function syncHistory(s, day) {
+    if (!day || !day.key) return;
+    s.history = s.history || {};
+    var act = active(s), goal = 0, got = 0, said = 0;
+    act.forEach(function (a) {
+      var d = (day.done && day.done[a.id]) || 0, ex = (day.extra && day.extra[a.id]) || 0;
+      goal += a.target;
+      got += Math.min(a.target, d);
+      said += d + ex;
+    });
+    var otherIds = {};
+    Object.keys(day.done || {}).forEach(function (id) { otherIds[id] = true; });
+    Object.keys(day.extra || {}).forEach(function (id) { otherIds[id] = true; });
+    Object.keys(otherIds).forEach(function (id) {
+      if (!act.some(function (a) { return a.id === id; })) {
+        said += ((day.done && day.done[id]) || 0) + ((day.extra && day.extra[id]) || 0);
+      }
+    });
+    if (day.friday && day.friday.salawat) said += day.friday.salawat;
+    var mDone = {};
+    MOMENTS.forEach(function (k) {
+      if (day.moments && day.moments[k] && day.moments[k].done) mDone[k] = true;
+    });
+    if (said > 0 || Object.keys(mDone).length > 0 || s.history[day.key]) {
+      s.history[day.key] = { said: said, got: got, goal: goal, complete: !!day.complete, moments: mDone };
+    }
+  }
+
   function rollDay(state, ts) {
     var s = copy(state), key = dayKey(ts, s.prefs), old = s.day.key;
     if (old === key) return s;
     if (old !== null) {
+      syncHistory(s, s.day);
       s.week.days.push(fileDay(s, s.day));
       for (var k = nextKey(old); k < key; k = nextKey(k)) s.week.days.push(fileDay(s, emptyDay(k)));
     }
@@ -284,6 +322,55 @@
     return s;
   }
 
+  function setAuto(state, id, on) {
+    var s = copy(state), a = find(s, id);
+    if (!a) return s;
+    a.auto = !!on;
+    return s;
+  }
+
+  function setLevel(state, level) {
+    var s = copy(state), st = CFG.start[level];
+    if (!st) return s;
+    s.prefs = Object.assign({}, s.prefs, { level: level });
+    s.comfort = (s.comfort || []).map(function () { return st.comfort; });
+    var autoItems = s.adhkar.filter(function (d) { return d.auto; });
+    autoItems.forEach(function (d) {
+      var r = ladder(sunnahOf(s, d.id)), idx = startRung(r, st.pct);
+      d.rung = idx; d.target = r[idx]; d._r = r;
+    });
+    var cap = slots(s.prefs).length * st.comfort;
+    function sum() { return s.adhkar.reduce(function (acc, d) { return acc + d.target; }, 0); }
+    while (sum() > cap && autoItems.some(function (d) { return d.rung > 0; })) {
+      autoItems.forEach(function (d) { if (d.rung > 0) { d.rung--; d.target = d._r[d.rung]; } });
+    }
+    autoItems.forEach(function (d) { delete d._r; });
+    markComplete(s);
+    return s;
+  }
+
+  function addCustom(state, item, target) {
+    var s = copy(state);
+    s.custom = (s.custom || []).filter(function (x) { return x.id !== item.id; }).concat([item]);
+    s = add(s, item);
+    if (target != null && target > 0) {
+      var a = find(s, item.id);
+      if (a) { setTo(s, a, Math.min(100000, Math.max(1, Math.round(+target) || 10))); a.auto = true; }
+    }
+    markComplete(s);
+    return s;
+  }
+
+  function remove(state, id) {
+    var s = copy(state);
+    s.adhkar = s.adhkar.filter(function (a) { return a.id !== id; });
+    if (s.custom) s.custom = s.custom.filter(function (x) { return x.id !== id; });
+    delete s.day.carry[id];
+    if (s.day.showing && s.day.showing.id === id) s.day.showing = null;
+    markComplete(s);
+    return s;
+  }
+
   function add(state, item) {
     var s = copy(state);
     if (find(s, item.id)) return s;
@@ -295,14 +382,7 @@
     return s;
   }
 
-  function remove(state, id) {
-    var s = copy(state);
-    s.adhkar = s.adhkar.filter(function (a) { return a.id !== id; });
-    delete s.day.carry[id];
-    if (s.day.showing && s.day.showing.id === id) s.day.showing = null;
-    markComplete(s);
-    return s;
-  }
+
 
   function rest(state, id, on) {
     var s = copy(state), a = find(s, id);
@@ -350,7 +430,7 @@
   function sessionTap(state, ts, key, items) {
     var s = rollDay(state, ts), pos = s.day.moments[key] || { i: 0, n: 0, done: false }, item = items[pos.i];
     if (pos.done || !item) return s;
-    if (find(s, item.id)) s = tap(s, ts, item.id, 1);
+    s = tap(s, ts, item.id, 1);
     pos = { i: pos.i, n: pos.n + 1, done: false };
     if (pos.n >= item.count) {
       if (pos.i + 1 < items.length) pos = { i: pos.i + 1, n: 0, done: false };
@@ -443,8 +523,13 @@
 
   function tap(state, ts, id, n) {
     var s = rollDay(state, ts), day = s.day, a = find(s, id);
-    if (!a) return s;
     n = n == null ? 1 : n;
+    if (!a) {
+      day.extra[id] = (day.extra[id] || 0) + n;
+      s.lifetime = (s.lifetime || 0) + n;
+      syncHistory(s, day);
+      return s;
+    }
     var had = day.done[id] || 0, toDone = Math.max(0, Math.min(n, a.target - had));
     day.done[id] = had + toDone;
     if (n > toDone) day.extra[id] = (day.extra[id] || 0) + n - toDone;
@@ -454,6 +539,8 @@
       day.fresh = (day.fresh || 0) + n;
     }
     markComplete(s);
+    s.lifetime = (s.lifetime || 0) + n;
+    syncHistory(s, day);
     return s;
   }
 
@@ -498,7 +585,8 @@
   var E = { CFG: CFG, min: min, ladder: ladder, slots: slots, dayStartMin: dayStartMin,
     dayKey: dayKey, momentTimes: momentTimes, newState: newState,
     rollDay: rollDay, show: show, tap: tap, leave: leave, intervalMin: intervalMin, left: left, active: active,
-    review: review, answerReview: answerReview, setTarget: setTarget, add: add, remove: remove, rest: rest,
+    review: review, answerReview: answerReview, setTarget: setTarget, setAuto: setAuto, setLevel: setLevel,
+    add: add, addCustom: addCustom, remove: remove, rest: rest, pick: pick,
     pause: pause, awayDays: awayDays, setMoment: setMoment, momentState: momentState,
     sessionTap: sessionTap, sessionMove: sessionMove, nowCard: nowCard };
 

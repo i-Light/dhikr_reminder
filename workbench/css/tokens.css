@@ -1,7 +1,6 @@
-/* tokens.css: the two looks. Every app part reads only these custom properties.
-   <html> carries data-look (a|b), data-theme (light|dark) and data-size (1|2|3), set by app.js.
-   Look a "Olive": olive wood and lime plaster. Soft round corners, Plex words, Amiri Regular dhikr set centred, a small eight-point star.
-   Look b "Iznik": porcelain tile and cobalt ink. Crisp corners, outlined tiles, Noto words, Amiri Bold dhikr set to the start, a small pointed arch.
+/* tokens.css: the Olive look. Every app part reads only these custom properties.
+   <html> carries data-theme (light|dark) and data-size (1..7), set by app.js.
+   Olive wood and lime plaster: soft round corners, Plex words, Amiri Regular dhikr set centred, a small eight-point star.
    Fonts are local files; nothing is fetched. Sources and licences are in README.md. */
 
 @font-face { font-family: "Plex Arabic"; src: url(../fonts/IBMPlexSansArabic-Regular.ttf) format("truetype"); font-weight: 400; font-style: normal; font-display: swap; }
@@ -11,8 +10,8 @@
 @font-face { font-family: "Amiri"; src: url(../fonts/Amiri-Regular.ttf) format("truetype"); font-weight: 400; font-style: normal; font-display: swap; }
 @font-face { font-family: "Amiri"; src: url(../fonts/Amiri-Bold.ttf) format("truetype"); font-weight: 700; font-style: normal; font-display: swap; }
 
-/* ---------- look a: Olive (also the default before app.js runs) ---------- */
-:root, :root[data-look="a"] {
+/* ---------- Olive palette (light & dark) ---------- */
+:root {
   --bg: #EDEFE5;
   --surface: #FAFBF5;
   --surface-2: #E2E6D7;
@@ -37,7 +36,7 @@
   --shadow: 0 1px 2px rgba(27, 33, 23, 0.06), 0 10px 28px -16px rgba(27, 33, 23, 0.28);
   --press: rgba(27, 33, 23, 0.12);
 }
-:root[data-theme="dark"]:not([data-look="b"]) {
+:root[data-theme="dark"] {
   --bg: #12160F;
   --surface: #1A1F16;
   --surface-2: #252C20;
@@ -53,69 +52,60 @@
   --press: rgba(237, 240, 229, 0.14);
 }
 
-/* ---------- look b: Iznik ---------- */
-:root[data-look="b"] {
-  --bg: #EEF1F4;
-  --surface: #FFFFFF;
-  --surface-2: #E1E7EE;
-  --ink: #111A2C;
-  --ink-2: #364260;
-  --line: #BCC6D4;
-  --accent: #1D3C8C;
-  --accent-ink: #FFFFFF;
-  --accent-soft: #DCE4F5;
-  --good: #0F6656;
-  --warn: #A3301D;
-  --font-ui: "Noto Arabic", "Plex Arabic", "Segoe UI", Tahoma, sans-serif;
-  --font-dhikr: "Amiri", "Noto Arabic", serif;
-  --dhikr-weight: 700;
-  --dhikr-align: start;
-  --dhikr-lh: 1.95;
-  --head-weight: 500;
-  --label-weight: 600;
-  --radius: 4px;
-  --radius-lg: 10px;
-  --radius-btn: 6px;
-  --shadow: 0 0 0 1px var(--line);
-  --press: rgba(17, 26, 44, 0.12);
+/* ---------- text sizes: 7 stages, from very compact (1) up to parent/elder extra-large (7) ---------- */
+:root[data-size="1"] {
+  --text: 13px;
+  --text-lg: 16px;
+  --text-xl: 22px;
+  --text-dhikr: 21px;
+  --tap: 42px;
+  --space: 11px;
 }
-:root[data-look="b"][data-theme="dark"] {
-  --bg: #0C1220;
-  --surface: #141C2E;
-  --surface-2: #1E2840;
-  --ink: #EEF2F9;
-  --ink-2: #B3BED3;
-  --line: #34425F;
-  --accent: #A7BFFF;
-  --accent-ink: #0C1530;
-  --accent-soft: #22305A;
-  --good: #7DD6C2;
-  --warn: #F3A28D;
-  --press: rgba(238, 242, 249, 0.14);
+:root[data-size="2"] {
+  --text: 14.5px;
+  --text-lg: 18px;
+  --text-xl: 25px;
+  --text-dhikr: 24px;
+  --tap: 46px;
+  --space: 12.5px;
 }
-
-/* ---------- text sizes (same in both looks; floors: text 18, dhikr 28, tap 56) ---------- */
-:root, :root[data-size="1"] {
+:root, :root[data-size="3"] {
+  --text: 16px;
+  --text-lg: 20px;
+  --text-xl: 28px;
+  --text-dhikr: 27px;
+  --tap: 50px;
+  --space: 14px;
+}
+:root[data-size="4"] {
   --text: 18px;
   --text-lg: 23px;
   --text-xl: 32px;
   --text-dhikr: 30px;
-  --tap: 56px;
+  --tap: 55px;
   --space: 16px;
 }
-:root[data-size="2"] {
-  --text: 21px;
-  --text-lg: 26px;
-  --text-xl: 38px;
-  --text-dhikr: 36px;
-  --tap: 62px;
-  --space: 18px;
+:root[data-size="5"] {
+  --text: 20px;
+  --text-lg: 25.5px;
+  --text-xl: 36px;
+  --text-dhikr: 34px;
+  --tap: 59px;
+  --space: 17px;
 }
-:root[data-size="3"] {
-  --text: 24px;
-  --text-lg: 30px;
-  --text-xl: 44px;
-  --text-dhikr: 42px;
+:root[data-size="6"] {
+  --text: 22px;
+  --text-lg: 28px;
+  --text-xl: 40px;
+  --text-dhikr: 38px;
+  --tap: 64px;
+  --space: 18.5px;
+}
+:root[data-size="7"] {
+  --text: 24.5px;
+  --text-lg: 31px;
+  --text-xl: 45px;
+  --text-dhikr: 43px;
   --tap: 68px;
   --space: 20px;
 }

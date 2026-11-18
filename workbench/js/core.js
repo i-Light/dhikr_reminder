@@ -1,4 +1,4 @@
-/* core.js: the shared runtime. W.html, a tiny store with undo, storage helpers, navigation. */
+/* core.js: the shared runtime. W.html, a tiny store with undo, storage helpers, live text edits, navigation. */
 (function () {
 "use strict";
 var R = window.React;
@@ -25,13 +25,13 @@ W.LS = {
   }
 };
 
-W.KEYS = { eng: "dhikr-wb-state", ui: "dhikr-wb-ui", comments: "dhikr-wb-comments" };
+W.KEYS = { eng: "dhikr-wb-state", ui: "dhikr-wb-ui", comments: "dhikr-wb-comments", edits: "dhikr-wb-edits" };
 
-W.DEFAULT_UI = { day: "first", lang: "ar", frame: "phone", look: "a", theme: "light", size: 1, route: "today", popup: null, commenting: false, panel: null };
+W.DEFAULT_UI = { day: "first", lang: "ar", frame: "phone", theme: "light", size: 3, route: "today", popup: null, commenting: false, editingText: false, panel: null };
 var ENUM = {
-  day: ["first", "noon", "complete", "missed", "weekup", "weekdown", "weekheavy"],
-  lang: ["ar", "en"], frame: ["phone", "windows"], look: ["a", "b"], theme: ["light", "dark"],
-  size: [1, 2, 3], popup: ["small", "full", "moment", "lock"]
+  day: ["first", "noon", "friday", "complete", "missed", "weekup", "weekdown", "weekheavy"],
+  lang: ["ar", "en"], frame: ["phone", "windows"], theme: ["light", "dark"],
+  size: [1, 2, 3, 4, 5, 6, 7], popup: ["banner", "small", "full", "moment", "lock"]
 };
 
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
@@ -47,6 +47,7 @@ W.cleanUi = function (saved) {
   });
   if (typeof saved.route === "string" && saved.route) ui.route = saved.route;
   if (typeof saved.commenting === "boolean") ui.commenting = saved.commenting;
+  if (typeof saved.editingText === "boolean") ui.editingText = saved.editingText;
   if (typeof saved.panel === "string") ui.panel = saved.panel;
   if (typeof saved.now === "number" && isFinite(saved.now)) ui.now = saved.now;
   if (typeof saved.backRoute === "string") ui.backRoute = saved.backRoute;
@@ -112,13 +113,108 @@ W.undo = function () {
   W.emit();
   return true;
 };
+
+/* ---------- live text overrides ---------- */
+W.ORIG = { str: null, lib: null };
+W.EDITS = { ar: {}, en: {}, lib: {}, dom: {} };
+W._renderedKeys = {};
+
+W.ensureOrig = function () {
+  if (!W.ORIG.str && W.STR) W.ORIG.str = clone(W.STR);
+  if (!W.ORIG.lib && W.LIB) W.ORIG.lib = clone(W.LIB);
+};
+
+W.applyEditsToTables = function () {
+  W.ensureOrig();
+  if (W.ORIG.str && W.STR) {
+    ["ar", "en"].forEach(function (lg) {
+      if (!W.ORIG.str[lg] || !W.STR[lg]) return;
+      Object.keys(W.ORIG.str[lg]).forEach(function (k) { W.STR[lg][k] = W.ORIG.str[lg][k]; });
+      var ov = (W.EDITS && W.EDITS[lg]) || {};
+      Object.keys(ov).forEach(function (k) {
+        if (typeof ov[k] === "string" && ov[k].trim()) W.STR[lg][k] = ov[k];
+      });
+    });
+  }
+  if (W.ORIG.lib && W.LIB) {
+    var origMap = {};
+    W.ORIG.lib.forEach(function (x) { origMap[x.id] = x; });
+    W.LIB.forEach(function (item) {
+      var ox = origMap[item.id];
+      if (!ox) return;
+      ["ar", "translit", "arNote", "en", "source", "sourceEn"].forEach(function (f) {
+        item[f] = ox[f];
+      });
+      var lov = W.EDITS && W.EDITS.lib && W.EDITS.lib[item.id];
+      if (plain(lov)) {
+        ["ar", "translit", "arNote", "en", "source", "sourceEn"].forEach(function (f) {
+          if (typeof lov[f] === "string" && lov[f].trim()) item[f] = lov[f];
+        });
+      }
+    });
+  }
+};
+
+W.loadEdits = function () {
+  W.ensureOrig();
+  var saved = W.LS.get(W.KEYS.edits, null);
+  if (plain(saved)) {
+    W.EDITS = {
+      ar: plain(saved.ar) ? saved.ar : {},
+      en: plain(saved.en) ? saved.en : {},
+      lib: plain(saved.lib) ? saved.lib : {},
+      dom: plain(saved.dom) ? saved.dom : {}
+    };
+    ["ar", "en"].forEach(function (lg) {
+      var origTbl = (W.ORIG.str && W.ORIG.str[lg]) || {};
+      Object.keys(W.EDITS[lg]).forEach(function (k) {
+        if (origTbl[k] != null && String(W.EDITS[lg][k]).trim() === String(origTbl[k]).trim()) delete W.EDITS[lg][k];
+      });
+    });
+  }
+  W.applyEditsToTables();
+};
+
+var editPutTimer = 0;
+W.saveEdits = function () {
+  W.LS.set(W.KEYS.edits, W.EDITS);
+  if (!W.served || !window.fetch) return;
+  clearTimeout(editPutTimer);
+  editPutTimer = setTimeout(function () {
+    window.fetch("/api/edits", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(W.EDITS) })
+      .catch(function () { /* kept in browser */ });
+  }, 250);
+};
+
+W.editsSync = function () {
+  if (!W.served || !window.fetch) return Promise.resolve(false);
+  return window.fetch("/api/edits").then(function (r) { return r.json(); }).then(function (remote) {
+    if (plain(remote)) {
+      ["ar", "en"].forEach(function (lg) {
+        if (plain(remote[lg])) W.EDITS[lg] = Object.assign({}, remote[lg], W.EDITS[lg]);
+      });
+      if (plain(remote.lib)) W.EDITS.lib = Object.assign({}, remote.lib, W.EDITS.lib);
+      if (plain(remote.dom)) W.EDITS.dom = Object.assign({}, remote.dom, W.EDITS.dom);
+      W.applyEditsToTables();
+      W.saveEdits();
+      W.emit();
+    }
+    return true;
+  }).catch(function () { return false; });
+};
+
 /* words: W.STR comes from strings.js; {name} is filled from vars; a missing key shows as [key] */
 W.t = function (key, vars) {
-  var ui = W.U(), table = W.STR && (W.STR[ui && ui.lang] || W.STR.ar);
+  var ui = W.U(), lang = (ui && ui.lang) || "ar";
+  var table = W.STR && (W.STR[lang] || W.STR.ar);
   var s = table && table[key];
   if (s == null) return "[" + key + "]";
-  return vars ? s.replace(/\{(\w+)\}/g, function (m, k) { return vars[k] == null ? m : String(vars[k]); }) : s;
+  var out = vars ? s.replace(/\{(\w+)\}/g, function (m, k) { return vars[k] == null ? m : String(vars[k]); }) : s;
+  var normOut = out.replace(/\s+/g, " ").trim();
+  if (normOut) W._renderedKeys[normOut] = { key: key, lang: lang };
+  return out;
 };
+
 /* the pretend time the prototype is showing; an example day sets it */
 W.now = function () { return S.state.ui.now || Date.now(); };
 W.go = function (route) {

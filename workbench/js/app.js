@@ -16,9 +16,11 @@ try { query = new URLSearchParams(window.location.search); } catch (e) { query =
 /* test hook: prove the app survives junk in storage */
 if (query.get("junk") === "1") {
   try {
-    [W.KEYS.eng, W.KEYS.ui, W.KEYS.comments].forEach(function (k) { window.localStorage.setItem(k, "{"); });
+    [W.KEYS.eng, W.KEYS.ui, W.KEYS.comments, W.KEYS.edits].forEach(function (k) { window.localStorage.setItem(k, "{"); });
   } catch (e) { /* no storage */ }
 }
+
+W.loadEdits();
 
 var ui = W.cleanUi(W.LS.get(W.KEYS.ui, null));
 var fromUrl = W.readUrl();
@@ -54,9 +56,8 @@ if (query.get("long") === "1" && W.S.state.eng && W.S.state.eng.adhkar && W.S.st
   }
 }
 
-/* the look, theme and text size live on <html> so tokens.css can answer them */
+/* theme and text size live on <html> so tokens.css can answer them */
 function applyLook(u) {
-  root.dataset.look = u.look;
   root.dataset.theme = u.theme;
   root.dataset.size = String(u.size);
 }
@@ -101,7 +102,7 @@ function Shell() {
 
 window.ReactDOM.createRoot(document.getElementById("root")).render(html`<${Shell} />`);
 setTimeout(function () { root.dataset.ready = "1"; }, 0);
-W.ping().then(function (ok) { if (ok) W.commentsSync(); });
+W.ping().then(function (ok) { if (ok) { W.commentsSync(); W.editsSync(); } });
 })();
 
 /* test hook: go through the real comment flow once (comment mode, click the part, type, save) */

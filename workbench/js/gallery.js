@@ -5,10 +5,7 @@
 "use strict";
 var W = window.W, html = W.html;
 
-var LOOKS = {
-  a: { name: "Olive", line: "Olive wood and lime plaster. Soft round corners and pill buttons, IBM Plex Sans Arabic for words, Amiri Regular for the dhikr set centred like a line on a page, and one small eight-point star between fine rules." },
-  b: { name: "Iznik", line: "Porcelain tile and cobalt ink. Crisp corners and outlined tiles with a double rule on top, Noto Sans Arabic for words, Amiri Bold for the dhikr set to the start like a written page, and one small pointed arch." }
-};
+var OLIVE = { name: "Olive", line: "Olive wood and lime plaster. Soft round corners and pill buttons, IBM Plex Sans Arabic for words, Amiri Regular for the dhikr set centred like a line on a page, and one small eight-point star between fine rules." };
 var COLOURS = ["--bg", "--surface", "--surface-2", "--ink", "--ink-2", "--line", "--accent", "--accent-ink", "--accent-soft", "--good", "--warn"];
 var MOTIONS = [
   ["m-count", "The count landing: each tap's new number rises into place."],
@@ -72,7 +69,7 @@ function Tokens() {
       <${Item} id="g-token-shadow" label="--shadow"><div class="gal-shape gal-shadow"></div><//>
       <${Item} id="g-token-tap" label=${"--tap (" + tokenValue("--tap") + ")"}><div class="gal-tap"></div><//>
     </div>
-    <p class="gal-note">Look ${ui.look.toUpperCase()}, ${ui.theme}, text size ${ui.size}. Switch with the URL keys look=a|b, theme=light|dark, size=1|2|3, lang=ar|en.</p>
+    <p class="gal-note">Olive (${ui.theme}), text size ${ui.size} of 7. Switch with the URL keys theme=light|dark, size=1..7, lang=ar|en.</p>
   </section>`;
 }
 
@@ -224,11 +221,10 @@ function Motion() {
 }
 
 W.Gallery = function Gallery() {
-  var ui = W.useApp().ui, look = LOOKS[ui.look] || LOOKS.a;
   return html`<main class="app gal" data-screen="gallery" dir="ltr" lang="en">
     <header class="gal-head" data-id="g-head">
-      <h1 class="gal-h1">Looks, icons and motion</h1>
-      <p class="gal-look" data-id="g-look"><strong>Look ${ui.look.toUpperCase()}: ${look.name}.</strong> ${look.line}</p>
+      <h1 class="gal-h1">Palette, icons and motion</h1>
+      <p class="gal-look" data-id="g-look"><strong>${OLIVE.name}.</strong> ${OLIVE.line}</p>
     </header>
     <${Tokens} />
     <${Icons} />

@@ -64,6 +64,104 @@
   to { opacity: 1; transform: none; }
 }
 
+/* m-tap-pulse & m-spark-*: tactile tap ring pulse and completion burst motes (transform and opacity only). */
+@keyframes m-tap-pulse {
+  0% { opacity: 0.75; transform: scale(0.92); }
+  100% { opacity: 0; transform: scale(1.28); }
+}
+@keyframes m-spark-1 { 0% { opacity: 1; transform: translate(0, 0) scale(0.4) rotate(45deg); } 100% { opacity: 0; transform: translate(0, -56px) scale(1.1) rotate(90deg); } }
+@keyframes m-spark-2 { 0% { opacity: 1; transform: translate(0, 0) scale(0.4) rotate(0deg); } 100% { opacity: 0; transform: translate(48px, -30px) scale(1.1) rotate(60deg); } }
+@keyframes m-spark-3 { 0% { opacity: 1; transform: translate(0, 0) scale(0.4) rotate(45deg); } 100% { opacity: 0; transform: translate(48px, 30px) scale(1.1) rotate(90deg); } }
+@keyframes m-spark-4 { 0% { opacity: 1; transform: translate(0, 0) scale(0.4) rotate(0deg); } 100% { opacity: 0; transform: translate(0, 56px) scale(1.1) rotate(60deg); } }
+@keyframes m-spark-5 { 0% { opacity: 1; transform: translate(0, 0) scale(0.4) rotate(45deg); } 100% { opacity: 0; transform: translate(-48px, 30px) scale(1.1) rotate(90deg); } }
+@keyframes m-spark-6 { 0% { opacity: 1; transform: translate(0, 0) scale(0.4) rotate(0deg); } 100% { opacity: 0; transform: translate(-48px, -30px) scale(1.1) rotate(60deg); } }
+
+/* m-tassel & m-bead-halo: Misbaha tassel sway on bead tap and gentle active-bead halo (transform and opacity only). */
+@keyframes m-tassel {
+  0% { transform: rotate(0deg); }
+  35% { transform: rotate(6deg); }
+  70% { transform: rotate(-3.5deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes m-bead-halo {
+  0%, 100% { opacity: 0.25; transform: scale(0.92); }
+  50% { opacity: 0.65; transform: scale(1.12); }
+}
+
+/* m-tree-sway: continuous ambient breeze sway for the Living Grove (seed, sprout, tree, and field of trees). */
+.grove-sway {
+  transform-origin: 0px 0px;
+  animation: m-tree-sway 3800ms var(--ease-in-out) infinite;
+}
+.grove-sway.is-alt {
+  animation-name: m-tree-sway-alt;
+  animation-duration: 4400ms;
+  animation-delay: -1300ms;
+}
+.grove-sway.is-slow {
+  animation-duration: 5100ms;
+  animation-delay: -2500ms;
+}
+.grove-sway.is-gentle {
+  animation-name: m-tree-sway-gentle;
+  animation-duration: 5800ms;
+}
+.grove-canopy-sway {
+  transform-origin: 0px 0px;
+  animation: m-canopy-flutter 3100ms var(--ease-in-out) infinite;
+}
+.grove-canopy-sway.is-gentle {
+  animation-duration: 5200ms;
+}
+.grove-seed-sway {
+  transform-origin: 0px -2px;
+  animation: m-seed-sway 3400ms var(--ease-in-out) infinite;
+}
+@keyframes m-tree-sway {
+  0%, 100% { transform: rotate(-2.8deg); }
+  50% { transform: rotate(3.1deg); }
+}
+@keyframes m-tree-sway-alt {
+  0%, 100% { transform: rotate(2.6deg); }
+  50% { transform: rotate(-2.9deg); }
+}
+@keyframes m-tree-sway-gentle {
+  0%, 100% { transform: rotate(-1.3deg); }
+  50% { transform: rotate(1.6deg); }
+}
+@keyframes m-canopy-flutter {
+  0%, 100% { transform: rotate(-1.6deg) scale(0.99); }
+  50% { transform: rotate(1.8deg) scale(1.02); }
+}
+@keyframes m-seed-sway {
+  0%, 100% { transform: rotate(-2.4deg) translateY(0px); }
+  50% { transform: rotate(2.6deg) translateY(-0.8px); }
+}
+
+@keyframes m-now-halo {
+  0%, 100% { opacity: 0.55; transform: scale(0.98); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+
+@keyframes m-now-face-a {
+  0%, 44% { opacity: 1; transform: translateY(0); }
+  50%, 94% { opacity: 0; transform: translateY(-5px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes m-now-face-b {
+  0%, 44% { opacity: 0; transform: translateY(5px); }
+  50%, 94% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(5px); }
+}
+
+@keyframes m-cta-sheen {
+  0% { opacity: 0; transform: translateX(-150%) skewX(-20deg); }
+  2.5% { opacity: 1; }
+  12.5% { opacity: 1; transform: translateX(270%) skewX(-20deg); }
+  14.5%, 100% { opacity: 0; transform: translateX(270%) skewX(-20deg); }
+}
+
 /* ---------- off ---------- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }

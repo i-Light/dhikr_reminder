@@ -1,5 +1,5 @@
-/* frames.js: the phone and the Windows desktop the app is shown in, and W.Screen, which picks the screen for
-   the route. Frames are plain elements (no iframe), so the comment tool can reach everything inside them. */
+/* frames.js: the phone and the Windows desktop the app is shown in, the persistent AppBar, and W.Screen.
+   Frames are plain elements (no iframe), so the comment and live text-edit tools can reach everything inside them. */
 (function () {
 "use strict";
 var W = window.W, html = W.html;
@@ -33,20 +33,20 @@ function Fit(p) {
   </div>`;
 }
 
-/* Space and Enter count on an open card; Escape closes it. */
+/* Space and Enter count on an open card; Escape closes popups or steps one level back. */
 function useCardKeys(trayOpen, setTrayOpen) {
   W.useEffect(function () {
     function onKey(e) {
       if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
       var ui = W.U();
-      if (ui.commenting || ui.panel === "comments" || ui.panel === "sim") return;
+      if (ui.commenting || ui.editingText || ui.panel === "comments" || ui.panel === "sim") return;
       var t = e.target;
       if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
       if (e.key === "Escape") {
         if (trayOpen && setTrayOpen) { e.preventDefault(); setTrayOpen(false); return; }
         if (ui.popup === "moment") { e.preventDefault(); ui.popup = null; W.save(); W.emit(); return; }
         if (ui.popup && W.cardLeave) { e.preventDefault(); W.cardLeave("close"); return; }
-        var back = document.querySelector('.card-page [data-id="card-back"]');
+        var back = document.querySelector('[data-id="app-back"], .card-page [data-id="card-back"]');
         if (back) { e.preventDefault(); back.click(); }
         return;
       }
@@ -65,6 +65,179 @@ function useCardKeys(trayOpen, setTrayOpen) {
   }, [trayOpen]);
 }
 
+function moreRowTitle(row) {
+  var map = {
+    level: "more.short.level", freq: "more.short.freq", sleep: "more.short.sleep",
+    look: "more.short.look", recite: "more.short.sound",
+    sound: "more.short.sound", lang: "more.short.lang", size: "more.short.size",
+    backup: "more.backup.t", request: "more.request.t", problem: "more.problem.t",
+    updates: "more.updates.t", about: "more.about.t"
+  };
+  return map[row] ? W.t(map[row]) : row;
+}
+
+function adhkarViewLabel(v) {
+  if (!v || v === "mine") return W.t("tab.adhkar");
+  if (v === "morning" || v === "evening") return W.t("moment." + v);
+  if (v === "waking") return W.t("adhkar.filter.waking");
+  if (v === "sleep") return W.t("adhkar.filter.sleep");
+  if (v === "jumuah") return W.t("group.jumuah");
+  if (v === "all") return W.t("adhkar.filter.all");
+  var g = (W.GROUPS || []).filter(function (x) { return x.id === v; })[0];
+  return g ? W.t(g.label) : v;
+}
+
+function routeLabel(r) {
+  if (!r || r === "today") return W.t("tab.today");
+  if (r === "adhkar") return W.t("tab.adhkar");
+  if (r === "more") return W.t("tab.more");
+  if (r === "add") return W.t("add.title");
+  if (r.indexOf("add/") === 0) {
+    var gid = r.slice(4), g = (W.GROUPS || []).filter(function (x) { return x.id === gid; })[0];
+    return g ? W.t(g.label) : gid;
+  }
+  if (r === "moments") return W.t("adhkar.moments.title");
+  if (r.indexOf("moments/") === 0) return W.t("moment." + r.slice(8));
+  return W.t("tab.today");
+}
+
+function popBack(fallback) {
+  var ui = W.U(), target = ui.backRoute || fallback || "today";
+  ui.backRoute = null;
+  W.go(target);
+}
+
+/* computes breadcrumb trail and one-step back handler for the persistent top bar */
+function navState(route, st) {
+  var ui = st.ui, eng = st.eng || {}, parts = route.split("/"), head = parts[0], arg = parts.slice(1).join("/");
+  if (head === "today") return { back: null, trail: [{ label: W.t("tab.today") }] };
+  if (head === "adhkar" && !arg) {
+    var v = ui.adhkarView || "mine";
+    if (v !== "mine") {
+      var resetView = function () { ui.adhkarView = "mine"; W.save(); W.emit(); };
+      return { back: resetView, trail: [{ label: W.t("tab.adhkar"), onClick: resetView }, { label: adhkarViewLabel(v) }] };
+    }
+    return { back: null, trail: [{ label: W.t("tab.adhkar") }] };
+  }
+  if (head === "adhkar" && arg) {
+    var retRoute = ui.backRoute || "adhkar";
+    var goParent = function () { popBack("adhkar"); };
+    return { back: goParent, trail: [{ label: routeLabel(retRoute), onClick: goParent }, { label: W.t("nav.dhikr") }] };
+  }
+  if (head === "add" && !arg) {
+    var addParent = (eng.adhkar && eng.adhkar.length) ? "adhkar" : "today";
+    return {
+      back: function () { W.go(addParent); },
+      trail: [{ label: W.t(addParent === "adhkar" ? "tab.adhkar" : "tab.today"), onClick: function () { W.go(addParent); } }, { label: W.t("add.title") }]
+    };
+  }
+  if (head === "add" && arg) {
+    var gObj = (W.GROUPS || []).filter(function (g) { return g.id === arg; })[0];
+    return {
+      back: function () { W.go("add"); },
+      trail: [
+        { label: W.t("tab.adhkar"), onClick: function () { W.go("adhkar"); } },
+        { label: W.t("add.title"), onClick: function () { W.go("add"); } },
+        { label: gObj ? W.t(gObj.label) : arg }
+      ]
+    };
+  }
+  if (head === "moments" && !arg) {
+    return {
+      back: function () { W.go("adhkar"); },
+      trail: [{ label: W.t("tab.adhkar"), onClick: function () { W.go("adhkar"); } }, { label: W.t("adhkar.moments.title") }]
+    };
+  }
+  if (head === "moments" && arg) {
+    return {
+      back: function () { W.go("moments"); },
+      trail: [
+        { label: W.t("tab.adhkar"), onClick: function () { W.go("adhkar"); } },
+        { label: W.t("today.moments"), onClick: function () { W.go("moments"); } },
+        { label: W.t("moment." + arg) }
+      ]
+    };
+  }
+  if (head === "session") {
+    var mKey = arg || "morning";
+    var items = W.activeSetItems ? W.activeSetItems(eng, mKey) : (mKey === "jumuah" ? (W.JUMUAH_SET || []) : ((W.SETS && W.SETS[mKey]) || []));
+    var pos = (eng.day && eng.day.moments && eng.day.moments[mKey]) || { i: 0 };
+    var idx = items.length ? W.clamp(pos.i || 0, 0, items.length - 1) + 1 : 1;
+    var sParent = ui.backRoute || "today";
+    var goSParent = function () { popBack("today"); };
+    var sTitle = mKey === "jumuah" ? W.t("group.jumuah") : W.t("moment." + mKey);
+    return {
+      back: goSParent,
+      trail: [
+        { label: routeLabel(sParent), onClick: goSParent },
+        { label: sTitle }
+      ],
+      badge: items.length ? html`<span class="appbar-badge num" data-id="session-progress">${W.t("session.progress", { n: idx, total: items.length })}</span>` : null
+    };
+  }
+  if (head === "count") {
+    var cParent = ui.backRoute || "today";
+    var goCParent = function () { popBack("today"); };
+    return {
+      back: goCParent,
+      trail: [{ label: routeLabel(cParent), onClick: goCParent }, { label: W.t("nav.counting") }]
+    };
+  }
+  if (head === "weekly") {
+    return {
+      back: function () { W.go("today"); },
+      trail: [{ label: W.t("tab.today"), onClick: function () { W.go("today"); } }, { label: W.t("nav.weekly") }]
+    };
+  }
+  if (head === "more" && !arg) return { back: null, trail: [{ label: W.t("tab.more") }] };
+  if (head === "days") {
+    var dParent = ui.backRoute || "more";
+    var goDParent = function () { popBack("more"); };
+    return {
+      back: goDParent,
+      trail: [{ label: routeLabel(dParent), onClick: goDParent }, { label: W.t("more.days.title") }]
+    };
+  }
+  if (head === "more" && arg) {
+    return {
+      back: function () { W.go("more"); },
+      trail: [{ label: W.t("tab.more"), onClick: function () { W.go("more"); } }, { label: moreRowTitle(arg) }]
+    };
+  }
+  return { back: null, trail: [{ label: route }] };
+}
+
+W.AppBar = function AppBar(p) {
+  var info = navState(p.route, p.st);
+  var trail = info.trail.length > 2 && p.st && p.st.ui && p.st.ui.frame !== "windows"
+    ? info.trail.slice(-2)
+    : info.trail;
+  return html`<header class=${W.cx("appbar", info.back && "has-back")} data-id="app-bar">
+    <div class="appbar-row">
+      ${info.back ? html`<button type="button" class="appbar-back" data-id="app-back" onClick=${info.back}>
+        ${W.Icon({ name: "back", size: 22 })}<span>${W.t("btn.back")}</span>
+      </button>` : null}
+      <button type="button" class="appbar-brand" data-id="app-brand"
+        onClick=${function () { W.U().adhkarView = "mine"; W.U().backRoute = null; W.go("today"); }}>
+        <span class="appbar-logo">${W.Icon({ name: "adhkar", size: 20 })}</span>
+        <span class="appbar-name">${W.t("app.name")}</span>
+      </button>
+      <nav class="appbar-crumbs" data-id="app-crumbs" aria-label="Breadcrumb">
+        ${trail.map(function (item, idx) {
+          var last = idx === trail.length - 1;
+          return html`<${W.R.Fragment} key=${idx}>
+            <span class="appbar-sep" aria-hidden="true">/</span>
+            ${!last && item.onClick
+              ? html`<button type="button" class="appbar-crumb is-link" onClick=${item.onClick}>${item.label}</button>`
+              : html`<span class="appbar-crumb is-here" data-id="app-here">${item.label}</span>`}
+          <//>`;
+        })}
+      </nav>
+      ${info.badge ? info.badge : null}
+    </div>
+  </header>`;
+};
+
 /* screens register themselves by the first part of their route: W.screen("today", Today) */
 W.SCREENS = {};
 W.screen = function (name, Component) { W.SCREENS[name] = Component; };
@@ -74,14 +247,18 @@ W.Screen = function Screen() {
   var st = W.useApp(), route = st.ui.route || "today", win = st.ui.frame === "windows";
   if (!(st.eng && st.eng.prefs) && route.indexOf("onboarding/") !== 0) route = "onboarding/1";
   var parts = route.split("/"), C = W.SCREENS[parts[0]];
-  var deskNav = win && route.indexOf("onboarding/") !== 0 && parts[0] !== "session" && parts[0] !== "count";
+  var inOnboarding = route.indexOf("onboarding/") === 0;
+  var deskNav = win && !inOnboarding && parts[0] !== "session" && parts[0] !== "count";
   return html`<div class=${W.cx("screen-wrap", win && "is-desktop")}>
     ${deskNav ? html`<${W.TabBar} route=${route} />` : null}
-    <div class="screen m-screen" key=${route} data-screen=${route}>
-      ${C ? html`<${C} route=${route} arg=${parts.slice(1).join("/")} />`
-        : html`<div class="screen-todo" data-id="screen-todo"><p class="title">${route}</p></div>`}
+    <div class="screen-main">
+      ${!inOnboarding ? html`<${W.AppBar} route=${route} st=${st} />` : null}
+      <div class="screen m-screen" key=${route} data-screen=${route}>
+        ${C ? html`<${C} route=${route} arg=${parts.slice(1).join("/")} />`
+          : html`<div class="screen-todo" data-id="screen-todo"><p class="title">${route}</p></div>`}
+      </div>
+      ${!win && TABBED[route] ? html`<${W.TabBar} route=${route} />` : null}
     </div>
-    ${!win && TABBED[route] ? html`<${W.TabBar} route=${route} />` : null}
   </div>`;
 };
 
@@ -111,8 +288,9 @@ W.WindowsFrame = function WindowsFrame(p) {
   useCardKeys(trayOpen, setTrayOpen);
 
   var pop = ui.popup, card = eng && eng.day && eng.day.showing;
+  var wantDeskSize = pop === "full" ? "full" : (pop === "banner" || (pop !== "small" && eng && eng.prefs && eng.prefs.cardSize === "banner")) ? "banner" : "small";
   var size = pop && pop !== "moment" && card && W.cardSizeFor
-    ? (pop === "full" ? "full" : W.cardSizeFor(card.id, "small"))
+    ? (wantDeskSize === "full" ? "full" : W.cardSizeFor(card.id, wantDeskSize))
     : null;
   var toast = ui.toast && W.Toast ? html`<div class="desktop-toast"><${W.Toast} id="app-toast" text=${ui.toast.text} stamp=${ui.toast.stamp}
     onUndo=${ui.toast.undo ? function () { W.undo(); W.U().toast = null; W.save(); W.emit(); } : null}
@@ -166,7 +344,7 @@ W.WindowsFrame = function WindowsFrame(p) {
       </div>` : null}
       <div class="desktop-corner app" data-id="desktop-corner">
         ${pop === "moment" && W.MomentCard ? html`<${W.MomentCard} />` : null}
-        ${size === "small" ? html`<${W.Card} ...${W.cardProps(eng, card)} size="small" onTap=${W.cardTap}
+        ${(size === "small" || size === "banner") ? html`<${W.Card} ...${W.cardProps(eng, card)} size=${size} onTap=${W.cardTap}
           onLater=${function () { W.cardLeave("later"); }} onClose=${function () { W.cardLeave("close"); }} />` : null}
         ${toast}
       </div>

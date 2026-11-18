@@ -266,3 +266,32 @@ test("functions never change their input", () => {
   E.answerReview(up, {refuse:["a"], heavy:{a:"rest"}, accept:["a"]}); E.review(up);
   assert.deepEqual(up, upSnap);
 });
+
+test("non-list adhkar credit, setAuto, setLevel, and addCustom", () => {
+  const r = E.sessionTap(s, at(6, 20), "waking", [{ id: "non_list_1", count: 1 }]);
+  assert.equal(r.day.done.non_list_1, undefined);
+  assert.equal(r.day.extra.non_list_1, 1);
+  assert.equal(r.lifetime, 1);
+  assert.equal(r.history["2026-11-16"].said, 1);
+
+  const manual = E.setTarget(s, "a", 50);
+  assert.equal(manual.adhkar[0].auto, false);
+  assert.equal(E.setAuto(manual, "a", true).adhkar[0].auto, true);
+
+  const eased = E.setLevel(manual, "new");
+  assert.equal(eased.prefs.level, "new");
+  assert.equal(eased.adhkar[0].target, 50); // manual auto=false stays untouched
+  assert.equal(eased.adhkar[1].target, 10); // auto=true rescales gently
+
+  const withCustom = E.addCustom(s, { id: "cust_1", ar: "دعاء", words: 2, sunnah: null, custom: true }, 12);
+  assert.equal(withCustom.custom.length, 1);
+  assert.equal(withCustom.adhkar.find(x => x.id === "cust_1").target, 12);
+  assert.equal(E.remove(withCustom, "cust_1").custom.length, 0);
+
+  // Night-shift schedule: wakes at 18:00 (6 PM), sleeps at 09:00 (9 AM)
+  const shiftTimes = E.momentTimes({ freq: "hour", wake: "18:00", sleep: "09:00" });
+  assert.equal(shiftTimes.waking.start, 1080);   // 18:00
+  assert.equal(shiftTimes.evening.start, 1095);  // 18:15 (evening, not while asleep)
+  assert.equal(shiftTimes.morning.start, 1740);  // 05:00 AM next morning (before 09:00 sleep)
+  assert.equal(shiftTimes.sleep.start, 1960);    // 08:40 AM (20 min before 09:00 sleep)
+});

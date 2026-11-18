@@ -1,11 +1,8 @@
-/* ui.js: the shared parts every screen is built from. Use them as components: html`<${W.Btn} ... />`.
-   Every part takes an id that becomes its data-id. Words come from W.t. Layout uses logical properties,
-   so each part works right to left and left to right. Styles live in css/app.css, motion in css/motion.css. */
+/* ui.js: the shared parts every screen is built from, plus the 30-second Parent Preset helper & sheet. */
 (function () {
 "use strict";
 var W = window.W, html = W.html;
 
-/* kind: "main" (the one main action), "soft" (a second choice), "text" (a quiet action). label or children is the word. */
 function Btn(p) {
   var kind = p.kind || "main";
   return html`<button type="button" class=${W.cx("btn", "btn-" + kind, p.wide && "btn-wide", p.className)}
@@ -15,8 +12,6 @@ function Btn(p) {
   </button>`;
 }
 
-/* progress ring: two half rings turned with transform, so filling animates without repainting the arc.
-   label (optional) sits in the middle; a full ring shows a check. */
 function Ring(p) {
   var size = p.size || 48, total = Math.max(1, p.total || 1);
   var done = W.clamp(p.done || 0, 0, total), f = done / total, full = done >= total;
@@ -25,7 +20,6 @@ function Ring(p) {
   W.useEffect(function () { prev.current = f; });
   var s1 = { transform: "rotate(" + Math.min(f, 0.5) * 360 + "deg)" };
   var s2 = { transform: "rotate(" + Math.max(f - 0.5, 0) * 360 + "deg)" };
-  /* crossing the half: the first half finishes before the second starts */
   if (up) { s1.transitionDuration = "200ms"; s1.transitionTimingFunction = "linear"; s2.transitionDelay = "200ms"; }
   if (down) { s2.transitionDuration = "200ms"; s2.transitionTimingFunction = "linear"; s1.transitionDelay = "200ms"; }
   return html`<span class=${W.cx("ring", full && "is-full", p.className)} data-id=${p.id}
@@ -39,22 +33,23 @@ function Ring(p) {
   </span>`;
 }
 
-/* a panel that rises from the bottom of the nearest positioned box. Closes with its own labelled button. */
 function Sheet(p) {
   if (!p.open) return null;
-  return html`<div class="sheet-layer" data-id=${p.id}>
+  var node = html`<div class=${W.cx("sheet-layer", p.popup && "is-popup")} data-id=${p.id}>
     <div class="sheet-scrim" onClick=${p.onClose}></div>
-    <div class="sheet m-enter" role="dialog" aria-modal="true" aria-label=${p.title}>
+    <div class=${W.cx("sheet", p.popup && "is-popup", "m-enter")} role="dialog" aria-modal="true" aria-label=${p.title}>
       <div class="sheet-head">
         <h2 class="sheet-title">${p.title}</h2>
         ${p.onClose ? html`<${Btn} kind="text" icon="close" label=${W.t("btn.close")} id=${p.id + "-close"} onClick=${p.onClose} />` : null}
       </div>
       <div class="sheet-body">${p.children}</div>
+      ${p.footer ? html`<div class="sheet-foot">${p.footer}</div>` : null}
     </div>
   </div>`;
+  var host = !p.inline && typeof document !== "undefined" && document.querySelector ? document.querySelector(".screen-main") : null;
+  return host && window.ReactDOM && window.ReactDOM.createPortal ? window.ReactDOM.createPortal(node, host) : node;
 }
 
-/* the three places. route defaults to the current one; onGo defaults to W.go. */
 var TABS = [["today", "tab.today"], ["adhkar", "tab.adhkar"], ["more", "tab.more"]];
 function TabBar(p) {
   var here = String(p.route != null ? p.route : W.U().route).split("/")[0];
@@ -68,8 +63,6 @@ function TabBar(p) {
   })}</nav>`;
 }
 
-/* a large list row. lead: a node at the start (a Ring); icon: or an icon there. dhikr: set the title in the dhikr face.
-   end: a node at the end; with onClick and no end, a quiet chevron. done: the finished look. */
 function Row(p) {
   var Tag = p.onClick ? "button" : "div";
   var lead = p.lead || (p.icon ? html`<span class="row-icon">${W.Icon({ name: p.icon, size: 28 })}</span>` : null);
@@ -85,7 +78,6 @@ function Row(p) {
   <//>`;
 }
 
-/* one number with Less and More. mark: the sunnah number, shown under it; tapping it sets the value to it. */
 function Stepper(p) {
   var step = p.step || 1, min = p.min == null ? 1 : p.min, max = p.max == null ? 9999 : p.max, v = p.value;
   function set(n) { n = W.clamp(n, min, max); if (n !== v) p.onChange(n); }
@@ -108,7 +100,6 @@ function Stepper(p) {
   </div>`;
 }
 
-/* large choice buttons, one chosen. options: [{value, label, sub, icon}] */
 function Choice(p) {
   var id = p.id || "choice";
   return html`<div class="choices" role="radiogroup" data-id=${id}>${p.options.map(function (o) {
@@ -123,8 +114,6 @@ function Choice(p) {
   })}</div>`;
 }
 
-/* one message with an optional Undo. Leaves by itself after 6 seconds, then calls onDone.
-   A new text or stamp shows it again. */
 var TOAST_MS = 6000, LEAVE_MS = 220;
 function Toast(p) {
   var st = W.useState("in"), phase = st[0], setPhase = st[1];
@@ -145,21 +134,140 @@ function Toast(p) {
   </div>`;
 }
 
-/* the look's one quiet ornament: a small eight-point star (look a) or a pointed arch (look b) between fine rules */
 var STAR = '<rect x="6.5" y="6.5" width="11" height="11"/><rect x="6.5" y="6.5" width="11" height="11" transform="rotate(45 12 12)"/>';
-var ARCH = '<path d="M6.5 21V12c0-3.6 2.4-6.2 5.5-8.5 3.1 2.3 5.5 4.9 5.5 8.5v9M9.5 21v-8c0-1.9 1-3.3 2.5-4.6 1.5 1.3 2.5 2.7 2.5 4.6v8"/>';
-/* size: the mark's size (26); bare: the mark alone, without the rules */
 function Ornament(p) {
   var size = p.size || 26;
-  function mark(cls, body) {
-    return html`<svg class=${cls} viewBox="0 0 24 24" width=${size} height=${size} fill="none" stroke="currentColor"
-      strokeWidth=${size > 40 ? 0.9 : 1.25} strokeLinejoin="round" strokeLinecap="round" dangerouslySetInnerHTML=${{ __html: body }}></svg>`;
-  }
   return html`<span class=${W.cx("orn", p.bare && "is-bare", p.className)} data-id=${p.id} aria-hidden="true">
-    ${p.bare ? null : html`<span class="orn-line"></span>`}${mark("orn-a", STAR)}${mark("orn-b", ARCH)}${p.bare ? null : html`<span class="orn-line"></span>`}
+    ${p.bare ? null : html`<span class="orn-line"></span>`}<svg class="orn-a" viewBox="0 0 24 24" width=${size} height=${size} fill="none" stroke="currentColor"
+      strokeWidth=${size > 40 ? 0.9 : 1.25} strokeLinejoin="round" strokeLinecap="round" dangerouslySetInnerHTML=${{ __html: STAR }}></svg>${p.bare ? null : html`<span class="orn-line"></span>`}
   </span>`;
+}
+
+/* 30-second Parent & Elder Preset: configures text size, calm voice recitation, misbaha card style, soft bead sound, and daily moments */
+W.applyParentPreset = function (opts) {
+  var cfg = Object.assign({ size: 7, recite: true, cardSize: "full", momentsOn: true }, opts || {});
+  var E = W.E, ui = W.U();
+  ui.size = W.clamp(Number(cfg.size) || 7, 1, 7);
+  ui.answers = null;
+  ui.permissionMissing = false;
+  var wantRecite = cfg.recite !== false;
+  var wantCard = cfg.cardSize === "small" ? "small" : "full";
+  var wantMoments = cfg.momentsOn !== false;
+  if (!(W.S.state.eng && W.S.state.eng.prefs)) {
+    var d = new Date(W.now());
+    ui.now = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 14, 0).getTime();
+    var fresh = E.newState({
+      level: "some", freq: "hour", recite: wantRecite,
+      wake: "06:00", sleep: "22:30", cardSize: wantCard
+    }, W.LIB);
+    fresh.prefs.sound = "soft";
+    ["waking", "morning", "evening", "sleep"].forEach(function (k) {
+      fresh.prefs.moments[k] = { on: wantMoments, at: null };
+    });
+    W.S.state.eng = E.rollDay(fresh, ui.now);
+    W.S.undo = [];
+  } else {
+    W.act("parent-preset", function (s) {
+      if (s.eng.prefs && s.eng.prefs.level === "daily" && E.setLevel) {
+        s.eng = E.setLevel(s.eng, "some");
+      }
+      var prefs = Object.assign({}, s.eng.prefs, {
+        cardSize: wantCard, recite: wantRecite, sound: "soft", freq: "hour"
+      });
+      var moments = {};
+      ["waking", "morning", "evening", "sleep"].forEach(function (k) {
+        var cur = (prefs.moments && prefs.moments[k]) || {};
+        moments[k] = { on: wantMoments, at: cur.at == null ? null : cur.at };
+      });
+      prefs.moments = moments;
+      s.eng = E.rollDay(Object.assign({}, s.eng, { prefs: prefs }), W.now());
+    });
+  }
+  W.go("today");
+  if (W.toast) W.toast(W.t("parent.done"));
+};
+
+function ParentSheet(p) {
+  var szSt = W.useState(7), sz = szSt[0], setSz = szSt[1];
+  var recSt = W.useState(true), recite = recSt[0], setRecite = recSt[1];
+  var csSt = W.useState("full"), cardSize = csSt[0], setCardSize = csSt[1];
+  var mmSt = W.useState(true), momentsOn = mmSt[0], setMomentsOn = mmSt[1];
+
+  W.useEffect(function () {
+    if (p.open) {
+      setSz(7);
+      setRecite(true);
+      setCardSize("full");
+      setMomentsOn(true);
+    }
+  }, [p.open]);
+
+  function cycleSize() {
+    setSz(sz <= 3 ? 7 : sz - 1);
+  }
+
+  return html`<${Sheet} id="parent-sheet" open=${p.open} title=${W.t("parent.sheet.title")} onClose=${p.onClose}
+    footer=${html`<${Btn} kind="main" wide=${true} icon="heart" label=${W.t("parent.apply")} id="apply-parent-preset"
+      onClick=${function () {
+        if (p.onClose) p.onClose();
+        W.applyParentPreset({ size: sz, recite: recite, cardSize: cardSize, momentsOn: momentsOn });
+      }} />`}>
+    <div class="parent-sheet-body">
+      <p class="quiet parent-sheet-lead">${W.t("parent.sheet.lead")}</p>
+      <p class="quiet parent-sheet-hint">${W.t("parent.sheet.hint")}</p>
+      <div class="parent-feats" data-id="parent-feats">
+        <button type="button" class="parent-feat is-btn is-on" data-id="parent-feat-size"
+          onClick=${cycleSize}>
+          <span class="parent-feat-ic">${W.Icon({ name: "text-size", size: 24 })}</span>
+          <span class="parent-feat-main">
+            <span class="parent-feat-title">${W.t("parent.feat.size.t")}</span>
+            <span class="parent-feat-sub quiet">${W.t("more.size." + sz)}</span>
+          </span>
+          <span class="parent-feat-pill num">${sz}/7</span>
+        </button>
+
+        <button type="button" class=${W.cx("parent-feat", "is-btn", recite && "is-on")} data-id="parent-feat-recite"
+          aria-pressed=${recite ? "true" : "false"}
+          onClick=${function () { setRecite(!recite); }}>
+          <span class="parent-feat-ic">${W.Icon({ name: recite ? "sound" : "sound-off", size: 24 })}</span>
+          <span class="parent-feat-main">
+            <span class="parent-feat-title">${W.t("parent.feat.recite.t")}</span>
+            <span class="parent-feat-sub quiet">${W.t(recite ? "parent.feat.recite.on" : "parent.feat.recite.off")}</span>
+          </span>
+          <span class=${W.cx("parent-feat-switch", recite && "is-on")} aria-hidden="true">
+            <span class="switch-knob"></span>
+          </span>
+        </button>
+
+        <button type="button" class=${W.cx("parent-feat", "is-btn", cardSize === "full" && "is-on")} data-id="parent-feat-card"
+          aria-pressed=${cardSize === "full" ? "true" : "false"}
+          onClick=${function () { setCardSize(cardSize === "full" ? "small" : "full"); }}>
+          <span class="parent-feat-ic">${W.Icon({ name: cardSize === "full" ? "card-full" : "card-small", size: 24 })}</span>
+          <span class="parent-feat-main">
+            <span class="parent-feat-title">${W.t("parent.feat.card.t")}</span>
+            <span class="parent-feat-sub quiet">${W.t(cardSize === "full" ? "parent.feat.card.full" : "parent.feat.card.small")}</span>
+          </span>
+          <span class="parent-feat-pill">${W.t("ob.size." + cardSize)}</span>
+        </button>
+
+        <button type="button" class=${W.cx("parent-feat", "is-btn", momentsOn && "is-on")} data-id="parent-feat-moments"
+          aria-pressed=${momentsOn ? "true" : "false"}
+          onClick=${function () { setMomentsOn(!momentsOn); }}>
+          <span class="parent-feat-ic">${W.Icon({ name: "sun", size: 24 })}</span>
+          <span class="parent-feat-main">
+            <span class="parent-feat-title">${W.t("parent.feat.moments.t")}</span>
+            <span class="parent-feat-sub quiet">${W.t(momentsOn ? "parent.feat.moments.on" : "parent.feat.moments.off")}</span>
+          </span>
+          <span class=${W.cx("parent-feat-switch", momentsOn && "is-on")} aria-hidden="true">
+            <span class="switch-knob"></span>
+          </span>
+        </button>
+      </div>
+    </div>
+  <//>`;
 }
 
 W.Btn = Btn; W.Ring = Ring; W.Sheet = Sheet; W.TabBar = TabBar; W.Row = Row;
 W.Stepper = Stepper; W.Choice = Choice; W.Toast = Toast; W.Ornament = Ornament;
+W.ParentSheet = ParentSheet;
 })();
